@@ -18,6 +18,7 @@ interface InvoicePreviewProps {
   clientAddress?: string;
   clientPhone?: string;
   lineItems: LineItem[];
+  taxRate?: number;
   notes?: string;
   forProject?: string;
 }
@@ -32,12 +33,12 @@ export function InvoicePreview({
   clientAddress,
   clientPhone,
   lineItems,
+  taxRate = 0,
   notes,
   forProject,
 }: InvoicePreviewProps) {
   const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
-  const taxRate = 0.0;
-  const tax = subtotal * taxRate;
+  const tax = subtotal * (taxRate / 100);
   const total = subtotal + tax;
 
   return (
@@ -85,9 +86,9 @@ export function InvoicePreview({
         {/* Bill To Section */}
         <div className="text-right space-y-1">
           <p className="text-sm">
-            <span className="font-medium">Bill To:</span> {clientName || "Client Name"}
+            <span className="font-medium">Bill To:</span> {clientCompany || clientName || "Client Name"}
           </p>
-          {clientCompany && <p className="text-sm font-medium">{clientCompany}</p>}
+          {clientCompany && clientName && <p className="text-sm text-muted-foreground">{clientName}</p>}
           {clientAddress && <p className="text-sm">{clientAddress}</p>}
           {clientPhone && <p className="text-sm">Phone: {clientPhone}</p>}
         </div>
@@ -137,7 +138,7 @@ export function InvoicePreview({
             </div>
             <div className="flex justify-between text-sm">
               <span className="font-medium">TAX RATE</span>
-              <span className="font-mono">{(taxRate * 100).toFixed(2)}%</span>
+              <span className="font-mono">{taxRate.toFixed(2)}%</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="font-medium">SALES TAX</span>

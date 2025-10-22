@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { InvoicePreview } from "./InvoicePreview";
+import type { Client } from "@shared/schema";
 
 const lineItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
@@ -37,6 +38,7 @@ const invoiceFormSchema = z.object({
   orderNumber: z.string().optional(),
   projectNumber: z.string().optional(),
   forProject: z.string().optional(),
+  taxRate: z.number().min(0).max(100).optional(),
   notes: z.string().optional(),
   lineItems: z.array(lineItemSchema).min(1, "At least one line item required"),
 });
@@ -49,13 +51,6 @@ interface LineItem {
   price: number;
 }
 
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-}
 
 interface InvoiceFormProps {
   clients: Client[];
@@ -67,6 +62,7 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
   const [lineItems, setLineItems] = useState<LineItem[]>(
     initialData?.lineItems || [{ description: "", quantity: 1, price: 0 }]
   );
+  const [taxRate, setTaxRate] = useState<number>(initialData?.taxRate || 0);
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceFormSchema),
@@ -76,6 +72,7 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
       orderNumber: initialData?.orderNumber || "",
       projectNumber: initialData?.projectNumber || "",
       forProject: initialData?.forProject || "",
+      taxRate: initialData?.taxRate || 0,
       notes: initialData?.notes || "",
       lineItems: lineItems,
     },
@@ -98,7 +95,7 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
   };
 
   const handleSubmit = (status: "draft" | "sent") => {
-    const data = { ...form.getValues(), lineItems };
+    const data = { ...form.getValues(), lineItems, taxRate };
     onSubmit(data, status);
   };
 
@@ -190,6 +187,34 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
                     <FormLabel>For (Project Name)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., Bracha Bridge" {...field} data-testid="input-for-project" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="taxRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tax Rate (%)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        max="100"
+                        placeholder="0.00" 
+                        {...field}
+                        value={taxRate}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0;
+                          setTaxRate(value);
+                          field.onChange(value);
+                        }}
+                        data-testid="input-tax-rate" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -294,10 +319,11 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
           projectNumber={form.watch("projectNumber")}
           forProject={form.watch("forProject")}
           clientName={selectedClient?.name}
-          clientCompany={selectedClient?.email}
-          clientAddress={selectedClient?.address}
-          clientPhone={selectedClient?.phone}
+          clientCompany={selectedClient?.company || undefined}
+          clientAddress={selectedClient?.address || undefined}
+          clientPhone={selectedClient?.phone || undefined}
           lineItems={lineItems}
+          taxRate={taxRate}
           notes={form.watch("notes")}
         />
       </div>

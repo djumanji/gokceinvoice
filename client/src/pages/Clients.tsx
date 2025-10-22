@@ -22,6 +22,7 @@ export default function Clients() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    company: "",
     phone: "",
     address: "",
   });
@@ -62,7 +63,7 @@ export default function Clients() {
   });
 
   const resetForm = () => {
-    setFormData({ name: "", email: "", phone: "", address: "" });
+    setFormData({ name: "", email: "", company: "", phone: "", address: "" });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -79,6 +80,7 @@ export default function Clients() {
     setFormData({
       name: client.name,
       email: client.email,
+      company: client.company || "",
       phone: client.phone || "",
       address: client.address || "",
     });
@@ -146,6 +148,15 @@ export default function Clients() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                   data-testid="input-client-email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company">Company</Label>
+                <Input
+                  id="company"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  data-testid="input-client-company"
                 />
               </div>
               <div className="space-y-2">

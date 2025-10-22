@@ -7,6 +7,7 @@ export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  company: text("company"),
   phone: text("phone"),
   address: text("address"),
 });
@@ -23,6 +24,7 @@ export const invoices = pgTable("invoices", {
   notes: text("notes"),
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0"),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });
 
@@ -36,8 +38,18 @@ export const lineItems = pgTable("line_items", {
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true });
-export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true });
-export const insertLineItemSchema = createInsertSchema(lineItems).omit({ id: true });
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true }).extend({
+  date: z.string().transform((str) => new Date(str)),
+  subtotal: z.union([z.string(), z.number()]).transform(val => String(val)),
+  tax: z.union([z.string(), z.number()]).transform(val => String(val)),
+  taxRate: z.union([z.string(), z.number()]).transform(val => String(val)),
+  total: z.union([z.string(), z.number()]).transform(val => String(val)),
+});
+export const insertLineItemSchema = createInsertSchema(lineItems).omit({ id: true }).extend({
+  quantity: z.union([z.string(), z.number()]).transform(val => String(val)),
+  price: z.union([z.string(), z.number()]).transform(val => String(val)),
+  amount: z.union([z.string(), z.number()]).transform(val => String(val)),
+});
 
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;

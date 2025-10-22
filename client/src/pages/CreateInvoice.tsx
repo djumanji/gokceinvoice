@@ -28,13 +28,13 @@ export default function CreateInvoice() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { lineItems, clientId, date, orderNumber, projectNumber, forProject, notes } = data;
+      const { lineItems, clientId, date, orderNumber, projectNumber, forProject, notes, taxRate } = data;
       
       // Calculate totals
       const subtotal = lineItems.reduce((sum: number, item: any) => 
         sum + (item.quantity * item.price), 0
       );
-      const tax = 0;
+      const tax = subtotal * (taxRate || 0) / 100;
       const total = subtotal + tax;
       
       // Generate invoice number
@@ -52,6 +52,7 @@ export default function CreateInvoice() {
         subtotal: subtotal.toString(),
         tax: tax.toString(),
         total: total.toString(),
+        taxRate: (taxRate || 0).toString(),
         lineItems: lineItems.map((item: any) => ({
           description: item.description,
           quantity: item.quantity,
@@ -60,7 +61,8 @@ export default function CreateInvoice() {
         })),
       };
 
-      return apiRequest("POST", "/api/invoices", invoiceData);
+      const res = await apiRequest("POST", "/api/invoices", invoiceData);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
@@ -70,12 +72,12 @@ export default function CreateInvoice() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { lineItems, clientId, date, orderNumber, projectNumber, forProject, notes } = data;
+      const { lineItems, clientId, date, orderNumber, projectNumber, forProject, notes, taxRate } = data;
       
       const subtotal = lineItems.reduce((sum: number, item: any) => 
         sum + (item.quantity * item.price), 0
       );
-      const tax = 0;
+      const tax = subtotal * (taxRate || 0) / 100;
       const total = subtotal + tax;
       
       const invoiceData = {
@@ -89,6 +91,7 @@ export default function CreateInvoice() {
         subtotal: subtotal.toString(),
         tax: tax.toString(),
         total: total.toString(),
+        taxRate: (taxRate || 0).toString(),
         lineItems: lineItems.map((item: any) => ({
           description: item.description,
           quantity: item.quantity,
@@ -97,7 +100,8 @@ export default function CreateInvoice() {
         })),
       };
 
-      return apiRequest("PATCH", `/api/invoices/${invoiceId}`, invoiceData);
+      const res = await apiRequest("PATCH", `/api/invoices/${invoiceId}`, invoiceData);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
@@ -128,6 +132,7 @@ export default function CreateInvoice() {
     orderNumber: (invoice as any).orderNumber || "",
     projectNumber: (invoice as any).projectNumber || "",
     forProject: (invoice as any).forProject || "",
+    taxRate: parseFloat((invoice as any).taxRate) || 0,
     notes: (invoice as any).notes || "",
     lineItems: Array.isArray(lineItems) && lineItems.length > 0 ? lineItems.map((item: any) => ({
       description: item.description,

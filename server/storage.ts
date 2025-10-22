@@ -50,6 +50,7 @@ export class MemStorage implements IStorage {
       id,
       name: insertClient.name,
       email: insertClient.email,
+      company: insertClient.company ?? null,
       phone: insertClient.phone ?? null,
       address: insertClient.address ?? null,
     };
@@ -92,6 +93,7 @@ export class MemStorage implements IStorage {
       notes: insertInvoice.notes ?? null,
       subtotal: insertInvoice.subtotal,
       tax: insertInvoice.tax ?? "0",
+      taxRate: insertInvoice.taxRate ?? "0",
       total: insertInvoice.total,
     };
     this.invoices.set(id, invoice);
