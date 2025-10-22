@@ -23,18 +23,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
-import { StatusBadge } from "./StatusBadge";
+import { InvoicePreview } from "./InvoicePreview";
 
 const lineItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
-  quantity: z.number().min(1, "Quantity must be at least 1"),
+  quantity: z.number().min(0.01, "Quantity must be greater than 0"),
   price: z.number().min(0, "Price must be positive"),
 });
 
 const invoiceFormSchema = z.object({
   clientId: z.string().min(1, "Client is required"),
   date: z.string(),
-  dueDate: z.string(),
+  orderNumber: z.string().optional(),
+  projectNumber: z.string().optional(),
+  forProject: z.string().optional(),
   notes: z.string().optional(),
   lineItems: z.array(lineItemSchema).min(1, "At least one line item required"),
 });
@@ -47,8 +49,16 @@ interface LineItem {
   price: number;
 }
 
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+}
+
 interface InvoiceFormProps {
-  clients: Array<{ id: string; name: string }>;
+  clients: Client[];
   onSubmit: (data: InvoiceFormData, status: string) => void;
   initialData?: Partial<InvoiceFormData>;
 }
@@ -57,14 +67,15 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
   const [lineItems, setLineItems] = useState<LineItem[]>(
     initialData?.lineItems || [{ description: "", quantity: 1, price: 0 }]
   );
-  const [previewStatus, setPreviewStatus] = useState<"draft" | "sent">("draft");
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: {
       clientId: initialData?.clientId || "",
       date: initialData?.date || format(new Date(), "yyyy-MM-dd"),
-      dueDate: initialData?.dueDate || format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
+      orderNumber: initialData?.orderNumber || "",
+      projectNumber: initialData?.projectNumber || "",
+      forProject: initialData?.forProject || "",
       notes: initialData?.notes || "",
       lineItems: lineItems,
     },
@@ -75,7 +86,9 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
   };
 
   const removeLineItem = (index: number) => {
-    setLineItems(lineItems.filter((_, i) => i !== index));
+    if (lineItems.length > 1) {
+      setLineItems(lineItems.filter((_, i) => i !== index));
+    }
   };
 
   const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
@@ -84,20 +97,12 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
     setLineItems(updated);
   };
 
-  const calculateTotal = () => {
-    const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
-    const tax = subtotal * 0.1;
-    const total = subtotal + tax;
-    return { subtotal, tax, total };
-  };
-
-  const { subtotal, tax, total } = calculateTotal();
-
   const handleSubmit = (status: "draft" | "sent") => {
-    setPreviewStatus(status);
     const data = { ...form.getValues(), lineItems };
     onSubmit(data, status);
   };
+
+  const selectedClient = clients.find((c) => c.id === form.watch("clientId"));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -133,15 +138,29 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invoice Date *</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} data-testid="input-date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="date"
+                  name="orderNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Invoice Date *</FormLabel>
+                      <FormLabel>Order #</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} data-testid="input-date" />
+                        <Input placeholder="e.g., 0025091" {...field} data-testid="input-order-number" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -150,18 +169,32 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
 
                 <FormField
                   control={form.control}
-                  name="dueDate"
+                  name="projectNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Due Date *</FormLabel>
+                      <FormLabel>Project #</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} data-testid="input-due-date" />
+                        <Input placeholder="e.g., 0299505" {...field} data-testid="input-project-number" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="forProject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>For (Project Name)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Bracha Bridge" {...field} data-testid="input-for-project" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -206,20 +239,22 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
                   <div className="grid grid-cols-3 gap-2">
                     <Input
                       type="number"
+                      step="0.01"
                       placeholder="Qty"
                       value={item.quantity}
-                      onChange={(e) => updateLineItem(index, "quantity", parseInt(e.target.value) || 0)}
+                      onChange={(e) => updateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
                       data-testid={`input-quantity-${index}`}
                     />
                     <Input
                       type="number"
+                      step="0.01"
                       placeholder="Price"
                       value={item.price}
                       onChange={(e) => updateLineItem(index, "price", parseFloat(e.target.value) || 0)}
                       data-testid={`input-price-${index}`}
                     />
-                    <div className="flex items-center justify-end font-mono font-medium">
-                      ${(item.quantity * item.price).toFixed(2)}
+                    <div className="flex items-center justify-end font-mono font-medium text-sm">
+                      €{(item.quantity * item.price).toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -252,70 +287,19 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
         </div>
       </div>
 
-      <div>
-        <Card className="sticky top-4">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-4">
-            <CardTitle>Invoice Preview</CardTitle>
-            <StatusBadge status={previewStatus} />
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-muted-foreground">Invoice Number</p>
-                <p className="font-mono font-semibold">INV-{String(Math.floor(Math.random() * 1000)).padStart(3, "0")}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Date</p>
-                <p>{form.watch("date") && format(new Date(form.watch("date")), "MMM dd, yyyy")}</p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Bill To</p>
-              <p className="font-semibold">
-                {clients.find((c) => c.id === form.watch("clientId"))?.name || "Select a client"}
-              </p>
-            </div>
-
-            <div className="border-t pt-4">
-              <div className="space-y-2">
-                {lineItems.map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <div className="flex-1">
-                      <p className="font-medium">{item.description || "Line item"}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {item.quantity} × ${item.price.toFixed(2)}
-                      </p>
-                    </div>
-                    <p className="font-mono">${(item.quantity * item.price).toFixed(2)}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t pt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-mono">${subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tax (10%)</span>
-                <span className="font-mono">${tax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                <span>Total</span>
-                <span className="font-mono">${total.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {form.watch("notes") && (
-              <div className="border-t pt-4">
-                <p className="text-sm text-muted-foreground mb-1">Notes</p>
-                <p className="text-sm">{form.watch("notes")}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="sticky top-4">
+        <InvoicePreview
+          date={form.watch("date")}
+          orderNumber={form.watch("orderNumber")}
+          projectNumber={form.watch("projectNumber")}
+          forProject={form.watch("forProject")}
+          clientName={selectedClient?.name}
+          clientCompany={selectedClient?.email}
+          clientAddress={selectedClient?.address}
+          clientPhone={selectedClient?.phone}
+          lineItems={lineItems}
+          notes={form.watch("notes")}
+        />
       </div>
     </div>
   );

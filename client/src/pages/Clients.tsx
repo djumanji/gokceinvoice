@@ -1,54 +1,106 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Users as UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClientCard } from "@/components/ClientCard";
 import { EmptyState } from "@/components/EmptyState";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { Client } from "@shared/schema";
 
 export default function Clients() {
-  const [hasClients] = useState(true); // todo: remove mock functionality
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
 
-  // todo: remove mock functionality
-  const mockClients = [
-    {
-      id: "1",
-      name: "Acme Corporation",
-      email: "contact@acme.com",
-      phone: "+1 (555) 123-4567",
-      totalInvoices: 12,
-      outstandingAmount: 3200.0,
+  const { data: clients = [], isLoading } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+  });
+
+  const { data: invoices = [] } = useQuery<any[]>({
+    queryKey: ["/api/invoices"],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: typeof formData) => apiRequest("POST", "/api/clients", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      setIsDialogOpen(false);
+      resetForm();
     },
-    {
-      id: "2",
-      name: "TechStart Inc",
-      email: "hello@techstart.io",
-      phone: "+1 (555) 987-6543",
-      totalInvoices: 8,
-      outstandingAmount: 1500.5,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: typeof formData }) =>
+      apiRequest("PATCH", `/api/clients/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      setIsDialogOpen(false);
+      resetForm();
+      setEditingClient(null);
     },
-    {
-      id: "3",
-      name: "Design Studio",
-      email: "info@designstudio.com",
-      totalInvoices: 5,
-      outstandingAmount: 0,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/clients/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
     },
-    {
-      id: "4",
-      name: "Global Solutions",
-      email: "support@globalsolutions.com",
-      phone: "+1 (555) 456-7890",
-      totalInvoices: 15,
-      outstandingAmount: 4200.0,
-    },
-    {
-      id: "5",
-      name: "Startup Labs",
-      email: "team@startuplabs.io",
-      phone: "+1 (555) 321-0987",
-      totalInvoices: 6,
-      outstandingAmount: 1750.0,
-    },
-  ];
+  });
+
+  const resetForm = () => {
+    setFormData({ name: "", email: "", phone: "", address: "" });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingClient) {
+      updateMutation.mutate({ id: editingClient.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleEdit = (client: Client) => {
+    setEditingClient(client);
+    setFormData({
+      name: client.name,
+      email: client.email,
+      phone: client.phone || "",
+      address: client.address || "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this client?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const getClientStats = (clientId: string) => {
+    const clientInvoices = invoices.filter(inv => inv.clientId === clientId);
+    const outstanding = clientInvoices
+      .filter(inv => inv.status !== "paid")
+      .reduce((sum, inv) => sum + parseFloat(inv.total), 0);
+    return {
+      totalInvoices: clientInvoices.length,
+      outstandingAmount: outstanding,
+    };
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -57,32 +109,118 @@ export default function Clients() {
           <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
           <p className="text-muted-foreground">Manage your client information and relationships</p>
         </div>
-        <Button onClick={() => console.log("Add client")} data-testid="button-add-client">
-          <Plus className="w-4 h-4" />
-          Add Client
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            resetForm();
+            setEditingClient(null);
+          }
+        }}>
+          <DialogTrigger asChild>
+            <Button data-testid="button-add-client">
+              <Plus className="w-4 h-4" />
+              Add Client
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingClient ? "Edit Client" : "Add New Client"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  data-testid="input-client-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  data-testid="input-client-email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  data-testid="input-client-phone"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  data-testid="input-client-address"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    resetForm();
+                    setEditingClient(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  data-testid="button-save-client"
+                >
+                  {editingClient ? "Update" : "Create"} Client
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {hasClients ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {mockClients.map((client) => (
-            <ClientCard
-              key={client.id}
-              {...client}
-              onEdit={(id) => console.log("Edit client:", id)}
-              onViewInvoices={(id) => console.log("View invoices for client:", id)}
-            />
-          ))}
-        </div>
-      ) : (
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">Loading clients...</div>
+      ) : clients.length === 0 ? (
         <div className="border rounded-lg p-12">
           <EmptyState
             icon={UsersIcon}
             title="No clients yet"
             description="Add your first client to start creating invoices and tracking payments."
             actionLabel="Add Client"
-            onAction={() => console.log("Add client")}
+            onAction={() => setIsDialogOpen(true)}
           />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {clients.map((client) => {
+            const stats = getClientStats(client.id);
+            return (
+              <ClientCard
+                key={client.id}
+                id={client.id}
+                name={client.name}
+                email={client.email}
+                phone={client.phone || undefined}
+                totalInvoices={stats.totalInvoices}
+                outstandingAmount={stats.outstandingAmount}
+                onEdit={() => handleEdit(client)}
+                onViewInvoices={(id) => console.log("View invoices for client:", id)}
+              />
+            );
+          })}
         </div>
       )}
     </div>
