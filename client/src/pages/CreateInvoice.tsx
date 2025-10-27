@@ -7,6 +7,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Client } from "@shared/schema";
 import { OnboardingProgressBanner } from "@/components/OnboardingProgressBanner";
 import { useOnboardingGuard } from "@/hooks/use-onboarding";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CreateInvoice() {
   const [, setLocation] = useLocation();
@@ -14,6 +15,7 @@ export default function CreateInvoice() {
   const invoiceId = params.id;
   const isEditing = !!invoiceId;
   const { isOnboardingComplete } = useOnboardingGuard();
+  const { toast } = useToast();
 
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
@@ -69,7 +71,19 @@ export default function CreateInvoice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Success",
+        description: "Invoice created successfully",
+      });
       setLocation("/invoices");
+    },
+    onError: (error: any) => {
+      console.error("Failed to create invoice:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create invoice",
+        variant: "destructive",
+      });
     },
   });
 
@@ -108,7 +122,19 @@ export default function CreateInvoice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Success",
+        description: "Invoice updated successfully",
+      });
       setLocation("/invoices");
+    },
+    onError: (error: any) => {
+      console.error("Failed to update invoice:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update invoice",
+        variant: "destructive",
+      });
     },
   });
 
