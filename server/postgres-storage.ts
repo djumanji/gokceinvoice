@@ -14,8 +14,14 @@ function initializeDb() {
     if (!connectionString) {
       throw new Error('DATABASE_URL is not set');
     }
-    client = postgres(connectionString);
-    db = drizzle(client);
+    
+    try {
+      client = postgres(connectionString);
+      db = drizzle(client);
+    } catch (error) {
+      console.error('Failed to create PostgreSQL client:', error);
+      throw error;
+    }
   }
   return db;
 }

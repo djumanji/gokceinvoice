@@ -343,10 +343,20 @@ export class MemStorage implements IStorage {
 function createStorage() {
   if (process.env.DATABASE_URL) {
     try {
-      console.log('Initializing PostgreSQL storage with URL:', process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@'));
+      const dbUrl = process.env.DATABASE_URL;
+      console.log('Initializing PostgreSQL storage with URL:', dbUrl.replace(/:[^:@]+@/, ':****@'));
+      
+      // Validate DATABASE_URL format
+      if (!dbUrl.includes('://')) {
+        console.error('Invalid DATABASE_URL format. Missing protocol (postgresql:// or postgres://)');
+        console.log('Falling back to in-memory storage');
+        return new MemStorage();
+      }
+      
       return new PgStorage();
     } catch (error) {
-      console.error('Failed to initialize PostgreSQL storage, falling back to in-memory storage:', error);
+      console.error('Failed to initialize PostgreSQL storage, falling back to in-memory storage');
+      console.error('Error:', error instanceof Error ? error.message : String(error));
       return new MemStorage();
     }
   }

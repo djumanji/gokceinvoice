@@ -11,6 +11,10 @@ const MemoryStoreSession = MemoryStore(session);
 
 const app = express();
 
+// Trust proxy - required for Replit and other cloud platforms
+// This ensures rate limiting and sessions work correctly behind a proxy
+app.set('trust proxy', 1);
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
