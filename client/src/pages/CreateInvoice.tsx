@@ -179,6 +179,7 @@ export default function CreateInvoice() {
           clients={clients as any}
           onSubmit={handleSubmit}
           initialData={initialData}
+          isLoading={createMutation.isPending || updateMutation.isPending}
         />
       )}
     </div>

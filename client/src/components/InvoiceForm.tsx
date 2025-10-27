@@ -74,9 +74,10 @@ interface InvoiceFormProps {
   clients: Client[];
   onSubmit: (data: InvoiceFormData, status: string) => void;
   initialData?: Partial<InvoiceFormData>;
+  isLoading?: boolean;
 }
 
-export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps) {
+export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false }: InvoiceFormProps) {
   const [lineItems, setLineItems] = useState<LineItem[]>(
     initialData?.lineItems || [{ description: "", quantity: 1, price: 0 }]
   );
@@ -500,11 +501,16 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
             onClick={() => handleSubmit("draft")}
             variant="outline"
             data-testid="button-save-draft"
+            disabled={isLoading}
           >
-            Save as Draft
+            {isLoading ? "Saving..." : "Save as Draft"}
           </Button>
-          <Button onClick={() => handleSubmit("sent")} data-testid="button-mark-sent">
-            Mark as Sent
+          <Button 
+            onClick={() => handleSubmit("sent")} 
+            data-testid="button-mark-sent"
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving..." : "Mark as Sent"}
           </Button>
         </div>
       </div>
