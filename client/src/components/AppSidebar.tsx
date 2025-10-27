@@ -1,5 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Users, Moon, Sun } from "lucide-react";
+import { Home, FileText, Users, Box, Moon, Sun, LogOut } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Sidebar,
   SidebarContent,
@@ -17,9 +19,9 @@ import { useTheme } from "./ThemeProvider";
 
 const menuItems = [
   {
-    title: "Dashboard",
+    title: "Home",
     url: "/",
-    icon: LayoutDashboard,
+    icon: Home,
   },
   {
     title: "Invoices",
@@ -31,11 +33,31 @@ const menuItems = [
     url: "/clients",
     icon: Users,
   },
+  {
+    title: "Services",
+    url: "/services",
+    icon: Box,
+  },
 ];
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const [, setLocation] = useLocation();
   const { theme, toggleTheme } = useTheme();
+
+  // Fetch current user
+  const { data: userData } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/auth/me");
+      return res.json();
+    },
+  });
+
+  const handleLogout = async () => {
+    await apiRequest("POST", "/api/auth/logout");
+    setLocation("/login");
+  };
 
   return (
     <Sidebar>
@@ -66,7 +88,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-2">
+        {userData?.email && (
+          <div className="px-2 py-2 text-sm border rounded-lg">
+            <div className="font-medium truncate">{userData.email}</div>
+          </div>
+        )}
         <Button
           variant="ghost"
           size="sm"
@@ -85,6 +112,15 @@ export function AppSidebar() {
               <span>Light Mode</span>
             </>
           )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="w-full justify-start text-destructive"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Logout</span>
         </Button>
       </SidebarFooter>
     </Sidebar>

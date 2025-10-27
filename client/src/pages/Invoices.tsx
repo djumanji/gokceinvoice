@@ -6,6 +6,7 @@ import { InvoiceTable } from "@/components/InvoiceTable";
 import { EmptyState } from "@/components/EmptyState";
 import { FileText } from "lucide-react";
 import { useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Invoice, Client } from "@shared/schema";
 
 interface InvoiceWithClient extends Invoice {
@@ -34,12 +35,8 @@ export default function Invoices() {
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this invoice?")) {
       try {
-        const response = await fetch(`/api/invoices/${id}`, {
-          method: "DELETE",
-        });
-        if (response.ok) {
-          window.location.reload();
-        }
+        await apiRequest("DELETE", `/api/invoices/${id}`);
+        queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       } catch (error) {
         console.error("Failed to delete invoice:", error);
       }

@@ -5,12 +5,15 @@ import { ArrowLeft } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Client } from "@shared/schema";
+import { OnboardingProgressBanner } from "@/components/OnboardingProgressBanner";
+import { useOnboardingGuard } from "@/hooks/use-onboarding";
 
 export default function CreateInvoice() {
   const [, setLocation] = useLocation();
   const params = useParams();
   const invoiceId = params.id;
   const isEditing = !!invoiceId;
+  const { isOnboardingComplete } = useOnboardingGuard();
 
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
@@ -143,6 +146,10 @@ export default function CreateInvoice() {
 
   return (
     <div className="p-6 space-y-6">
+      {!isOnboardingComplete && !isEditing && (
+        <OnboardingProgressBanner currentStep="invoices" />
+      )}
+      
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Mail, Phone, Pencil, FileText } from "lucide-react";
+import { Mail, Phone, Pencil, FileText, Trash2 } from "lucide-react";
 
 interface ClientCardProps {
   id: string;
@@ -11,6 +11,7 @@ interface ClientCardProps {
   totalInvoices: number;
   outstandingAmount: number;
   onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
   onViewInvoices?: (id: string) => void;
 }
 
@@ -22,6 +23,7 @@ export function ClientCard({
   totalInvoices,
   outstandingAmount,
   onEdit,
+  onDelete,
   onViewInvoices,
 }: ClientCardProps) {
   const initials = name
@@ -42,14 +44,25 @@ export function ClientCard({
           </Avatar>
           <CardTitle className="text-lg">{name}</CardTitle>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onEdit?.(id)}
-          data-testid={`button-edit-client-${id}`}
-        >
-          <Pencil className="w-4 h-4" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onEdit?.(id)}
+            data-testid={`button-edit-client-${id}`}
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete?.(id)}
+            data-testid={`button-delete-client-${id}`}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-2 text-sm">

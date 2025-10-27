@@ -4,6 +4,7 @@ import { Plus, Users as UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClientCard } from "@/components/ClientCard";
 import { EmptyState } from "@/components/EmptyState";
+import { OnboardingProgressBanner } from "@/components/OnboardingProgressBanner";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,7 @@ export default function Clients() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/clients/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.refetchQueries({ queryKey: ["/api/clients"] });
     },
   });
 
@@ -106,6 +108,8 @@ export default function Clients() {
 
   return (
     <div className="p-6 space-y-6">
+      <OnboardingProgressBanner currentStep="clients" />
+      
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
@@ -228,6 +232,7 @@ export default function Clients() {
                 totalInvoices={stats.totalInvoices}
                 outstandingAmount={stats.outstandingAmount}
                 onEdit={() => handleEdit(client)}
+                onDelete={(id) => handleDelete(id)}
                 onViewInvoices={(id) => console.log("View invoices for client:", id)}
               />
             );

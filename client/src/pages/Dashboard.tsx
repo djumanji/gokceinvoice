@@ -6,6 +6,9 @@ import { StatCard } from "@/components/StatCard";
 import { InvoiceTable } from "@/components/InvoiceTable";
 import { EmptyState } from "@/components/EmptyState";
 import { useLocation } from "wouter";
+import { useOnboardingGuard } from "@/hooks/use-onboarding";
+import { useEffect } from "react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Invoice, Client } from "@shared/schema";
 
 interface InvoiceWithClient extends Invoice {
@@ -14,6 +17,23 @@ interface InvoiceWithClient extends Invoice {
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const { isOnboardingComplete } = useOnboardingGuard();
+
+  // Redirect to onboarding if not complete
+  useEffect(() => {
+    if (!isOnboardingComplete) {
+      setLocation("/onboarding");
+    }
+  }, [isOnboardingComplete, setLocation]);
+
+  // Show loading or empty state while checking
+  if (!isOnboardingComplete) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12 text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   const { data: invoices = [], isLoading: invoicesLoading } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
@@ -52,12 +72,8 @@ export default function Dashboard() {
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this invoice?")) {
       try {
-        const response = await fetch(`/api/invoices/${id}`, {
-          method: "DELETE",
-        });
-        if (response.ok) {
-          window.location.reload();
-        }
+        await apiRequest("DELETE", `/api/invoices/${id}`);
+        queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       } catch (error) {
         console.error("Failed to delete invoice:", error);
       }

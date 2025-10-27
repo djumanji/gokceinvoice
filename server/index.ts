@@ -1,6 +1,13 @@
+import "./config/env";
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
+import MemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
+import { registerAuthRoutes } from "./auth-routes";
+import { registerOAuthRoutes } from "./oauth";
 import { setupVite, serveStatic, log } from "./vite";
+
+const MemoryStoreSession = MemoryStore(session);
 
 const app = express();
 
@@ -9,12 +16,41 @@ declare module 'http' {
     rawBody: unknown
   }
 }
+
+// Validate required environment variables
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET) {
+  console.error('FATAL ERROR: SESSION_SECRET environment variable must be set');
+  console.error('Generate a secure secret with: openssl rand -base64 32');
+  process.exit(1);
+}
+
+// Session middleware
+app.use(session({
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Auto-detect production
+    httpOnly: true,
+    sameSite: 'strict', // CSRF protection
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+  },
+  store: new MemoryStoreSession({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  })
+}));
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+// Auth routes
+registerAuthRoutes(app);
+registerOAuthRoutes(app);
 
 app.use((req, res, next) => {
   const start = Date.now();

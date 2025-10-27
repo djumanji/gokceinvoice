@@ -24,7 +24,25 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { InvoicePreview } from "./InvoicePreview";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Client } from "@shared/schema";
+
+interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  price: string;
+  unit?: string;
+}
 
 const lineItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
@@ -63,6 +81,40 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
     initialData?.lineItems || [{ description: "", quantity: 1, price: 0 }]
   );
   const [taxRate, setTaxRate] = useState<number>(initialData?.taxRate || 0);
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
+  const [newServiceData, setNewServiceData] = useState({
+    name: "",
+    description: "",
+    category: "",
+    price: "",
+    unit: "item",
+  });
+  const [pendingLineItemIndex, setPendingLineItemIndex] = useState<number | null>(null);
+
+  const { data: services = [] } = useQuery<Service[]>({
+    queryKey: ["/api/services"],
+  });
+
+  const createServiceMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/services", data),
+    onSuccess: async (response) => {
+      const newService = await response.json();
+      await queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+      setShowServiceDialog(false);
+      setNewServiceData({ name: "", description: "", category: "", price: "", unit: "item" });
+      
+      if (pendingLineItemIndex !== null) {
+        const updated = [...lineItems];
+        updated[pendingLineItemIndex] = {
+          description: newService.name,
+          quantity: 1,
+          price: parseFloat(newService.price),
+        };
+        setLineItems(updated);
+        setPendingLineItemIndex(null);
+      }
+    },
+  });
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceFormSchema),
@@ -92,6 +144,35 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
     setLineItems(updated);
+  };
+
+  const handleServiceSelect = (index: number, value: string) => {
+    if (value === "add-new") {
+      setPendingLineItemIndex(index);
+      setShowServiceDialog(true);
+    } else {
+      const service = services.find((s) => s.id === value);
+      if (service) {
+        const updated = [...lineItems];
+        updated[index] = {
+          description: service.name,
+          quantity: 1,
+          price: parseFloat(service.price),
+        };
+        setLineItems(updated);
+      }
+    }
+  };
+
+  const handleNewServiceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createServiceMutation.mutate({
+      name: newServiceData.name,
+      description: newServiceData.description || undefined,
+      category: newServiceData.category || undefined,
+      price: parseFloat(newServiceData.price),
+      unit: newServiceData.unit,
+    });
   };
 
   const handleSubmit = (status: "draft" | "sent") => {
@@ -255,31 +336,55 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
             {lineItems.map((item, index) => (
               <div key={index} className="flex gap-2 items-start" data-testid={`line-item-${index}`}>
                 <div className="flex-1 space-y-2">
-                  <Input
-                    placeholder="Description"
-                    value={item.description}
-                    onChange={(e) => updateLineItem(index, "description", e.target.value)}
-                    data-testid={`input-description-${index}`}
-                  />
+                  <div className="space-y-2">
+                    <Label>Service</Label>
+                    <Select
+                      value={services.find((s) => s.name === item.description && parseFloat(s.price) === item.price)?.id || ""}
+                      onValueChange={(value) => handleServiceSelect(index, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a service" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services.map((service) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name} - €{parseFloat(service.price).toFixed(2)}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="add-new" className="text-primary font-medium">
+                          <Plus className="w-4 h-4 mr-2 inline" /> Add New Service
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(e) => updateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
-                      data-testid={`input-quantity-${index}`}
-                    />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Price"
-                      value={item.price}
-                      onChange={(e) => updateLineItem(index, "price", parseFloat(e.target.value) || 0)}
-                      data-testid={`input-price-${index}`}
-                    />
-                    <div className="flex items-center justify-end font-mono font-medium text-sm">
-                      €{(item.quantity * item.price).toFixed(2)}
+                    <div className="space-y-2">
+                      <Label>Qty</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Qty"
+                        value={item.quantity}
+                        onChange={(e) => updateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                        data-testid={`input-quantity-${index}`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Price</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Price"
+                        value={item.price}
+                        onChange={(e) => updateLineItem(index, "price", parseFloat(e.target.value) || 0)}
+                        data-testid={`input-price-${index}`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Total</Label>
+                      <div className="flex items-center h-10 px-3 font-mono font-medium text-sm border rounded-md bg-muted">
+                        €{(item.quantity * item.price).toFixed(2)}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -297,6 +402,89 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
             ))}
           </CardContent>
         </Card>
+
+        {/* Add New Service Dialog */}
+        <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Service</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleNewServiceSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Service Name *</Label>
+                <Input
+                  value={newServiceData.name}
+                  onChange={(e) => setNewServiceData({ ...newServiceData, name: e.target.value })}
+                  required
+                  placeholder="e.g., Web Development"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={newServiceData.description}
+                  onChange={(e) => setNewServiceData({ ...newServiceData, description: e.target.value })}
+                  placeholder="Service description"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Input
+                  value={newServiceData.category}
+                  onChange={(e) => setNewServiceData({ ...newServiceData, category: e.target.value })}
+                  placeholder="e.g., Development, Consulting"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Price *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={newServiceData.price}
+                    onChange={(e) => setNewServiceData({ ...newServiceData, price: e.target.value })}
+                    required
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Unit</Label>
+                  <Select
+                    value={newServiceData.unit}
+                    onValueChange={(value) => setNewServiceData({ ...newServiceData, unit: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="item">Item</SelectItem>
+                      <SelectItem value="hour">Hour</SelectItem>
+                      <SelectItem value="day">Day</SelectItem>
+                      <SelectItem value="week">Week</SelectItem>
+                      <SelectItem value="month">Month</SelectItem>
+                      <SelectItem value="project">Project</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowServiceDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createServiceMutation.isPending}
+                >
+                  {createServiceMutation.isPending ? "Adding..." : "Add Service"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         <div className="flex gap-2 flex-wrap">
           <Button
