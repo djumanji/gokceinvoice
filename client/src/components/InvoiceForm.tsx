@@ -175,7 +175,16 @@ export function InvoiceForm({ clients, onSubmit, initialData }: InvoiceFormProps
     });
   };
 
-  const handleSubmit = (status: "draft" | "sent") => {
+  const handleSubmit = async (status: "draft" | "sent") => {
+    // For "draft" status, allow saving without full validation
+    // For "sent" status, require validation
+    if (status === "sent") {
+      const isValid = await form.trigger();
+      if (!isValid) {
+        return;
+      }
+    }
+    
     const data = { ...form.getValues(), lineItems, taxRate };
     onSubmit(data, status);
   };
