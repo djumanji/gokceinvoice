@@ -75,6 +75,11 @@ export default function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Track login attempt
+    trackEvent('Login Attempt', {
+      email,
+    });
+    
     if (!email || !password) {
       toast({
         title: "Missing Information",
