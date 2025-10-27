@@ -68,16 +68,14 @@ export default function Register() {
   return (
     <div className="relative min-h-screen flex items-center justify-center p-6 overflow-hidden">
       {/* Theme Toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
+      <button
         onClick={toggleTheme}
-        className="absolute top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border hover:bg-background"
+        className="absolute top-4 right-4 z-50 h-10 w-10 rounded-md flex items-center justify-center bg-card border hover:bg-accent transition-colors"
         data-testid="button-theme-toggle"
         aria-label="Toggle theme"
       >
         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-      </Button>
+      </button>
       
       {/* Background Lottie Animation */}
       <div className="absolute inset-0 z-0 flex items-center justify-center opacity-30">
