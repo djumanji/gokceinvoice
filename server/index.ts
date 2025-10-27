@@ -31,9 +31,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Auto-detect production
+    secure: process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true', // Only secure on HTTPS
     httpOnly: true,
-    sameSite: 'strict', // CSRF protection
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict', // Use 'lax' for production to work with redirects
     maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
   },
   store: new MemoryStoreSession({

@@ -78,15 +78,13 @@ export default function Register() {
       </button>
       
       {/* Background Lottie Animation */}
-      <div className="absolute inset-0 z-0 flex items-center justify-center opacity-30">
-        <div className="w-full h-full max-w-4xl">
-          <DotLottieReact
-            src="https://lottie.host/8aa90f89-3d22-4f51-99f6-8262f166f0a9/w07L1QkYUx.lottie"
-            loop
-            autoplay
-            className="w-full h-full"
-          />
-        </div>
+      <div className="absolute inset-0 z-0 opacity-30 overflow-hidden">
+        <DotLottieReact
+          src="https://lottie.host/8aa90f89-3d22-4f51-99f6-8262f166f0a9/w07L1QkYUx.lottie"
+          loop
+          autoplay
+          className="w-full h-full object-cover"
+        />
       </div>
 
       {/* Content Layer */}

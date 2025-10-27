@@ -27,19 +27,24 @@ export function registerAuthRoutes(app: Express) {
     try {
       const { email, password, username } = req.body;
       
+      console.log('Registration attempt:', { email, username: username || 'not provided' });
+      
       // Validate input
       if (!email || !password) {
+        console.log('Validation failed: missing email or password');
         return res.status(400).json({ error: 'Email and password are required' });
       }
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
+        console.log('User already exists:', email);
         return res.status(400).json({ error: 'User already exists' });
       }
       
       // Hash password
       const hashedPassword = await hashPassword(password);
+      console.log('Password hashed successfully');
       
       // Create user
       const user = await storage.createUser({
@@ -50,8 +55,11 @@ export function registerAuthRoutes(app: Express) {
         isEmailVerified: false,
       });
       
+      console.log('User created:', { id: user.id, email: user.email });
+      
       // Store user ID in session
       req.session.userId = user.id;
+      console.log('Session created with userId:', user.id);
       
       res.status(201).json({ 
         user: { 
@@ -62,7 +70,8 @@ export function registerAuthRoutes(app: Express) {
       });
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ error: 'Failed to register user' });
+      console.error('Error details:', error instanceof Error ? error.message : String(error));
+      res.status(500).json({ error: 'Failed to register user', details: process.env.NODE_ENV === 'development' ? String(error) : undefined });
     }
   });
   
