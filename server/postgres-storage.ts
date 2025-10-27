@@ -15,6 +15,12 @@ function initializeDb() {
       throw new Error('DATABASE_URL is not set');
     }
     
+    // Additional validation - reject invalid hostnames like "helium"
+    if (connectionString.includes('helium') || connectionString.length < 10) {
+      console.error('Invalid or incomplete DATABASE_URL:', connectionString);
+      throw new Error('Invalid DATABASE_URL');
+    }
+    
     try {
       client = postgres(connectionString);
       db = drizzle(client);
