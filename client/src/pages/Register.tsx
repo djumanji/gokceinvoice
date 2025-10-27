@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { useTheme } from "@/components/ThemeProvider";
+import { Moon, Sun } from "lucide-react";
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -17,6 +19,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { theme, toggleTheme } = useTheme();
 
   const registerMutation = useMutation({
     mutationFn: async () => {
@@ -64,6 +67,17 @@ export default function Register() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-6 overflow-hidden">
+      {/* Theme Toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleTheme}
+        className="absolute top-4 right-4"
+        data-testid="button-theme-toggle"
+      >
+        {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+      </Button>
+      
       {/* Background Lottie Animation */}
       <div className="absolute inset-0 z-0 flex items-center justify-center opacity-30">
         <div className="w-full h-full max-w-4xl">
