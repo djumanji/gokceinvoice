@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Moon, Sun } from "lucide-react";
+import { trackEvent, identifyUser } from "@/lib/mixpanel";
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -29,7 +30,22 @@ export default function Register() {
       const res = await apiRequest("POST", "/api/auth/register", { email, password, username });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Track registration success in Mixpanel
+      trackEvent('User Registered', {
+        email,
+        username: username || 'not provided',
+        registration_method: 'email',
+      });
+      
+      // Identify user in Mixpanel
+      if (data.user) {
+        identifyUser(data.user.id, {
+          email: data.user.email,
+          username: data.user.username,
+        });
+      }
+      
       // Invalidate the auth query to refetch user data
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       setLocation("/onboarding");
@@ -62,6 +78,13 @@ export default function Register() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Track registration attempt
+    trackEvent('Registration Attempt', {
+      email,
+      has_username: !!username,
+    });
+    
     registerMutation.mutate();
   };
 

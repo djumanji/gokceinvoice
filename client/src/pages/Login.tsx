@@ -12,6 +12,7 @@ import { OAuthButtons } from "@/components/OAuthButtons";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Moon, Sun } from "lucide-react";
+import { trackEvent, identifyUser } from "@/lib/mixpanel";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -26,7 +27,21 @@ export default function Login() {
       const res = await apiRequest("POST", "/api/auth/login", { email: loginEmail, password: loginPassword });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Track login success in Mixpanel
+      trackEvent('User Logged In', {
+        email,
+        login_method: 'email',
+      });
+      
+      // Identify user in Mixpanel
+      if (data.user) {
+        identifyUser(data.user.id, {
+          email: data.user.email,
+          username: data.user.username,
+        });
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       setLocation("/");
     },
