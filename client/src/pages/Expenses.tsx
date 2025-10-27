@@ -167,7 +167,6 @@ export default function Expenses() {
                     {category.icon} {category.label}
                   </SelectItem>
                 ))}
-                ))}
               </SelectContent>
             </Select>
           </div>
