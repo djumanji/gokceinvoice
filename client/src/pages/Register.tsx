@@ -72,8 +72,9 @@ export default function Register() {
         variant="ghost"
         size="icon"
         onClick={toggleTheme}
-        className="absolute top-4 right-4"
+        className="absolute top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border hover:bg-background"
         data-testid="button-theme-toggle"
+        aria-label="Toggle theme"
       >
         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
       </Button>
