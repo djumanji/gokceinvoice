@@ -82,6 +82,22 @@ export const services = pgTable("services", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const expenses = pgTable("expenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }), // Cascade delete expenses when user deleted
+  description: text("description").notNull(),
+  category: text("category").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  date: date("date").notNull().defaultNow(),
+  paymentMethod: text("payment_method").default("other"), // "cash", "card", "bank_transfer", "other"
+  vendor: text("vendor"),
+  isTaxDeductible: boolean("is_tax_deductible").default(true),
+  receipt: text("receipt"), // URL or base64 receipt image
+  tags: text("tags"), // Comma-separated tags
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true }).extend({
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
 });
@@ -150,6 +166,17 @@ export const insertServiceSchema = createInsertSchema(services).omit({ id: true 
     .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Price must have max 2 decimal places"),
 });
 
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true }).extend({
+  date: z.string().transform((str) => str),
+  amount: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0 && num < 100000000;
+    }, "Amount must be between 0 and 99,999,999.99")
+    .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Amount must have max 2 decimal places"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -164,3 +191,6 @@ export type LineItem = typeof lineItems.$inferSelect;
 
 export type InsertService = z.infer<typeof insertServiceSchema>;
 export type Service = typeof services.$inferSelect;
+
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type Expense = typeof expenses.$inferSelect;

@@ -14,6 +14,7 @@ import Invoices from "@/pages/Invoices";
 import CreateInvoice from "@/pages/CreateInvoice";
 import Clients from "@/pages/Clients";
 import Services from "@/pages/Services";
+import Expenses from "@/pages/Expenses";
 import Onboarding from "@/pages/Onboarding";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -53,6 +54,11 @@ function Router() {
       <Route path="/services">
         <ProtectedRoute>
           <Services />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/expenses">
+        <ProtectedRoute>
+          <Expenses />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />

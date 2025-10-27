@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService } from "@shared/schema";
+import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { PgStorage } from './postgres-storage';
 
@@ -37,6 +37,13 @@ export interface IStorage {
   createService(service: InsertService): Promise<Service>;
   updateService(id: string, userId: string, service: Partial<InsertService>): Promise<Service | undefined>;
   deleteService(id: string, userId: string): Promise<boolean>;
+
+  // Expenses
+  getExpenses(userId: string): Promise<Expense[]>;
+  getExpense(id: string, userId: string): Promise<Expense | undefined>;
+  createExpense(expense: InsertExpense): Promise<Expense>;
+  updateExpense(id: string, userId: string, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
+  deleteExpense(id: string, userId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -45,6 +52,7 @@ export class MemStorage implements IStorage {
   private invoices: Map<string, Invoice>;
   private lineItems: Map<string, LineItem>;
   private services: Map<string, Service>;
+  private expenses: Map<string, Expense>;
 
   constructor() {
     this.users = new Map();
@@ -52,6 +60,7 @@ export class MemStorage implements IStorage {
     this.invoices = new Map();
     this.lineItems = new Map();
     this.services = new Map();
+    this.expenses = new Map();
   }
   
   // Users
@@ -277,6 +286,55 @@ export class MemStorage implements IStorage {
     const existing = this.services.get(id);
     if (!existing || existing.userId !== userId) return false;
     this.services.delete(id);
+    return true;
+  }
+
+  // Expenses
+  async getExpenses(userId: string): Promise<Expense[]> {
+    return Array.from(this.expenses.values()).filter(e => e.userId === userId);
+  }
+
+  async getExpense(id: string, userId: string): Promise<Expense | undefined> {
+    const expense = this.expenses.get(id);
+    if (expense && expense.userId === userId) {
+      return expense;
+    }
+    return undefined;
+  }
+
+  async createExpense(insertExpense: InsertExpense): Promise<Expense> {
+    const id = randomUUID();
+    const expense: Expense = {
+      id,
+      userId: insertExpense.userId ?? null,
+      description: insertExpense.description,
+      category: insertExpense.category,
+      amount: insertExpense.amount,
+      date: insertExpense.date as any,
+      paymentMethod: insertExpense.paymentMethod ?? "other",
+      vendor: insertExpense.vendor ?? null,
+      isTaxDeductible: insertExpense.isTaxDeductible ?? true,
+      receipt: insertExpense.receipt ?? null,
+      tags: insertExpense.tags ?? null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.expenses.set(id, expense);
+    return expense;
+  }
+
+  async updateExpense(id: string, userId: string, updateData: Partial<InsertExpense>): Promise<Expense | undefined> {
+    const existing = this.expenses.get(id);
+    if (!existing || existing.userId !== userId) return undefined;
+    const updated: Expense = { ...existing, ...updateData, updatedAt: new Date() };
+    this.expenses.set(id, updated);
+    return updated;
+  }
+
+  async deleteExpense(id: string, userId: string): Promise<boolean> {
+    const existing = this.expenses.get(id);
+    if (!existing || existing.userId !== userId) return false;
+    this.expenses.delete(id);
     return true;
   }
 }

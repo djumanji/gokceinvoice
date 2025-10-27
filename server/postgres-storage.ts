@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { users, clients, invoices, lineItems, services, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService } from '@shared/schema';
+import { users, clients, invoices, lineItems, services, expenses, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense } from '@shared/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 
 // Initialize PostgreSQL connection
@@ -174,6 +174,36 @@ export class PgStorage {
   async deleteService(id: string, userId: string): Promise<boolean> {
     const result = await this.db.delete(services)
       .where(and(eq(services.id, id), eq(services.userId, userId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Expenses
+  async getExpenses(userId: string): Promise<Expense[]> {
+    return await this.db.select().from(expenses).where(eq(expenses.userId, userId));
+  }
+
+  async getExpense(id: string, userId: string): Promise<Expense | undefined> {
+    const result = await this.db.select().from(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
+    return result[0];
+  }
+
+  async createExpense(data: InsertExpense): Promise<Expense> {
+    const result = await this.db.insert(expenses).values(data).returning();
+    return result[0];
+  }
+
+  async updateExpense(id: string, userId: string, data: Partial<InsertExpense>): Promise<Expense | undefined> {
+    const result = await this.db.update(expenses)
+      .set(data)
+      .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteExpense(id: string, userId: string): Promise<boolean> {
+    const result = await this.db.delete(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }

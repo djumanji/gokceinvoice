@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { requireAuth } from "./middleware";
-import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertServiceSchema } from "@shared/schema";
+import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertServiceSchema, insertExpenseSchema } from "@shared/schema";
 import { z } from "zod";
 import { sanitizeObject } from "./sanitize";
 
@@ -11,6 +11,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/clients", requireAuth);
   app.use("/api/invoices", requireAuth);
   app.use("/api/services", requireAuth);
+  app.use("/api/expenses", requireAuth);
   
   // Client routes
   app.get("/api/clients", async (req, res) => {
@@ -454,6 +455,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete service:", error);
       res.status(500).json({ error: "Failed to delete service" });
+    }
+  });
+
+  // Expense routes
+  app.get("/api/expenses", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const expenses = await storage.getExpenses(userId);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Failed to fetch expenses:", error);
+      res.status(500).json({ error: "Failed to fetch expenses" });
+    }
+  });
+
+  app.get("/api/expenses/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const expense = await storage.getExpense(req.params.id, userId);
+      if (!expense) {
+        return res.status(404).json({ error: "Expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      console.error("Failed to fetch expense:", error);
+      res.status(500).json({ error: "Failed to fetch expense" });
+    }
+  });
+
+  app.post("/api/expenses", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Sanitize text inputs to prevent XSS
+      const sanitized = sanitizeObject(req.body, ['description', 'category', 'vendor', 'receipt', 'tags']);
+
+      const data = insertExpenseSchema.parse({ ...sanitized, userId });
+      const expense = await storage.createExpense(data);
+      res.status(201).json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Failed to create expense:", error);
+      res.status(500).json({ error: "Failed to create expense" });
+    }
+  });
+
+  app.patch("/api/expenses/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Sanitize text inputs to prevent XSS
+      const sanitized = sanitizeObject(req.body, ['description', 'category', 'vendor', 'receipt', 'tags']);
+
+      const data = insertExpenseSchema.partial().parse(sanitized);
+      const expense = await storage.updateExpense(req.params.id, userId, data);
+      if (!expense) {
+        return res.status(404).json({ error: "Expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Failed to update expense:", error);
+      res.status(500).json({ error: "Failed to update expense" });
+    }
+  });
+
+  app.delete("/api/expenses/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const deleted = await storage.deleteExpense(req.params.id, userId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Expense not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete expense:", error);
+      res.status(500).json({ error: "Failed to delete expense" });
     }
   });
 
