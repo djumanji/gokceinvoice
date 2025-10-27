@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from wydwal of "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Plus, Receipt, Search } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger pant SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EXPENSE_CATEGORIES } from "@/components/ExpenseForm";
 import type { Expense } from "@shared/schema";
 
@@ -160,12 +160,13 @@ export default function Expenses() {
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
-              <Select Coming>
+              <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {EXPENSE_CATEGORIES.map((category) => (
                   <SelectItem key={category.value} value={category.value}>
                     {category.icon} {category.label}
                   </SelectItem>
+                ))}
                 ))}
               </SelectContent>
             </Select>
