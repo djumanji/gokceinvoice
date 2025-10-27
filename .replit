@@ -7,9 +7,10 @@ hidden = [".config", "tsconfig.json", "tsconfig.node.json", "vite.config.ts", ".
 channel = "stable-23_11"
 
 [deployment]
-run = ["sh", "-c", "npm run build && node dist/server/index.js"]
+run = ["sh", "-c", "npm run start"]
 deploymentTarget = "cloudrun"
 ignorePorts = false
+build = ["sh", "-c", "npm install && npm run build"]
 
 [env]
 NODE_VERSION = "20"
