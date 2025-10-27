@@ -87,30 +87,44 @@ export function registerOAuthRoutes(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Google OAuth
-  app.get('/api/auth/google', 
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-  );
+  // Google OAuth - only if configured
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    app.get('/api/auth/google', 
+      passport.authenticate('google', { scope: ['profile', 'email'] })
+    );
 
-  app.get('/api/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-      req.session.userId = (req.user as any).id;
-      res.redirect('/');
-    }
-  );
+    app.get('/api/auth/google/callback',
+      passport.authenticate('google', { failureRedirect: '/login' }),
+      (req, res) => {
+        req.session.userId = (req.user as any).id;
+        res.redirect('/');
+      }
+    );
+  } else {
+    // Fallback if Google OAuth not configured
+    app.get('/api/auth/google', (req, res) => {
+      res.status(503).json({ error: 'Google OAuth is not configured' });
+    });
+  }
 
-  // GitHub OAuth
-  app.get('/api/auth/github',
-    passport.authenticate('github', { scope: ['user:email'] })
-  );
+  // GitHub OAuth - only if configured
+  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+    app.get('/api/auth/github',
+      passport.authenticate('github', { scope: ['user:email'] })
+    );
 
-  app.get('/api/auth/github/callback',
-    passport.authenticate('github', { failureRedirect: '/login' }),
-    (req, res) => {
-      req.session.userId = (req.user as any).id;
-      res.redirect('/');
-    }
-  );
+    app.get('/api/auth/github/callback',
+      passport.authenticate('github', { failureRedirect: '/login' }),
+      (req, res) => {
+        req.session.userId = (req.user as any).id;
+        res.redirect('/');
+      }
+    );
+  } else {
+    // Fallback if GitHub OAuth not configured
+    app.get('/api/auth/github', (req, res) => {
+      res.status(503).json({ error: 'GitHub OAuth is not configured' });
+    });
+  }
 }
 
