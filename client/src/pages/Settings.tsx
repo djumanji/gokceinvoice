@@ -66,7 +66,7 @@ export default function Settings() {
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/auth/me");
-      return res.json();
+      return res; // apiRequest already returns JSON
     },
   });
 
