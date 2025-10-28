@@ -36,14 +36,19 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       return;
     }
 
-    if (error || !user) {
-      console.log('[ProtectedRoute] No user or error, redirecting to /login');
+    // Only redirect on actual auth failure, not during refetch
+    if (error) {
+      console.log('[ProtectedRoute] Error detected, redirecting to /login');
       setLocation("/login");
-    } else {
+      setIsLoading(false);
+      return;
+    }
+
+    if (user) {
       console.log('[ProtectedRoute] User authenticated, showing protected content');
       setIsAuthenticated(true);
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [user, error, queryLoading, setLocation]);
 
   if (isLoading) {

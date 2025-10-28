@@ -91,9 +91,11 @@ export default function Settings() {
     mutationFn: async (data: ProfileFormData) => {
       return apiRequest("PATCH", "/api/users/profile", data);
     },
-    onSuccess: async () => {
-      // Instead of invalidating (which causes ProtectedRoute to re-check), just refetch the data
-      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
+    onSuccess: async (response) => {
+      // Update the cache directly with the response data to avoid refetch
+      const updatedUser = await response.json();
+      queryClient.setQueryData(["/api/auth/me"], updatedUser);
+      
       toast({
         title: t("common.success"),
         description: t("settings.profileUpdated"),
