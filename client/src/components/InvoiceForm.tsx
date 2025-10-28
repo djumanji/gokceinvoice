@@ -50,8 +50,9 @@ const lineItemSchema = z.object({
   price: z.number().min(0, "Price must be positive"),
 });
 
-const invoiceFormSchema = z.object({
+const invoiceFormSchema = z charge({
   clientId: z.string().min(1, "Client is required"),
+  bankAccountId: z.string().optional(),
   date: z.string(),
   orderNumber: z.string().optional(),
   projectNumber: z.string().optional(),
@@ -83,6 +84,14 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/auth/me");
+    },
+  });
+
+  // Fetch bank accounts
+  const { data: bankAccounts = [] } = useQuery({
+    queryKey: ["/api/bank-accounts"],
+    queryFn: async () => {
+      return await apiRequest("GET", "/api/bank-accounts");
     },
   });
 
