@@ -138,6 +138,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: {
       clientId: initialData?.clientId || "",
+      bankAccountId: initialData?.bankAccountId || "",
       date: initialData?.date || format(new Date(), "yyyy-MM-dd"),
       orderNumber: initialData?.orderNumber || "",
       projectNumber: initialData?.projectNumber || "",
@@ -242,6 +243,33 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
                   </FormItem>
                 )}
               />
+
+              {bankAccounts.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="bankAccountId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bank Account</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select bank account" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {bankAccounts.map((bank: any) => (
+                            <SelectItem key={bank.id} value={bank.id}>
+                              {bank.bankName} - {bank.currency} {bank.isDefault && "(Default)"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
