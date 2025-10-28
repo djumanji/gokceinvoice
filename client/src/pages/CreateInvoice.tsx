@@ -69,7 +69,7 @@ export default function CreateInvoice() {
       };
 
       const res = await apiRequest("POST", "/api/invoices", invoiceData);
-      return res.json();
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
@@ -120,7 +120,7 @@ export default function CreateInvoice() {
       };
 
       const res = await apiRequest("PATCH", `/api/invoices/${invoiceId}`, invoiceData);
-      return res.json();
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
