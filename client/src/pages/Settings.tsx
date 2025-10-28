@@ -229,157 +229,22 @@ export default function Settings() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="preferredCurrency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("settings.preferredCurrency")}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("settings.selectCurrency")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {currencies.map((currency) => (
-                          <SelectItem key={currency.value} value={currency.value}>
-                            {currency.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <Separator />
 
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">{t("settings.bankDetails")}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{t("settings.bankDetailsDescription")}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{t("settings.bankAccounts")}</h3>
+                    <p className="text-sm text-muted-foreground">{t("settings.bankAccountsDescription")}</p>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setLocation("/settings/bank-accounts")}
+                  >
+                    {t("settings.manageBankAccounts")}
+                  </Button>
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="accountHolderName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.accountHolderName")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={t("settings.accountHolderNamePlaceholder")}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="bankName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.bankName")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={t("settings.bankNamePlaceholder")}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="iban"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.iban")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={t("settings.ibanPlaceholder")}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="swiftCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.swiftCode")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={t("settings.swiftCodePlaceholder")}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="accountNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.accountNumber")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={t("settings.accountNumberPlaceholder")}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="bankBranch"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.bankBranch")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={t("settings.bankBranchPlaceholder")}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="bankAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.bankAddress")}</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder={t("settings.bankAddressPlaceholder")}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <Button type="submit" disabled={isSaving}>

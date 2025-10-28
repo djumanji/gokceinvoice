@@ -116,7 +116,7 @@ export default function Dashboard() {
         <StatCard
           title={t("dashboard.overdue")}
           value={`€${stats.overdue.toFixed(2)}`}
-          icon={DollarSign}
+          icon={Clock}
           color="danger"
         />
       </div>

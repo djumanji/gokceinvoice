@@ -13,6 +13,7 @@ import { LoadingModal } from "@/components/LoadingModal";
 import Dashboard from "@/pages/Dashboard";
 import Invoices from "@/pages/Invoices";
 import CreateInvoice from "@/pages/CreateInvoice";
+import ViewInvoice from "@/pages/ViewInvoice";
 import Clients from "@/pages/Clients";
 import Services from "@/pages/Services";
 import Expenses from "@/pages/Expenses";
@@ -53,6 +54,11 @@ function Router() {
       <Route path="/invoices/edit/:id">
         <ProtectedRoute>
           <CreateInvoice />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/invoices/:id">
+        <ProtectedRoute>
+          <ViewInvoice />
         </ProtectedRoute>
       </Route>
       <Route path="/clients">
