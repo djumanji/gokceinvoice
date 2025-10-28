@@ -1,3 +1,4 @@
+import "./i18n/config";
 import { Switch, Route, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { queryClient, setApiLoadingCallback } from "./lib/queryClient";
@@ -18,6 +19,9 @@ import Expenses from "@/pages/Expenses";
 import Onboarding from "@/pages/Onboarding";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import VerifyEmail from "@/pages/VerifyEmail";
+import ResetPassword from "@/pages/ResetPassword";
+import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +29,8 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/">
         <ProtectedRoute>
@@ -61,6 +67,11 @@ function Router() {
           <Expenses />
         </ProtectedRoute>
       </Route>
+      <Route path="/settings">
+        <ProtectedRoute>
+          <Settings />
+        </ProtectedRoute>
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -68,7 +79,7 @@ function Router() {
 
 function AuthLayout({ children, style }: { children: React.ReactNode; style: React.CSSProperties }) {
   const [location] = useLocation();
-  const isAuthPage = location === '/login' || location === '/register';
+  const isAuthPage = location === '/login' || location === '/register' || location.startsWith('/verify-email') || location.startsWith('/reset-password');
 
   if (isAuthPage) {
     return (
