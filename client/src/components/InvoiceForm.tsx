@@ -82,8 +82,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
   const { data: user } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/auth/me");
-      return res.json();
+      return await apiRequest("GET", "/api/auth/me");
     },
   });
 
