@@ -92,7 +92,8 @@ export default function Settings() {
       return apiRequest("PATCH", "/api/users/profile", data);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      // Instead of invalidating (which causes ProtectedRoute to re-check), just refetch the data
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
       toast({
         title: t("common.success"),
         description: t("settings.profileUpdated"),
