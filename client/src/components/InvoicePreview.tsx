@@ -21,6 +21,21 @@ interface InvoicePreviewProps {
   taxRate?: number;
   notes?: string;
   forProject?: string;
+  // Company/User data
+  companyName?: string;
+  companyAddress?: string;
+  companyPhone?: string;
+  companyTaxId?: string;
+  // Bank details
+  bankName?: string;
+  swiftCode?: string;
+  iban?: string;
+  accountHolderName?: string;
+  bankAddress?: string;
+  // Footer contact
+  userName?: string;
+  userPhone?: string;
+  userEmail?: string;
 }
 
 export function InvoicePreview({
@@ -36,6 +51,21 @@ export function InvoicePreview({
   taxRate = 0,
   notes,
   forProject,
+  // Company data
+  companyName = "GKIZILDERE ENGINEERING OFFICE",
+  companyAddress = "18, Yavuz Gonnolu Sokak, Ortaköy, Nicosia, North Cyprus",
+  companyPhone = "+90 533 860 9480",
+  companyTaxId = "232477",
+  // Bank details
+  bankName,
+  swiftCode = "TRWIBEB1XXX",
+  iban = "BE72 9670 4186 0516",
+  accountHolderName = "Gökçe Kızıldere",
+  bankAddress = "Wise, Rue du Trone 100, 3rd Floor, Brussels, 1050, BELGIUM",
+  // Footer contact
+  userName = "Gökçe Kızıldere",
+  userPhone = "+90 533 860 94 80",
+  userEmail = "gkizildere@hotmail.com",
 }: InvoicePreviewProps) {
   const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
   const tax = subtotal * (taxRate / 100);
@@ -48,11 +78,10 @@ export function InvoicePreview({
         <div className="grid grid-cols-2 gap-8">
           {/* Left: Company Details */}
           <div className="space-y-1">
-            <h3 className="font-bold text-base">GKIZILDERE ENGINEERING OFFICE</h3>
-            <p className="text-sm">Address: 18, Yavuz Gonnolu Sokak, Ortaköy</p>
-            <p className="text-sm">Nicosia, North Cyprus</p>
-            <p className="text-sm">Phone: +90 533 860 9480</p>
-            <p className="text-sm">Tax Office ID: 232477</p>
+            <h3 className="font-bold text-base">{companyName}</h3>
+            <p className="text-sm">{companyAddress}</p>
+            <p className="text-sm">Phone: {companyPhone}</p>
+            <p className="text-sm">Tax Office ID: {companyTaxId}</p>
           </div>
 
           {/* Right: Invoice Details */}
@@ -123,11 +152,10 @@ export function InvoicePreview({
           {/* Left: Bank Details */}
           <div className="space-y-1">
             <p className="text-sm font-medium mb-2">Bank Details For Payment:</p>
-            <p className="text-sm">Swift CODE: TRWIBEB1XXX</p>
-            <p className="text-sm">IBAN: BE72 9670 4186 0516</p>
-            <p className="text-sm">Account Holder: Gökçe Kızıldere</p>
-            <p className="text-sm">Bank Address: Wise, Rue du Trone 100,</p>
-            <p className="text-sm">3rd Floor, Brussels, 1050, BELGIUM</p>
+            {swiftCode && <p className="text-sm">Swift CODE: {swiftCode}</p>}
+            {iban && <p className="text-sm">IBAN: {iban}</p>}
+            {accountHolderName && <p className="text-sm">Account Holder: {accountHolderName}</p>}
+            {bankAddress && <p className="text-sm">{bankAddress}</p>}
           </div>
 
           {/* Right: Totals */}
@@ -159,7 +187,7 @@ export function InvoicePreview({
         {/* Contact Information */}
         <div className="text-sm text-muted-foreground border-t pt-4">
           <p>If you have any questions concerning this invoice,</p>
-          <p>contact Gökçe Kızıldere, Whatsapp +90 533 860 94 80 or gkizildere@hotmail.com</p>
+          <p>contact {userName}{userPhone && `, Whatsapp ${userPhone}`}{userEmail && ` or ${userEmail}`}</p>
         </div>
 
         {notes && (

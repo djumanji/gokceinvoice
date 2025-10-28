@@ -34,6 +34,14 @@ const profileSchema = z.object({
   phone: z.string().optional(),
   taxOfficeId: z.string().optional(),
   preferredCurrency: z.enum(["USD", "EUR", "GBP", "AUD", "TRY"]).optional(),
+  // Bank details
+  bankName: z.string().optional(),
+  accountHolderName: z.string().optional(),
+  accountNumber: z.string().optional(),
+  iban: z.string().optional(),
+  swiftCode: z.string().optional(),
+  bankAddress: z.string().optional(),
+  bankBranch: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;

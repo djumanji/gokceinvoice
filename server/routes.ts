@@ -52,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Sanitize text inputs to prevent XSS
-      const sanitized = sanitizeObject(req.body, ['name', 'companyName', 'address', 'phone', 'taxOfficeId']);
+      const sanitized = sanitizeObject(req.body, ['name', 'companyName', 'address', 'phone', 'taxOfficeId', 'bankName', 'accountHolderName', 'accountNumber', 'iban', 'swiftCode', 'bankAddress', 'bankBranch']);
 
       const data = updateUserProfileSchema.parse(sanitized);
       const user = await storage.updateUser(userId, data);

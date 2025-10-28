@@ -31,6 +31,14 @@ export const users = pgTable("users", {
   phone: text("phone"),
   taxOfficeId: text("tax_office_id"), // Tax Registration Number
   preferredCurrency: text("preferred_currency").default("USD"),
+  // Bank details
+  bankName: text("bank_name"),
+  accountHolderName: text("account_holder_name"),
+  accountNumber: text("account_number"),
+  iban: text("iban"), // International Bank Account Number
+  swiftCode: text("swift_code"), // SWIFT/BIC code
+  bankAddress: text("bank_address"),
+  bankBranch: text("bank_branch"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -129,6 +137,14 @@ export const updateUserProfileSchema = z.object({
   phone: z.string().optional(),
   taxOfficeId: z.string().optional(),
   preferredCurrency: z.enum(["USD", "EUR", "GBP", "AUD", "TRY"]).optional(),
+  // Bank details
+  bankName: z.string().optional(),
+  accountHolderName: z.string().optional(),
+  accountNumber: z.string().optional(),
+  iban: z.string().optional(),
+  swiftCode: z.string().optional(),
+  bankAddress: z.string().optional(),
+  bankBranch: z.string().optional(),
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true });

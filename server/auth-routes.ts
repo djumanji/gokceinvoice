@@ -211,7 +211,15 @@ export function registerAuthRoutes(app: Express) {
         address: user.address,
         phone: user.phone,
         taxOfficeId: user.taxOfficeId,
-        preferredCurrency: user.preferredCurrency
+        preferredCurrency: user.preferredCurrency,
+        // Bank details
+        bankName: user.bankName,
+        accountHolderName: user.accountHolderName,
+        accountNumber: user.accountNumber,
+        iban: user.iban,
+        swiftCode: user.swiftCode,
+        bankAddress: user.bankAddress,
+        bankBranch: user.bankBranch
       });
     } catch (error) {
       console.error('Get user error:', error);
