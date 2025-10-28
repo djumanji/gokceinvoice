@@ -79,6 +79,22 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 006_add_name_field_to_users.sql"
+if psql "$DATABASE_URL" -f migrations/006_add_name_field_to_users.sql; then
+    echo "✅ Name field added to users"
+else
+    echo "⚠️  Name field may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 007_add_bank_accounts_table.sql"
+if psql "$DATABASE_URL" -f migrations/007_add_bank_accounts_table.sql; then
+    echo "✅ Bank accounts table created"
+else
+    echo "⚠️  Bank accounts table may already exist - continuing..."
+fi
+echo ""
+
 # Verify tables exist
 echo "🔍 Verifying tables..."
 TABLE_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" 2>/dev/null || echo "0")
