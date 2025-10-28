@@ -79,6 +79,14 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 005_email_verification_and_reset.sql"
+if psql "$DATABASE_URL" -f migrations/005_email_verification_and_reset.sql; then
+    echo "✅ Email verification and password reset fields added"
+else
+    echo "⚠️  Email verification fields may already exist - continuing..."
+fi
+echo ""
+
 echo "📊 Running migration: 006_add_name_field_to_users.sql"
 if psql "$DATABASE_URL" -f migrations/006_add_name_field_to_users.sql; then
     echo "✅ Name field added to users"
