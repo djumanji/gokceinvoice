@@ -78,6 +78,15 @@ interface InvoiceFormProps {
 }
 
 export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false }: InvoiceFormProps) {
+  // Fetch user data for invoice header/footer
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/auth/me");
+      return res.json();
+    },
+  });
+
   const [lineItems, setLineItems] = useState<LineItem[]>(
     initialData?.lineItems || [{ description: "", quantity: 1, price: 0 }]
   );
