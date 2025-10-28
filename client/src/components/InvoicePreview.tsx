@@ -134,12 +134,12 @@ export function InvoicePreview({
           </div>
 
           {lineItems.map((item, index) => (
-            <div key={index} className="grid grid-cols-12 gap-4 text-sm py-2">
-              <div className="col-span-6">{item.description || "Line item"}</div>
-              <div className="col-span-2 text-center">{item.quantity.toFixed(2)}</div>
-              <div className="col-span-2 text-right font-mono">€{item.price.toFixed(2)}</div>
-              <div className="col-span-2 text-right font-mono font-medium">
-                €{(item.quantity * item.price).toFixed(2)}
+              <div key={index} className="grid grid-cols-12 gap-4 text-sm py-2">
+                <div className="col-span-6">{item.description || "Line item"}</div>
+                <div className="col-span-2 text-center">{Number(item.quantity).toFixed(2)}</div>
+                <div className="col-span-2 text-right font-mono">€{Number(item.price).toFixed(2)}</div>
+                <div className="col-span-2 text-right font-mono font-medium">
+                €{(Number(item.quantity) * Number(item.price)).toFixed(2)}
               </div>
             </div>
           ))}
