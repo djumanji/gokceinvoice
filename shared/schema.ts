@@ -77,6 +77,7 @@ export const invoices = pgTable("invoices", {
   invoiceNumber: text("invoice_number").notNull().unique(),
   userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }), // Cascade delete invoices when user deleted
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: 'restrict' }), // Prevent deleting client with invoices
+  bankAccountId: varchar("bank_account_id").references(() => bankAccounts.id, { onDelete: 'set null' }), // Reference to selected bank account
   date: timestamp("date").notNull().defaultNow(),
   orderNumber: text("order_number"),
   projectNumber: text("project_number"),
