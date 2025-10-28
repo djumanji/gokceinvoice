@@ -66,7 +66,7 @@ export default function ForgotPassword() {
                 variant="outline"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                {t('common.back')} {t('common.to')} Login
+                Back to Login
               </Button>
             </div>
           ) : (
@@ -96,7 +96,7 @@ export default function ForgotPassword() {
                 className="w-full"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                {t('common.back')} {t('common.to')} Login
+                Back to Login
               </Button>
             </form>
           )}
