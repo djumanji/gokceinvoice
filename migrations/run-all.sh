@@ -103,6 +103,14 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 008_add_bank_account_id_to_invoices.sql"
+if psql "$DATABASE_URL" -f migrations/008_add_bank_account_id_to_invoices.sql; then
+    echo "✅ Bank account ID column added to invoices"
+else
+    echo "⚠️  Bank account ID column may already exist - continuing..."
+fi
+echo ""
+
 # Verify tables exist
 echo "🔍 Verifying tables..."
 TABLE_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" 2>/dev/null || echo "0")
