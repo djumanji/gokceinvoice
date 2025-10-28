@@ -128,7 +128,7 @@ export default function BankSettings() {
       return await apiRequest("POST", `/api/bank-accounts/${id}/set-default`);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKeyционно ["/api/bank-accounts"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/bank-accounts"] });
       toast({
         title: t("common.success"),
         description: "Default bank account updated",
