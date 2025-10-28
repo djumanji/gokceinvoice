@@ -1,10 +1,15 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 /**
  * Custom hook to check if user has completed onboarding
- * Onboarding is complete when user has created at least 1 client, 1 invoice, and 1 service
+ * Onboarding is complete when user has:
+ * 1. Set profile (company name, address, phone, or tax ID)
+ * 2. Created at least 1 client
+ * 3. Created at least 1 invoice  
+ * 4. Created at least 1 service
  */
 export function useOnboardingGuard() {
   const [, setLocation] = useLocation();
@@ -17,9 +22,24 @@ export function useOnboardingGuard() {
   const { data: services = [] } = useQuery<any[]>({
     queryKey: ["/api/services"],
   });
+  
+  // Fetch user profile to check if profile is set
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      return await apiRequest("GET", "/api/auth/me");
+    },
+  });
 
-  const isOnboardingComplete = clients.length > 0 && invoices.length > 0 && services.length > 0;
+  const hasProfile = user && (user.companyName || user.address || user.phone || user.taxOfficeId);
+  const isOnboardingComplete = hasProfile && clients.length > 0 && invoices.length > 0 && services.length > 0;
 
-  return { isOnboardingComplete, clientCount: clients.length, invoiceCount: invoices.length, serviceCount: services.length };
+  return { 
+    isOnboardingComplete, 
+    clientCount: clients.length, 
+    invoiceCount: invoices.length, 
+    serviceCount: services.length,
+    hasProfile: !!hasProfile
+  };
 }
 

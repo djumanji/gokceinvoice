@@ -23,8 +23,7 @@ export default function Onboarding() {
   const { data: user } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/auth/me");
-      return res.json();
+      return await apiRequest("GET", "/api/auth/me");
     },
   });
 
@@ -75,8 +74,12 @@ export default function Onboarding() {
               <Link key={index} href={step.href}>
                 <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
                   <div className="flex items-center gap-4">
-                    <div className="w-6 h-6 rounded-full border-2 border-muted-foreground flex items-center justify-center">
-                      {step.completed && <CheckCircle2 className="w-4 h-4 text-primary" />}
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      step.completed 
+                        ? 'bg-green-500 border-2 border-green-600' 
+                        : 'border-2 border-muted-foreground'
+                    }`}>
+                      {step.completed && <CheckCircle2 className="w-5 h-5 text-white" />}
                     </div>
                     <div>
                       <h3 className="font-medium">{step.title}</h3>
