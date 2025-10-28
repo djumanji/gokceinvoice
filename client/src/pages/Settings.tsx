@@ -256,14 +256,9 @@ export default function Settings() {
                 )}
               />
 
-              <div className="flex gap-4">
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? t("common.loading") : t("common.save")}
-                </Button>
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  {t("common.cancel")}
-                </Button>
-              </div>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? t("common.loading") : t("common.save")}
+              </Button>
             </form>
           </Form>
         </CardContent>
