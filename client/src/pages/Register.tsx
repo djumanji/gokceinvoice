@@ -10,9 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Moon, Sun } from "lucide-react";
-import { trackEvent, identifyUser } from "@/lib/mixpanel";
+// import { trackEvent, identifyUser } from "@/lib/mixpanel";
+import { useTranslation } from "react-i18next";
 
 export default function Register() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,26 +27,26 @@ export default function Register() {
   const registerMutation = useMutation({
     mutationFn: async () => {
       if (password !== confirmPassword) {
-        throw new Error("Passwords do not match");
+        throw new Error(t("errors.passwordMismatch"));
       }
       const res = await apiRequest("POST", "/api/auth/register", { email, password, username });
-      return res.json();
+      return res;
     },
     onSuccess: (data) => {
       // Track registration success in Mixpanel
-      trackEvent('User Registered', {
-        email,
-        username: username || 'not provided',
-        registration_method: 'email',
-      });
-      
+      // trackEvent('User Registered', {
+      //   email,
+      //   username: username || 'not provided',
+      //   registration_method: 'email',
+      // });
+
       // Identify user in Mixpanel
-      if (data.user) {
-        identifyUser(data.user.id, {
-          email: data.user.email,
-          username: data.user.username,
-        });
-      }
+      // if (data.user) {
+      //   identifyUser(data.user.id, {
+      //     email: data.user.email,
+      //     username: data.user.username,
+      //   });
+      // }
       
       // Invalidate the auth query to refetch user data
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -54,7 +56,7 @@ export default function Register() {
       console.error("Registration failed:", error);
       
       // Try to extract error message from the error
-      let errorMessage = error.message || "Registration failed. Please try again.";
+      let errorMessage = error.message || t("register.registrationFailed");
       
       try {
         // The error message from apiRequest contains the response text
@@ -69,7 +71,7 @@ export default function Register() {
       }
       
       toast({
-        title: "Registration Failed",
+        title: t("register.registrationFailed"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -80,10 +82,10 @@ export default function Register() {
     e.preventDefault();
     
     // Track registration attempt
-    trackEvent('Registration Attempt', {
-      email,
-      has_username: !!username,
-    });
+    // trackEvent('Registration Attempt', {
+    //   email,
+    //   has_username: !!username,
+    // });
     
     registerMutation.mutate();
   };
@@ -95,7 +97,7 @@ export default function Register() {
         onClick={toggleTheme}
         className="absolute top-4 right-4 z-50 h-10 w-10 rounded-md flex items-center justify-center bg-card border hover:bg-accent transition-colors"
         data-testid="button-theme-toggle"
-        aria-label="Toggle theme"
+        aria-label={t("auth.toggleTheme")}
       >
         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
       </button>
@@ -113,7 +115,7 @@ export default function Register() {
       {/* Content Layer */}
       <Card className="relative z-10 w-full max-w-md backdrop-blur-sm bg-card/95 shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
+          <CardTitle className="text-2xl text-center">{t("register.createAccount")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -122,67 +124,67 @@ export default function Register() {
               variant="outline"
               className="w-full"
             >
-              🔵 Continue with Google
+              {t("auth.continueWithGoogle")}
             </Button>
             <Button
               onClick={() => window.location.href = '/api/auth/github'}
               variant="outline"
               className="w-full"
             >
-              🐙 Continue with GitHub
+              {t("auth.continueWithGithub")}
             </Button>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or register with email</span>
+                <span className="bg-card px-2 text-muted-foreground">{t("auth.orContinueWith")}</span>
               </div>
             </div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("common.email")}</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="you@example.com"
+                placeholder={t("auth.emailPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="username">Username (optional)</Label>
+              <Label htmlFor="username">{t("register.usernameOptional")}</Label>
               <Input
                 id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="johndoe"
+                placeholder={t("register.usernameOptional")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("common.password")}</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="••••••••"
+                placeholder={t("auth.passwordPlaceholder")}
                 minLength={6}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t("register.confirmPassword")}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                placeholder="••••••••"
+                placeholder={t("auth.passwordPlaceholder")}
               />
             </div>
             <Button 
@@ -190,16 +192,16 @@ export default function Register() {
               className="w-full"
               disabled={registerMutation.isPending}
             >
-              {registerMutation.isPending ? "Creating account..." : "Register"}
+              {registerMutation.isPending ? t("register.creatingAccount") : t("common.register")}
             </Button>
           </form>
           <div className="mt-6 text-center text-sm">
-            Already have an account?{" "}
+            {t("register.alreadyHaveAccount")}{" "}
             <button
               onClick={() => setLocation("/login")}
               className="text-primary hover:underline"
             >
-              Login
+              {t("common.login")}
             </button>
           </div>
         </CardContent>

@@ -8,8 +8,10 @@ import type { Client } from "@shared/schema";
 import { OnboardingProgressBanner } from "@/components/OnboardingProgressBanner";
 import { useOnboardingGuard } from "@/hooks/use-onboarding";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 export default function CreateInvoice() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const params = useParams();
   const invoiceId = params.id;
@@ -72,16 +74,16 @@ export default function CreateInvoice() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       toast({
-        title: "Success",
-        description: "Invoice created successfully",
+        title: t("common.success"),
+        description: t("invoiceForm.invoiceCreated"),
       });
       setLocation("/invoices");
     },
     onError: (error: any) => {
       console.error("Failed to create invoice:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create invoice",
+        title: t("common.error"),
+        description: error.message || t("invoiceForm.invoiceCreateFailed"),
         variant: "destructive",
       });
     },
@@ -123,16 +125,16 @@ export default function CreateInvoice() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       toast({
-        title: "Success",
-        description: "Invoice updated successfully",
+        title: t("common.success"),
+        description: t("invoiceForm.invoiceUpdated"),
       });
       setLocation("/invoices");
     },
     onError: (error: any) => {
       console.error("Failed to update invoice:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to update invoice",
+        title: t("common.error"),
+        description: error.message || t("invoiceForm.invoiceUpdateFailed"),
         variant: "destructive",
       });
     },
@@ -150,7 +152,7 @@ export default function CreateInvoice() {
   if (clientsLoading || (isEditing && invoiceLoading)) {
     return (
       <div className="p-6">
-        <div className="text-center py-12 text-muted-foreground">Loading...</div>
+        <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>
       </div>
     );
   }
@@ -187,18 +189,18 @@ export default function CreateInvoice() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isEditing ? "Edit Invoice" : "Create Invoice"}
+            {isEditing ? t("invoiceForm.editInvoice") : t("invoiceForm.createInvoice")}
           </h1>
           <p className="text-muted-foreground">
-            {isEditing ? "Update invoice details" : "Fill in the details to create a new invoice"}
+            {isEditing ? t("invoiceForm.editInvoiceDesc") : t("invoiceForm.createInvoiceDesc")}
           </p>
         </div>
       </div>
 
       {clients.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">You need to add a client first before creating an invoice.</p>
-          <Button onClick={() => setLocation("/clients")}>Go to Clients</Button>
+          <p className="text-muted-foreground mb-4">{t("invoiceForm.needClientFirst")}</p>
+          <Button onClick={() => setLocation("/clients")}>{t("invoiceForm.goToClients")}</Button>
         </div>
       ) : (
         <InvoiceForm
