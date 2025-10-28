@@ -528,6 +528,20 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
           lineItems={lineItems}
           taxRate={taxRate}
           notes={form.watch("notes")}
+          // Company data
+          companyName={user?.companyName}
+          companyAddress={user?.address}
+          companyPhone={user?.phone}
+          companyTaxId={user?.taxOfficeId}
+          // Bank details
+          swiftCode={user?.swiftCode}
+          iban={user?.iban}
+          accountHolderName={user?.accountHolderName}
+          bankAddress={user?.bankAddress}
+          // Footer contact
+          userName={user?.name}
+          userPhone={user?.phone}
+          userEmail={user?.email}
         />
       </div>
     </div>
