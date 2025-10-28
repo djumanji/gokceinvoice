@@ -1,126 +1,100 @@
-import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface LoadingModalProps {
   isVisible: boolean;
 }
 
+const BRIGHT_GREEN = "#39ff14"; // Neon/bright green
+
 export function LoadingModal({ isVisible }: LoadingModalProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
-  const circle1Ref = useRef<HTMLDivElement>(null);
-  const circle2Ref = useRef<HTMLDivElement>(null);
-  const circle3Ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const tl = gsap.timeline();
-
-    if (isVisible) {
-      // Animate in
-      gsap.set(containerRef.current, { display: "flex" });
-      gsap.set([textRef.current], { opacity: 0, y: 20 });
-      
-      tl.to(containerRef.current, {
-        opacity: 1,
-        duration: 0.3,
-        ease: "power2.out",
-      })
-      .to(
-        textRef.current,
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.4,
-          ease: "power2.out",
-        },
-        "-=0.2"
-      );
-
-      // Spinner animation
-      gsap.to(circle1Ref.current, {
-        rotation: 360,
-        duration: 1,
-        repeat: -1,
-        ease: "none",
-      });
-
-      gsap.to(circle2Ref.current, {
-        rotation: -360,
-        duration: 1.5,
-        repeat: -1,
-        ease: "none",
-      });
-
-      gsap.to(circle3Ref.current, {
-        rotation: 360,
-        duration: 2,
-        repeat: -1,
-        ease: "none",
-      });
-    } else {
-      // Animate out
-      tl.to(textRef.current, {
-        opacity: 0,
-        y: -20,
-        duration: 0.2,
-        ease: "power2.in",
-      })
-      .to(
-        containerRef.current,
-        {
-          opacity: 0,
-          duration: 0.3,
-          ease: "power2.in",
-          onComplete: () => {
-            if (containerRef.current) {
-              gsap.set(containerRef.current, { display: "none" });
-            }
-          },
-        },
-        "-=0.1"
-      );
-    }
-
-    return () => {
-      tl.kill();
-    };
-  }, [isVisible]);
-
   return (
-    <div
-      ref={containerRef}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm"
-      style={{ display: "none" }}
-    >
-      <div className="relative w-32 h-32">
-        {/* Rotating circles */}
-        <div
-          ref={circle1Ref}
-          className="absolute top-0 left-0 w-full h-full border-4 border-primary border-t-transparent rounded-full opacity-30"
-        />
-        <div
-          ref={circle2Ref}
-          className="absolute top-2 left-2 w-[calc(100%-1rem)] h-[calc(100%-1rem)] border-4 border-primary/60 border-r-transparent rounded-full opacity-50"
-        />
-        <div
-          ref={circle3Ref}
-          className="absolute top-4 left-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)] border-4 border-primary/40 border-b-transparent rounded-full opacity-70"
-        />
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm"
+        >
+          <div className="flex flex-col items-center gap-6">
+            {/* Pulsing dots animation */}
+            <div className="relative w-20 h-20">
+              {/* Center pulsing circle */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{
+                  width: 12,
+                  height: 12,
+                  backgroundColor: BRIGHT_GREEN,
+                  boxShadow: `0 0 20px ${BRIGHT_GREEN}`,
+                }}
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [1, 0.5, 1],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              
+              {/* Orbiting dots */}
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="absolute inset-0 flex items-center justify-center"
+                  animate={{
+                    rotate: 360,
+                  }}
+                  transition={{
+                    duration: 2 + i * 0.4,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  style={{
+                    transformOrigin: "center",
+                  }}
+                >
+                  <motion.div
+                    className="absolute rounded-full"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      backgroundColor: BRIGHT_GREEN,
+                      boxShadow: `0 0 10px ${BRIGHT_GREEN}`,
+                      x: -4,
+                      y: -32,
+                    }}
+                    animate={{
+                      scale: [1, 1.3, 1],
+                    }}
+                    transition={{
+                      duration: 1.2 + i * 0.2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: i * 0.15,
+                    }}
+                  />
+                </motion.div>
+              ))}
+            </div>
 
-        {/* Center dot */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full animate-pulse" />
-      </div>
-
-      {/* Loading text */}
-      <div
-        ref={textRef}
-        className="absolute top-[60%] text-muted-foreground font-medium"
-      >
-        Loading...
-      </div>
-    </div>
+            {/* Loading text */}
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -10, opacity: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="text-sm font-medium"
+              style={{ color: BRIGHT_GREEN }}
+            >
+              Loading...
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
-
