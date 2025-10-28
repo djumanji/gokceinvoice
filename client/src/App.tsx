@@ -22,6 +22,7 @@ import Register from "@/pages/Register";
 import VerifyEmail from "@/pages/VerifyEmail";
 import ResetPassword from "@/pages/ResetPassword";
 import Settings from "@/pages/Settings";
+import BankSettings from "@/pages/BankSettings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -70,6 +71,11 @@ function Router() {
       <Route path="/settings">
         <ProtectedRoute>
           <Settings />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/settings/bank-accounts">
+        <ProtectedRoute>
+          <BankSettings />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />

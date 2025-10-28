@@ -34,15 +34,6 @@ const profileSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   taxOfficeId: z.string().optional(),
-  preferredCurrency: z.enum(["USD", "EUR", "GBP", "AUD", "TRY"]).optional(),
-  // Bank details
-  bankName: z.string().optional(),
-  accountHolderName: z.string().optional(),
-  accountNumber: z.string().optional(),
-  iban: z.string().optional(),
-  swiftCode: z.string().optional(),
-  bankAddress: z.string().optional(),
-  bankBranch: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -78,15 +69,6 @@ export default function Settings() {
       address: "",
       phone: "",
       taxOfficeId: "",
-      preferredCurrency: "USD",
-      // Bank details
-      bankName: "",
-      accountHolderName: "",
-      accountNumber: "",
-      iban: "",
-      swiftCode: "",
-      bankAddress: "",
-      bankBranch: "",
     },
   });
 
@@ -99,15 +81,6 @@ export default function Settings() {
         address: user.address || "",
         phone: user.phone || "",
         taxOfficeId: user.taxOfficeId || "",
-        preferredCurrency: user.preferredCurrency || "USD",
-        // Bank details
-        bankName: user.bankName || "",
-        accountHolderName: user.accountHolderName || "",
-        accountNumber: user.accountNumber || "",
-        iban: user.iban || "",
-        swiftCode: user.swiftCode || "",
-        bankAddress: user.bankAddress || "",
-        bankBranch: user.bankBranch || "",
       });
     }
   }, [user, form]);

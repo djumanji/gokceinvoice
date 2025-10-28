@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense } from "@shared/schema";
+import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { PgStorage } from './postgres-storage';
 
@@ -48,6 +48,14 @@ export interface IStorage {
   createExpense(expense: InsertExpense): Promise<Expense>;
   updateExpense(id: string, userId: string, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
   deleteExpense(id: string, userId: string): Promise<boolean>;
+
+  // Bank Accounts
+  getBankAccounts(userId: string): Promise<BankAccount[]>;
+  getBankAccount(id: string, userId: string): Promise<BankAccount | undefined>;
+  createBankAccount(userId: string, bankAccount: InsertBankAccount): Promise<BankAccount>;
+  updateBankAccount(id: string, userId: string, bankAccount: Partial<InsertBankAccount>): Promise<BankAccount | undefined>;
+  deleteBankAccount(id: string, userId: string): Promise<boolean>;
+  setDefaultBankAccount(id: string, userId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {

@@ -30,15 +30,22 @@ export const users = pgTable("users", {
   address: text("address"),
   phone: text("phone"),
   taxOfficeId: text("tax_office_id"), // Tax Registration Number
-  preferredCurrency: text("preferred_currency").default("USD"),
-  // Bank details
-  bankName: text("bank_name"),
-  accountHolderName: text("account_holder_name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const bankAccounts = pgTable("bank_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  accountHolderName: text("account_holder_name").notNull(),
+  bankName: text("bank_name").notNull(),
   accountNumber: text("account_number"),
-  iban: text("iban"), // International Bank Account Number
-  swiftCode: text("swift_code"), // SWIFT/BIC code
+  iban: text("iban"),
+  swiftCode: text("swift_code"),
   bankAddress: text("bank_address"),
   bankBranch: text("bank_branch"),
+  currency: text("currency").default("USD"), // Currency for this bank account
+  isDefault: boolean("is_default").default(false), // Default bank account for invoicing
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -136,15 +143,18 @@ export const updateUserProfileSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   taxOfficeId: z.string().optional(),
-  preferredCurrency: z.enum(["USD", "EUR", "GBP", "AUD", "TRY"]).optional(),
-  // Bank details
-  bankName: z.string().optional(),
-  accountHolderName: z.string().optional(),
+});
+
+export const bankAccountSchema = z.object({
+  accountHolderName: z.string().min(1, "Account holder name is required"),
+  bankName: z.string().min(1, "Bank name is required"),
   accountNumber: z.string().optional(),
   iban: z.string().optional(),
   swiftCode: z.string().optional(),
   bankAddress: z.string().optional(),
   bankBranch: z.string().optional(),
+  currency: z.enum(["USD", "EUR", "GBP", "AUD", "TRY"]).default("USD"),
+  isDefault: z.boolean().default(false),
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true });
@@ -239,3 +249,6 @@ export type Service = typeof services.$inferSelect;
 
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Expense = typeof expenses.$inferSelect;
+
+export type InsertBankAccount = z.infer<typeof bankAccountSchema>;
+export type BankAccount = typeof bankAccounts.$inferSelect;
