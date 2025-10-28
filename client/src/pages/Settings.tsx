@@ -199,7 +199,7 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               <Form {...profileForm}>
-                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}皮的 className="space-y-6">
+                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
                   <FormField
                     control={profileForm.control}
                     name="name"
