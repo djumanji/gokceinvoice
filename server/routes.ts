@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { requireAuth } from "./middleware";
 import { validateCsrf } from "./index";
-import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertServiceSchema, insertExpenseSchema, updateUserProfileSchema } from "@shared/schema";
+import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertServiceSchema, insertExpenseSchema, updateUserProfileSchema, bankAccountSchema } from "@shared/schema";
 import { z } from "zod";
 import { sanitizeObject } from "./sanitize";
 import multer from "multer";
@@ -42,6 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/services", requireAuth, validateCsrf);
   app.use("/api/expenses", requireAuth, validateCsrf);
   app.use("/api/users", requireAuth, validateCsrf);
+  app.use("/api/bank-accounts", requireAuth, validateCsrf);
 
   // User profile routes
   app.patch("/api/users/profile", async (req, res) => {
@@ -663,6 +664,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete expense:", error);
       res.status(500).json({ error: "Failed to delete expense" });
+    }
+  });
+
+  // Bank Account routes
+  app.get("/api/bank-accounts", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const bankAccounts = await storage.getBankAccounts(userId);
+      res.json(bankAccounts);
+    } catch (error) {
+      console.error("Failed to fetch bank accounts:", error);
+      res.status(500).json({ error: "Failed to fetch bank accounts" });
+    }
+  });
+
+  app.get("/api/bank-accounts/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const bankAccount = await storage.getBankAccount(req.params.id, userId);
+      if (!bankAccount) {
+        return res.status(404).json({ error: "Bank account not found" });
+      }
+      res.json(bankAccount);
+    } catch (error) {
+      console.error("Failed to fetch bank account:", error);
+      res.status(500).json({ error: "Failed to fetch bank account" });
+    }
+  });
+
+  app.post("/api/bank-accounts", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Sanitize text inputs
+      const sanitized = sanitizeObject(req.body, ['accountHolderName', 'bankName', 'accountNumber', 'iban', 'swiftCode', 'bankAddress', 'bankBranch']);
+
+      const data = bankAccountSchema.parse(sanitized);
+      const bankAccount = await storage.createBankAccount(userId, data);
+      res.status(201).json(bankAccount);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Failed to create bank account:", error);
+      res.status(500).json({ error: "Failed to create bank account" });
+    }
+  });
+
+  app.patch("/api/bank-accounts/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Sanitize text inputs
+      const sanitized = sanitizeObject(req.body, ['accountHolderName', 'bankName', 'accountNumber', 'iban', 'swiftCode', 'bankAddress', 'bankBranch']);
+
+      const data = bankAccountSchema.partial().parse(sanitized);
+      const bankAccount = await storage.updateBankAccount(req.params.id, userId, data);
+      if (!bankAccount) {
+        return res.status(404).json({ error: "Bank account not found" });
+      }
+      res.json(bankAccount);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Failed to update bank account:", error);
+      res.status(500).json({ error: "Failed to update bank account" });
+    }
+  });
+
+  app.delete("/api/bank-accounts/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const deleted = await storage.deleteBankAccount(req.params.id, userId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Bank account not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete bank account:", error);
+      res.status(500).json({ error: "Failed to delete bank account" });
+    }
+  });
+
+  app.post("/api/bank-accounts/:id/set-default", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      await storage.setDefaultBankAccount(req.params.id, userId);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Failed to set default bank account:", error);
+      res.status(500).json({ error: "Failed to set default bank account" });
     }
   });
 

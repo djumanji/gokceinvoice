@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { users, clients, invoices, lineItems, services, expenses, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense } from '@shared/schema';
+import { users, clients, invoices, lineItems, services, expenses, bankAccounts, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount } from '@shared/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 
 // Initialize PostgreSQL connection
@@ -247,6 +247,48 @@ export class PgStorage {
     const result = await this.db.delete(expenses)
       .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Bank Accounts
+  async getBankAccounts(userId: string): Promise<BankAccount[]> {
+    return await this.db.select().from(bankAccounts).where(eq(bankAccounts.userId, userId));
+  }
+
+  async getBankAccount(id: string, userId: string): Promise<BankAccount | undefined> {
+    const result = await this.db.select().from(bankAccounts)
+      .where(and(eq(bankAccounts.id, id), eq(bankAccounts.userId, userId)));
+    return result[0];
+  }
+
+  async createBankAccount(userId: string, data: InsertBankAccount): Promise<BankAccount> {
+    const result = await this.db.insert(bankAccounts).values({ ...data, userId }).returning();
+    return result[0];
+  }
+
+  async updateBankAccount(id: string, userId: string, data: Partial<InsertBankAccount>): Promise<BankAccount | undefined> {
+    const result = await this.db.update(bankAccounts)
+      .set(data)
+      .where(and(eq(bankAccounts.id, id), eq(bankAccounts.userId, userId)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteBankAccount(id: string, userId: string): Promise<boolean> {
+    const result = await this.db.delete(bankAccounts)
+      .where(and(eq(bankAccounts.id, id), eq(bankAccounts.userId, userId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async setDefaultBankAccount(id: string, userId: string): Promise<void> {
+    // First unset all default flags for this user
+    await this.db.update(bankAccounts)
+      .set({ isDefault: false })
+      .where(eq(bankAccounts.userId, userId));
+
+    // Then set this account as default
+    await this.db.update(bankAccounts)
+      .set({ isDefault: true })
+      .where(and(eq(bankAccounts.id, id), eq(bankAccounts.userId, userId)));
   }
 }
 
