@@ -25,6 +25,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       }
     },
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   useEffect(() => {
