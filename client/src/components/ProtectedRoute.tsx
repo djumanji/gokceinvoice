@@ -15,20 +15,30 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { data: user, error, isLoading: queryLoading } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/auth/me");
-      return res.json();
+      try {
+        const data = await apiRequest("GET", "/api/auth/me");
+        return data;
+      } catch (err) {
+        // Return null on auth errors instead of throwing
+        console.log('[ProtectedRoute] Auth error:', err);
+        return null;
+      }
     },
     retry: false,
   });
 
   useEffect(() => {
+    console.log('[ProtectedRoute] Effect running:', { queryLoading, hasUser: !!user, hasError: !!error });
     if (queryLoading) {
+      console.log('[ProtectedRoute] Still loading, waiting...');
       return;
     }
 
     if (error || !user) {
+      console.log('[ProtectedRoute] No user or error, redirecting to /login');
       setLocation("/login");
     } else {
+      console.log('[ProtectedRoute] User authenticated, showing protected content');
       setIsAuthenticated(true);
     }
     setIsLoading(false);
