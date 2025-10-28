@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Form,
   FormControl,
@@ -78,6 +79,14 @@ export default function Settings() {
       phone: "",
       taxOfficeId: "",
       preferredCurrency: "USD",
+      // Bank details
+      bankName: "",
+      accountHolderName: "",
+      accountNumber: "",
+      iban: "",
+      swiftCode: "",
+      bankAddress: "",
+      bankBranch: "",
     },
   });
 
@@ -91,6 +100,14 @@ export default function Settings() {
         phone: user.phone || "",
         taxOfficeId: user.taxOfficeId || "",
         preferredCurrency: user.preferredCurrency || "USD",
+        // Bank details
+        bankName: user.bankName || "",
+        accountHolderName: user.accountHolderName || "",
+        accountNumber: user.accountNumber || "",
+        iban: user.iban || "",
+        swiftCode: user.swiftCode || "",
+        bankAddress: user.bankAddress || "",
+        bankBranch: user.bankBranch || "",
       });
     }
   }, [user, form]);
@@ -263,6 +280,134 @@ export default function Settings() {
                   </FormItem>
                 )}
               />
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">{t("settings.bankDetails")}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{t("settings.bankDetailsDescription")}</p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="accountHolderName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("settings.accountHolderName")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t("settings.accountHolderNamePlaceholder")}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="bankName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("settings.bankName")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t("settings.bankNamePlaceholder")}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="iban"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("settings.iban")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t("settings.ibanPlaceholder")}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="swiftCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("settings.swiftCode")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t("settings.swiftCodePlaceholder")}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="accountNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("settings.accountNumber")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t("settings.accountNumberPlaceholder")}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="bankBranch"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("settings.bankBranch")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t("settings.bankBranchPlaceholder")}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="bankAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("settings.bankAddress")}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder={t("settings.bankAddressPlaceholder")}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? t("common.loading") : t("common.save")}
