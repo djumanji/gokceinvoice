@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -25,8 +25,8 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import { Plus, Trash2, Edit } from "lucide-react";
 
 const profileSchema = z.object({
   name: z.string().optional(),
@@ -36,7 +36,20 @@ const profileSchema = z.object({
   taxOfficeId: z.string().optional(),
 });
 
+const bankAccountSchema = z.object({
+  accountHolderName: z.string().min(1, "Account holder name is required"),
+  bankName: z.string().min(1, "Bank name is required"),
+  accountNumber: z.string().optional(),
+  iban: z.string().optional(),
+  swiftCode: z.string().optional(),
+  bankAddress: z.string().optional(),
+  bankBranch: z.string().optional(),
+  currency: z.enum(["USD", "EUR", "GBP", "AUD", "TRY"]).default("USD"),
+  isDefault: z.boolean().default(false),
+});
+
 type ProfileFormData = z.infer<typeof profileSchema>;
+type BankAccountFormData = z.infer<typeof bankAccountSchema>;
 
 const currencies = [
   { value: "USD", label: "USD - US Dollar" },
@@ -49,19 +62,28 @@ const currencies = [
 export default function Settings() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddingBank, setIsAddingBank] = useState(false);
+  const [editingBankId, setEditingBankId] = useState<string | null>(null);
 
   // Fetch current user profile
   const { data: user, isLoading } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/auth/me");
-      return res; // apiRequest already returns JSON
+      return res;
     },
   });
 
-  const form = useForm<ProfileFormData>({
+  // Fetch bank accounts
+  const { data: bankAccounts = [] } = useQuery({
+    queryKey: ["/api/bank-accounts"],
+    queryFn: async () => {
+      return await apiRequest("GET", "/api/bank-accounts");
+    },
+  });
+
+  const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: "",
@@ -72,10 +94,24 @@ export default function Settings() {
     },
   });
 
-  // Update form values when user data is loaded
+  const bankForm = useForm<BankAccountFormData>({
+    resolver: zodResolver(bankAccountSchema),
+    defaultValues: {
+      accountHolderName: "",
+      bankName: "",
+      accountNumber: "",
+      iban: "",
+      swiftCode: "",
+      bankAddress: "",
+      bankBranch: "",
+      currency: "USD",
+      isDefault: false,
+    },
+  });
+
   useEffect(() => {
     if (user) {
-      form.reset({
+      profileForm.reset({
         name: user.name || "",
         companyName: user.companyName || "",
         address: user.address || "",
@@ -83,17 +119,33 @@ export default function Settings() {
         taxOfficeId: user.taxOfficeId || "",
       });
     }
-  }, [user, form]);
+  }, [user, profileForm]);
+
+  useEffect(() => {
+    if (editingBankId && bankAccounts) {
+      const bank = bankAccounts.find((b: any) => b.id === editingBankId);
+      if (bank) {
+        bankForm.reset({
+          accountHolderName: bank.accountHolderName || "",
+          bankName: bank.bankName || "",
+          accountNumber: bank.accountNumber || "",
+          iban: bank.iban || "",
+          swiftCode: bank.swiftCode || "",
+          bankAddress: bank.bankAddress || "",
+          bankBranch: bank.bankBranch || "",
+          currency: bank.currency || "USD",
+          isDefault: bank.isDefault || false,
+        });
+      }
+    }
+  }, [editingBankId, bankAccounts, bankForm]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       return apiRequest("PATCH", "/api/users/profile", data);
     },
     onSuccess: async (data) => {
-      // The mutation already returns parsed JSON data
-      // Update the cache directly with the data to avoid refetch
       queryClient.setQueryData(["/api/auth/me"], data);
-      
       toast({
         title: t("common.success"),
         description: t("settings.profileUpdated"),
@@ -111,11 +163,10 @@ export default function Settings() {
     },
   });
 
-  const onSubmit = async (data: ProfileFormData) => {
+  const onProfileSubmit = async (data: ProfileFormData) => {
     setIsSaving(true);
     updateProfileMutation.mutate(data);
   };
-
 
   if (isLoading) {
     return (
@@ -134,126 +185,115 @@ export default function Settings() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.profileInformation")}</CardTitle>
-          <CardDescription>
-            {t("settings.profileDescription")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("settings.name")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={t("settings.namePlaceholder")}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <Tabs defaultValue="personal" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="personal">Personal</TabsTrigger>
+          <TabsTrigger value="bank">Bank Details</TabsTrigger>
+        </TabsList>
 
-              <FormField
-                control={form.control}
-                name="companyName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("settings.companyName")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={t("settings.companyNamePlaceholder")}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <TabsContent value="personal">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("settings.profileInformation")}</CardTitle>
+              <CardDescription>{t("settings.profileDescription")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...profileForm}>
+                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}皮的 className="space-y-6">
+                  <FormField
+                    control={profileForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.name")}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t("settings.namePlaceholder")} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("settings.address")}</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder={t("settings.addressPlaceholder")}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={profileForm.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.companyName")}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t("settings.companyNamePlaceholder")} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("settings.phone")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={t("settings.phonePlaceholder")}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={profileForm.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.address")}</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder={t("settings.addressPlaceholder")} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="taxOfficeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("settings.taxRegistrationNumber")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={t("settings.taxRegistrationNumberPlaceholder")}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={profileForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.phone")}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t("settings.phonePlaceholder")} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <Separator />
+                  <FormField
+                    control={profileForm.control}
+                    name="taxOfficeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.taxRegistrationNumber")}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t("settings.taxRegistrationNumberPlaceholder")} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold">{t("settings.bankAccounts")}</h3>
-                    <p className="text-sm text-muted-foreground">{t("settings.bankAccountsDescription")}</p>
-                  </div>
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => setLocation("/settings/bank-accounts")}
-                  >
-                    {t("settings.manageBankAccounts")}
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? t("common.loading") : t("common.save")}
                   </Button>
-                </div>
-              </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? t("common.loading") : t("common.save")}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+        <TabsContent value="bank">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bank Accounts</CardTitle>
+              <CardDescription>Manage your bank accounts for invoice payments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                Click "Manage Bank Accounts" button to add/edit bank details
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
+
