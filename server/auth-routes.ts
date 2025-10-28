@@ -210,16 +210,7 @@ export function registerAuthRoutes(app: Express) {
         companyName: user.companyName,
         address: user.address,
         phone: user.phone,
-        taxOfficeId: user.taxOfficeId,
-        preferredCurrency: user.preferredCurrency,
-        // Bank details
-        bankName: user.bankName,
-        accountHolderName: user.accountHolderName,
-        accountNumber: user.accountNumber,
-        iban: user.iban,
-        swiftCode: user.swiftCode,
-        bankAddress: user.bankAddress,
-        bankBranch: user.bankBranch
+        taxOfficeId: user.taxOfficeId
       });
     } catch (error) {
       console.error('Get user error:', error);
