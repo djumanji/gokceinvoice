@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 interface Service {
   id: string;
@@ -39,6 +40,7 @@ interface Service {
 }
 
 export default function Services() {
+  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [formData, setFormData] = useState({
@@ -117,8 +119,8 @@ export default function Services() {
       
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Services</h1>
-          <p className="text-muted-foreground">Manage your service catalog and pricing</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("services.title")}</h1>
+          <p className="text-muted-foreground">{t("services.subtitle")}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);

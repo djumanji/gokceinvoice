@@ -84,6 +84,7 @@ npm install
 # Run database migrations
 psql $DATABASE_URL -f migrations/001_critical_indexes.sql
 psql $DATABASE_URL -f migrations/004_invoice_number_fix.sql
+psql $DATABASE_URL -f migrations/005_add_user_profile_fields.sql
 
 # Optional: Apply additional migrations
 # psql $DATABASE_URL -f migrations/002_data_integrity_constraints.sql
@@ -134,6 +135,9 @@ if ! psql $DATABASE_URL -c "SELECT 1 FROM pg_tables WHERE tablename = 'invoice_s
   echo "Fixing invoice number generation..."
   psql $DATABASE_URL -f migrations/004_invoice_number_fix.sql
 
+  echo "Adding user profile fields..."
+  psql $DATABASE_URL -f migrations/005_add_user_profile_fields.sql
+
   echo "✅ Migrations complete!"
 else
   echo "✅ Migrations already applied"
@@ -156,6 +160,7 @@ psql $DATABASE_URL
 # Run migrations one by one
 \i migrations/001_critical_indexes.sql
 \i migrations/004_invoice_number_fix.sql
+\i migrations/005_add_user_profile_fields.sql
 
 # Verify
 SELECT tablename FROM pg_tables WHERE schemaname = 'public';

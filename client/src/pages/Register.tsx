@@ -18,7 +18,6 @@ export default function Register() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -29,7 +28,7 @@ export default function Register() {
       if (password !== confirmPassword) {
         throw new Error(t("errors.passwordMismatch"));
       }
-      const res = await apiRequest("POST", "/api/auth/register", { email, password, username });
+      const res = await apiRequest("POST", "/api/auth/register", { email, password });
       return res;
     },
     onSuccess: (data) => {
@@ -54,22 +53,25 @@ export default function Register() {
     },
     onError: async (error: any) => {
       console.error("Registration failed:", error);
-      
-      // Try to extract error message from the error
-      let errorMessage = error.message || t("register.registrationFailed");
-      
+
+      let errorMessage = t("register.registrationFailed");
+
       try {
-        // The error message from apiRequest contains the response text
-        // Format is usually "400: {\"error\":\"User already exists\"}"
-        const errorMatch = error.message?.match(/\{[^}]+\}/);
-        if (errorMatch) {
-          const errorData = JSON.parse(errorMatch[0]);
-          errorMessage = errorData.error || errorMessage;
+        // Parse error message format: "400: {\"error\":\"message\"}"
+        const match = error.message?.match(/\d+:\s*(.+)/);
+        if (match) {
+          const errorBody = match[1];
+          try {
+            const errorData = JSON.parse(errorBody);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            errorMessage = errorBody;
+          }
         }
       } catch (e) {
-        // If parsing fails, use the error message as is
+        console.error("Error parsing error message:", e);
       }
-      
+
       toast({
         title: t("register.registrationFailed"),
         description: errorMessage,
@@ -118,31 +120,7 @@ export default function Register() {
           <CardTitle className="text-2xl text-center">{t("register.createAccount")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Button
-              onClick={() => window.location.href = '/api/auth/google'}
-              variant="outline"
-              className="w-full"
-            >
-              {t("auth.continueWithGoogle")}
-            </Button>
-            <Button
-              onClick={() => window.location.href = '/api/auth/github'}
-              variant="outline"
-              className="w-full"
-            >
-              {t("auth.continueWithGithub")}
-            </Button>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">{t("auth.orContinueWith")}</span>
-              </div>
-            </div>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t("common.email")}</Label>
               <Input
@@ -155,16 +133,6 @@ export default function Register() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="username">{t("register.usernameOptional")}</Label>
-              <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder={t("register.usernameOptional")}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="password">{t("common.password")}</Label>
               <Input
                 id="password"
@@ -173,8 +141,11 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder={t("auth.passwordPlaceholder")}
-                minLength={6}
+                minLength={8}
               />
+              <p className="text-xs text-muted-foreground">
+                Min 8 characters with uppercase, lowercase, and number
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">{t("register.confirmPassword")}</Label>

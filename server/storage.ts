@@ -8,6 +8,10 @@ export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getUserByProvider(provider: string, providerId: string): Promise<User | undefined>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
+  getUserByVerificationToken(token: string): Promise<User | undefined>;
+  verifyUserEmail(userId: string): Promise<void>;
+  getUserByPasswordResetToken(token: string): Promise<User | undefined>;
 
   // Clients
   getClients(userId: string): Promise<Client[]>;
@@ -82,6 +86,15 @@ export class MemStorage implements IStorage {
       provider: insertUser.provider ?? "local",
       providerId: insertUser.providerId ?? null,
       isEmailVerified: insertUser.isEmailVerified ?? false,
+      emailVerificationToken: insertUser.emailVerificationToken ?? null,
+      emailVerificationExpires: insertUser.emailVerificationExpires ?? null,
+      passwordResetToken: insertUser.passwordResetToken ?? null,
+      passwordResetExpires: insertUser.passwordResetExpires ?? null,
+      companyName: insertUser.companyName ?? null,
+      address: insertUser.address ?? null,
+      phone: insertUser.phone ?? null,
+      taxOfficeId: insertUser.taxOfficeId ?? null,
+      preferredCurrency: insertUser.preferredCurrency ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -93,6 +106,36 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(
       u => u.provider === provider && u.providerId === providerId
     );
+  }
+  
+  async updateUser(id: string, updateData: Partial<InsertUser>): Promise<User | undefined> {
+    const existing = this.users.get(id);
+    if (!existing) return undefined;
+    const updated: User = { ...existing, ...updateData, updatedAt: new Date() };
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  async getUserByVerificationToken(token: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(u => u.emailVerificationToken === token);
+  }
+
+  async verifyUserEmail(userId: string): Promise<void> {
+    const existing = this.users.get(userId);
+    if (existing) {
+      const updated: User = {
+        ...existing,
+        isEmailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+        updatedAt: new Date(),
+      };
+      this.users.set(userId, updated);
+    }
+  }
+
+  async getUserByPasswordResetToken(token: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(u => u.passwordResetToken === token);
   }
 
   // Clients

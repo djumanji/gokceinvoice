@@ -1,7 +1,9 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, Pencil, Trash2, Receipt } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Receipt, Image as ImageIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +22,8 @@ interface ExpenseTableProps {
 }
 
 export function ExpenseTable({ expenses, onEdit, onDelete, onViewReceipt }: ExpenseTableProps) {
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   if (expenses.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -36,18 +40,20 @@ export function ExpenseTable({ expenses, onEdit, onDelete, onViewReceipt }: Expe
   };
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Amount</TableHead>
-          <TableHead>Vendor</TableHead>
-          <TableHead>Tax</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Vendor</TableHead>
+            <TableHead>Receipt</TableHead>
+            <TableHead>Tax</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
       <TableBody>
         {expenses.map((expense) => {
           const category = getCategoryInfo(expense.category);
@@ -70,6 +76,21 @@ export function ExpenseTable({ expenses, onEdit, onDelete, onViewReceipt }: Expe
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {expense.vendor || "-"}
+              </TableCell>
+              <TableCell>
+                {expense.receipt ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setPreviewImage(expense.receipt || null)}
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
               </TableCell>
               <TableCell>
                 {expense.isTaxDeductible ? (
@@ -113,6 +134,25 @@ export function ExpenseTable({ expenses, onEdit, onDelete, onViewReceipt }: Expe
         })}
       </TableBody>
     </Table>
+
+    {/* Image Preview Dialog */}
+    <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Receipt/Invoice</DialogTitle>
+        </DialogHeader>
+        {previewImage && (
+          <div className="flex justify-center">
+            <img
+              src={previewImage}
+              alt="Receipt"
+              className="max-h-[70vh] w-auto rounded-lg"
+            />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

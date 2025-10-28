@@ -5,6 +5,8 @@ import { Link } from "wouter";
 import { useOnboardingGuard } from "@/hooks/use-onboarding";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
@@ -17,7 +19,19 @@ export default function Onboarding() {
     }
   }, [isOnboardingComplete, setLocation]);
 
+  // Fetch user profile to check if profile is set
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/auth/me");
+      return res.json();
+    },
+  });
+
+  const hasProfile = user && (user.companyName || user.address || user.phone || user.taxOfficeId);
+
   const setupSteps = [
+    { title: "Set your profile", completed: hasProfile, time: "1 min", href: "/settings" },
     { title: "Add your first client", completed: clientCount > 0, time: "2 mins", href: "/clients" },
     { title: "Add your first service", completed: serviceCount > 0, time: "2 mins", href: "/services" },
     { title: "Create your first invoice", completed: invoiceCount > 0, time: "3 mins", href: "/invoices/new" },

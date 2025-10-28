@@ -1,5 +1,29 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// CSRF token management
+let csrfToken: string | null = null;
+
+async function getCsrfToken(): Promise<string> {
+  if (!csrfToken) {
+    try {
+      const res = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      csrfToken = data.csrfToken;
+    } catch (error) {
+      console.error('Failed to fetch CSRF token:', error);
+      throw error;
+    }
+  }
+  return csrfToken;
+}
+
+// Reset CSRF token on auth changes
+export function resetCsrfToken() {
+  csrfToken = null;
+}
+
 // Global API loading tracker
 let activeRequests = 0;
 let loadingTimeout: NodeJS.Timeout | null = null;
@@ -49,20 +73,55 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<any> {
   startRequestTracking();
-  
+
   try {
+    const isFormData = data instanceof FormData;
+    const headers: Record<string, string> = {};
+
+    // Only set Content-Type for non-FormData, let browser set it for FormData
+    if (data && !isFormData) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    // Add CSRF token for non-GET requests
+    if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+      const token = await getCsrfToken();
+      headers["X-CSRF-Token"] = token;
+    }
+
     const res = await fetch(url, {
       method,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
+      headers,
+      body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
       credentials: "include",
     });
 
+    // If CSRF token is invalid, reset and retry once
+    if (res.status === 403) {
+      const errorText = await res.text();
+      if (errorText.includes('CSRF')) {
+        resetCsrfToken();
+        const newToken = await getCsrfToken();
+        headers["X-CSRF-Token"] = newToken;
+
+        const retryRes = await fetch(url, {
+          method,
+          headers,
+          body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
+          credentials: "include",
+        });
+
+        await throwIfResNotOk(retryRes);
+        endRequestTracking();
+        return await retryRes.json();
+      }
+    }
+
     await throwIfResNotOk(res);
     endRequestTracking();
-    return res;
+    return await res.json();
   } catch (error) {
     endRequestTracking();
     throw error;

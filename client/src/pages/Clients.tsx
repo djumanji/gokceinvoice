@@ -16,8 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Client } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 export default function Clients() {
+  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState({
@@ -90,7 +92,7 @@ export default function Clients() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this client?")) {
+    if (confirm(t("clients.deleteConfirmation"))) {
       deleteMutation.mutate(id);
     }
   };
@@ -112,8 +114,8 @@ export default function Clients() {
       
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
-          <p className="text-muted-foreground">Manage your client information and relationships</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("clients.title")}</h1>
+          <p className="text-muted-foreground">{t("clients.subtitle")}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
@@ -125,16 +127,16 @@ export default function Clients() {
           <DialogTrigger asChild>
             <Button data-testid="button-add-client">
               <Plus className="w-4 h-4" />
-              Add Client
+              {t("clients.addClient")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingClient ? "Edit Client" : "Add New Client"}</DialogTitle>
+              <DialogTitle>{editingClient ? t("clients.editClient") : t("clients.addNewClient")}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name">{t("clients.name")} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -144,7 +146,7 @@ export default function Clients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">{t("common.email")} *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -155,7 +157,7 @@ export default function Clients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
+                <Label htmlFor="company">{t("clients.company")}</Label>
                 <Input
                   id="company"
                   value={formData.company}
@@ -164,7 +166,7 @@ export default function Clients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t("client.phone")}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -173,7 +175,7 @@ export default function Clients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">{t("client.address")}</Label>
                 <Input
                   id="address"
                   value={formData.address}
@@ -191,14 +193,14 @@ export default function Clients() {
                     setEditingClient(null);
                   }}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
                   data-testid="button-save-client"
                 >
-                  {editingClient ? "Update" : "Create"} Client
+                  {editingClient ? t("clients.update") : t("clients.create")} {t("client.client")}
                 </Button>
               </div>
             </form>
@@ -207,14 +209,14 @@ export default function Clients() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading clients...</div>
+        <div className="text-center py-12 text-muted-foreground">{t("clients.loadingClients")}</div>
       ) : clients.length === 0 ? (
         <div className="border rounded-lg p-12">
           <EmptyState
             icon={UsersIcon}
-            title="No clients yet"
-            description="Add your first client to start creating invoices and tracking payments."
-            actionLabel="Add Client"
+            title={t("clients.noClientsYet")}
+            description={t("clients.addFirstClient")}
+            actionLabel={t("clients.addClient")}
             onAction={() => setIsDialogOpen(true)}
           />
         </div>

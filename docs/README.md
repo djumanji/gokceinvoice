@@ -8,7 +8,15 @@ This directory contains all project documentation organized by category.
 docs/
 ├── security/          # Security audits and fixes
 ├── database/          # Database documentation and guides
+├── database-external/ # External database hosting options
 ├── design/           # Design guidelines and refactoring notes
+├── setup/            # Setup and deployment guides
+├── auth/             # Authentication and email setup
+├── storage/          # S3 and storage configuration
+├── analytics/        # Analytics and telemetry setup
+├── testing/          # Testing guides and best practices
+├── localization/     # i18n and translation guides
+├── troubleshooting/  # Fix guides and debugging
 └── README.md         # This file
 ```
 
@@ -57,6 +65,9 @@ Common PostgreSQL commands and queries for administration.
 
 ### [PgAdmin Setup](database/PGADMIN_SETUP.md)
 Guide for setting up PgAdmin for database management.
+
+### [User Table Schema](database/USER_TABLE_SCHEMA.md)
+Detailed schema documentation for user-related tables.
 
 ---
 
@@ -135,3 +146,76 @@ When making changes to the project:
 
 *Last Updated: 2025-10-27*
 *Maintained by: Development Team*
+
+---
+
+## 📘 Setup & Deployment
+
+- [Project Structure](PROJECT_STRUCTURE.md)
+- [Replit Quick Start](setup/REPLIT_QUICK_START.md)
+- [Replit Deployment Guide](REPLIT_DEPLOYMENT.md)
+- [Replit Database Setup](setup/REPLIT_DATABASE_SETUP.md)
+- [Replit Troubleshooting](setup/REPLIT_TROUBLESHOOTING.md)
+- [Replit Guide](setup/replit.md)
+- [What Is "Restart Repl"](setup/WHAT_IS_RESTART_REPL.md)
+- [Deployment Instructions](setup/DEPLOYMENT_INSTRUCTIONS.md)
+- [Deployment Fix](setup/DEPLOYMENT_FIX.md)
+- [Deployment Fix Guide](setup/DEPLOYMENT_FIX_GUIDE.md)
+- [Deployment Summary](setup/DEPLOYMENT_SUMMARY.md)
+- [Production Fix Summary](setup/PRODUCTION_FIX_SUMMARY.md)
+- [Quick Migration Guide](setup/QUICK_MIGRATION_GUIDE.md)
+- [Run Migrations in Replit](setup/RUN_MIGRATIONS_IN_REPLIT.md)
+
+## 🔑 Authentication & Email
+
+- [Auth System Summary](auth/AUTH_SYSTEM_SUMMARY.md)
+- [Email Auth Implementation](auth/EMAIL_AUTH_IMPLEMENTATION.md)
+- [Email Setup Summary](auth/EMAIL_SETUP_SUMMARY.md)
+- [Email Implementation Summary](auth/EMAIL_IMPLEMENTATION_SUMMARY.md)
+- [Email Auth Test Results](auth/EMAIL_AUTH_TEST_RESULTS.md)
+- [Get Resend API Key](auth/GET_RESEND_API_KEY.md)
+
+## 🗂️ Storage (S3)
+
+- [S3 Setup Guide](storage/S3_SETUP_GUIDE.md)
+- [S3 Quick Start](storage/S3_QUICK_START.md)
+- [S3 Setup Complete](storage/S3_SETUP_COMPLETE.md)
+- [Next Steps AWS Setup](storage/NEXT_STEPS_AWS_SETUP.md)
+- [Why IAM Users](storage/WHY_IAM_USERS.md)
+
+## 📈 Analytics & Telemetry
+
+- [PostHog Setup](analytics/POSTHOG_SETUP.md)
+- [PostHog Configuration Complete](analytics/POSTHOG_CONFIGURATION_COMPLETE.md)
+- [PostHog Ready To Use](analytics/POSTHOG_READY_TO_USE.md)
+- [Mixpanel Setup](analytics/MIXPANEL_SETUP.md)
+
+## 🧪 Testing & QA
+
+- [Automated Testing Setup](testing/AUTOMATED_TESTING_SETUP.md)
+- [Playwright Best Practices](testing/PLAYWRIGHT_BEST_PRACTICES.md)
+- [Tests Summary](testing/TESTS_SUMMARY.md)
+- [Failed Tests Prioritized](testing/FAILED_TESTS_PRIORITIZED.md)
+- [Local Testing Guide](testing/LOCAL_TESTING_GUIDE.md)
+- [tests/README](../../tests/README.md)
+
+## 🌍 Localization (i18n)
+
+- [Localization Setup](localization/LOCALIZATION_SETUP.md)
+- [Localization Implementation Complete](localization/LOCALIZATION_IMPLEMENTATION_COMPLETE.md)
+- [Dashboard Translation Complete](localization/DASHBOARD_TRANSLATION_COMPLETE.md)
+- [Translation Status](localization/TRANSLATION_STATUS.md)
+- [Test Results (Localization)](localization/TEST_RESULTS_LOCALIZATION.md)
+
+## 🧰 Troubleshooting & Fix Guides
+
+- [Fix Missing Tables](troubleshooting/FIX_MISSING_TABLES.md)
+- [Invoice Button Fix](troubleshooting/INVOICE_BUTTON_FIX.md)
+- [Expense Receipt Upload Summary](troubleshooting/EXPENSE_RECEIPT_UPLOAD_SUMMARY.md)
+
+## 💸 External Database Options
+
+- [Free Database Options](database-external/FREE_DATABASE_OPTIONS.md)
+- [Neon Database Setup](database-external/NEON_DATABASE_SETUP.md)
+- [Free Error Logging Tools](database-external/FREE_ERROR_LOGGING_TOOLS.md)
+

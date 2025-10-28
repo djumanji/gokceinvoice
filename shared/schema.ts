@@ -8,6 +8,7 @@ export const invoiceStatusEnum = pgEnum("invoice_status", ["draft", "sent", "vie
 export const paymentMethodEnum = pgEnum("payment_method", ["bank_transfer", "credit_card", "paypal", "cash", "check", "other"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
 export const recurrenceFrequencyEnum = pgEnum("recurrence_frequency", ["weekly", "biweekly", "monthly", "quarterly", "yearly"]);
+export const currencyEnum = pgEnum("currency", ["USD", "EUR", "GBP", "AUD", "TRY"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -17,6 +18,19 @@ export const users = pgTable("users", {
   provider: text("provider").default("local"), // "local", "google", "github"
   providerId: text("provider_id"), // Google/GitHub user ID
   isEmailVerified: boolean("is_email_verified").default(false),
+  // Email verification fields
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationExpires: timestamp("email_verification_expires"),
+  // Password reset fields
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
+  // Profile fields
+  name: text("name"), // User's full name for profile/invoicing
+  companyName: text("company_name"),
+  address: text("address"),
+  phone: text("phone"),
+  taxOfficeId: text("tax_office_id"), // Tax Registration Number
+  preferredCurrency: text("preferred_currency").default("USD"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -99,7 +113,22 @@ export const expenses = pgTable("expenses", {
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true }).extend({
-  password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password must be less than 72 characters")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .optional(),
+});
+
+export const updateUserProfileSchema = z.object({
+  name: z.string().optional(),
+  companyName: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  taxOfficeId: z.string().optional(),
+  preferredCurrency: z.enum(["USD", "EUR", "GBP", "AUD", "TRY"]).optional(),
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true });

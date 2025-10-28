@@ -1,7 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { Home, FileText, Users, Box, Receipt, Moon, Sun, LogOut } from "lucide-react";
+import { Home, FileText, Users, Box, Receipt, Moon, Sun, LogOut, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import {
   Sidebar,
   SidebarContent,
@@ -43,9 +45,15 @@ const menuItems = [
     url: "/services",
     icon: Box,
   },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: Settings,
+  },
 ];
 
 export function AppSidebar() {
+  const { t } = useTranslation();
   const [location] = useLocation();
   const [, setLocation] = useLocation();
   const { theme, toggleTheme } = useTheme();
@@ -60,8 +68,16 @@ export function AppSidebar() {
   });
 
   const handleLogout = async () => {
-    await apiRequest("POST", "/api/auth/logout");
-    setLocation("/login");
+    try {
+      console.log('[Logout] Starting logout');
+      await apiRequest("POST", "/api/auth/logout");
+      console.log('[Logout] Logout successful, invalidating queries');
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      console.log('[Logout] Redirecting to /login');
+      setLocation("/login");
+    } catch (error) {
+      console.error('[Logout] Logout failed:', error);
+    }
   };
 
   return (
@@ -76,7 +92,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.navigation")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -84,7 +100,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link href={item.url} data-testid={`link-${item.title.toLowerCase()}`}>
                       <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
+                      <span>{t(`nav.${item.title.toLowerCase()}`)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -94,6 +110,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-4 space-y-2">
+        <LanguageSelector />
         {userData?.email && (
           <div className="px-2 py-2 text-sm border rounded-lg">
             <div className="font-medium truncate">{userData.email}</div>
@@ -109,12 +126,12 @@ export function AppSidebar() {
           {theme === "light" ? (
             <>
               <Moon className="w-4 h-4" />
-              <span>Dark Mode</span>
+              <span>{t("nav.darkMode")}</span>
             </>
           ) : (
             <>
               <Sun className="w-4 h-4" />
-              <span>Light Mode</span>
+              <span>{t("nav.lightMode")}</span>
             </>
           )}
         </Button>
@@ -125,7 +142,7 @@ export function AppSidebar() {
           className="w-full justify-start text-destructive"
         >
           <LogOut className="w-4 h-4" />
-          <span>Logout</span>
+          <span>{t("common.logout")}</span>
         </Button>
       </SidebarFooter>
     </Sidebar>

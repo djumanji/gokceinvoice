@@ -24,8 +24,11 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 const profileSchema = z.object({
+  name: z.string().optional(),
   companyName: z.string().optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
@@ -44,7 +47,9 @@ const currencies = [
 ];
 
 export default function Settings() {
+  const { t } = useTranslation();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isSaving, setIsSaving] = useState(false);
 
   // Fetch current user profile
@@ -59,6 +64,7 @@ export default function Settings() {
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      name: "",
       companyName: "",
       address: "",
       phone: "",
@@ -71,6 +77,7 @@ export default function Settings() {
   useEffect(() => {
     if (user) {
       form.reset({
+        name: user.name || "",
         companyName: user.companyName || "",
         address: user.address || "",
         phone: user.phone || "",
@@ -87,16 +94,16 @@ export default function Settings() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({
-        title: "Profile updated",
-        description: "Your profile settings have been saved successfully.",
+        title: t("common.success"),
+        description: t("settings.profileUpdated"),
       });
       setIsSaving(false);
     },
     onError: (error) => {
       console.error("Failed to update profile:", error);
       toast({
-        title: "Failed to update profile",
-        description: "An error occurred while saving your profile. Please try again.",
+        title: t("common.error"),
+        description: t("settings.profileUpdateFailed"),
         variant: "destructive",
       });
       setIsSaving(false);
@@ -108,10 +115,24 @@ export default function Settings() {
     updateProfileMutation.mutate(data);
   };
 
+  const handleCancel = () => {
+    // Reset form to original values
+    if (user) {
+      form.reset({
+        name: user.name || "",
+        companyName: user.companyName || "",
+        address: user.address || "",
+        phone: user.phone || "",
+        taxOfficeId: user.taxOfficeId || "",
+        preferredCurrency: user.preferredCurrency || "USD",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+        <div className="text-lg">{t("common.loading")}</div>
       </div>
     );
   }
@@ -119,17 +140,17 @@ export default function Settings() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("nav.settings")}</h1>
         <p className="text-muted-foreground mt-2">
-          Manage your profile information and preferences
+          {t("settings.description")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
+          <CardTitle>{t("settings.profileInformation")}</CardTitle>
           <CardDescription>
-            Set your company details and preferred currency
+            {t("settings.profileDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -137,13 +158,30 @@ export default function Settings() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("settings.name")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t("settings.namePlaceholder")}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="companyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company Name</FormLabel>
+                    <FormLabel>{t("settings.companyName")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your company name"
+                        placeholder={t("settings.companyNamePlaceholder")}
                         {...field}
                       />
                     </FormControl>
@@ -157,10 +195,10 @@ export default function Settings() {
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address</FormLabel>
+                    <FormLabel>{t("settings.address")}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter your address"
+                        placeholder={t("settings.addressPlaceholder")}
                         {...field}
                       />
                     </FormControl>
@@ -174,10 +212,10 @@ export default function Settings() {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <FormLabel>{t("settings.phone")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your phone number"
+                        placeholder={t("settings.phonePlaceholder")}
                         {...field}
                       />
                     </FormControl>
@@ -191,10 +229,10 @@ export default function Settings() {
                 name="taxOfficeId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tax Registration Number</FormLabel>
+                    <FormLabel>{t("settings.taxRegistrationNumber")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your tax registration number"
+                        placeholder={t("settings.taxRegistrationNumberPlaceholder")}
                         {...field}
                       />
                     </FormControl>
@@ -208,11 +246,11 @@ export default function Settings() {
                 name="preferredCurrency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preferred Currency</FormLabel>
+                    <FormLabel>{t("settings.preferredCurrency")}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a currency" />
+                          <SelectValue placeholder={t("settings.selectCurrency")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -228,9 +266,14 @@ export default function Settings() {
                 )}
               />
 
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
+              <div className="flex gap-4">
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? t("common.loading") : t("common.save")}
+                </Button>
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  {t("common.cancel")}
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>
@@ -238,4 +281,3 @@ export default function Settings() {
     </div>
   );
 }
-

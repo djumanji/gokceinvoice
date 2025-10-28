@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Save, X } from "lucide-react";
+import { CalendarIcon, Save, X, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Expense } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export const EXPENSE_CATEGORIES = [
   { value: "travel", label: "Travel", icon: "✈️" },
@@ -42,7 +43,10 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ expense, onSubmit, onCancel, isLoading = false }: ExpenseFormProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [date, setDate] = useState<Date>(expense ? new Date(expense.date) : new Date());
+  const [uploading, setUploading] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(expense?.receipt || null);
   const [formData, setFormData] = useState({
     description: expense?.description || "",
     category: expense?.category || "other",
@@ -53,6 +57,46 @@ export function ExpenseForm({ expense, onSubmit, onCancel, isLoading = false }: 
     receipt: expense?.receipt || "",
     tags: expense?.tags || "",
   });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await apiRequest('POST', '/api/upload', formData);
+      setUploadedImageUrl(response.url);
+      setFormData(prev => ({ ...prev, receipt: response.url }));
+    } catch (error) {
+      console.error('Failed to upload file:', error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setUploadedImageUrl(null);
+    setFormData(prev => ({ ...prev, receipt: '' }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,6 +236,56 @@ export function ExpenseForm({ expense, onSubmit, onCancel, isLoading = false }: 
                 onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                 placeholder="e.g., client meeting, deductible"
               />
+            </div>
+
+            {/* Receipt Upload */}
+            <div className="md:col-span-2">
+              <Label htmlFor="receipt">Receipt/Invoice Image</Label>
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  id="receipt"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                {uploadedImageUrl ? (
+                  <div className="relative border rounded-lg p-4 bg-muted/50">
+                    <img
+                      src={uploadedImageUrl}
+                      alt="Receipt preview"
+                      className="max-h-48 w-full object-contain rounded"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={handleRemoveImage}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <>Uploading...</>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Receipt
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Tax Deductible */}

@@ -8,6 +8,8 @@ A modern, secure invoice management system built with React, Express, PostgreSQL
 - 📊 Invoice creation and management
 - 👥 Client management
 - 🛠️ Service catalog
+- 💰 Expense tracking
+- 📎 Receipt/invoice image uploads (S3)
 - 📈 Dashboard with analytics
 - 🌙 Dark mode support
 - 🔒 Multi-tenant data isolation
@@ -78,6 +80,10 @@ gokceinvoice/
 └── README.md              # This file
 ```
 
+## Documentation
+
+For a complete, organized documentation hub, see `docs/README.md`.
+
 ## Getting Started
 
 ### Prerequisites
@@ -112,20 +118,35 @@ gokceinvoice/
    - `SESSION_SECRET` - Generate with: `openssl rand -base64 32`
    - `DATABASE_URL` - PostgreSQL connection string
    - OAuth credentials (optional)
+   - AWS S3 credentials (for receipt uploads - see S3_SETUP_GUIDE.md)
 
-5. **Run database migrations**
+5. **Set up AWS S3 (for receipt uploads - optional but recommended)**
+   ```bash
+   # Option 1: Use the setup script
+   npm run tsx scripts/setup-s3.ts
+   
+   # Option 2: Manually add to .env (see S3_SETUP_GUIDE.md)
+   ```
+   
+   Required AWS S3 credentials:
+   - `AWS_REGION`
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_S3_BUCKET_NAME`
+
+6. **Run database migrations**
    ```bash
    psql $DATABASE_URL -f migrations/001_critical_indexes.sql
    psql $DATABASE_URL -f migrations/004_invoice_number_fix.sql
    ```
 
-6. **Start the development server**
+7. **Start the development server**
    ```bash
    npm run dev
    ```
 
-7. **Open the application**
-
+8. **Open the application**
+   
    Navigate to http://localhost:5000
 
 ### Demo Account

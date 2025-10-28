@@ -59,6 +59,15 @@ else
 fi
 echo ""
 
+# Add user profile fields
+echo "📊 Adding user profile fields..."
+if psql "$DATABASE_URL" -f migrations/005_add_user_profile_fields.sql > /dev/null 2>&1; then
+    echo "✅ User profile fields added"
+else
+    echo "⚠️  Profile fields may already exist - continuing..."
+fi
+echo ""
+
 # Verify setup
 echo "✔️  Verifying database setup..."
 

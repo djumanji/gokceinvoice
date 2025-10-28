@@ -1,17 +1,73 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { requireAuth } from "./middleware";
-import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertServiceSchema, insertExpenseSchema } from "@shared/schema";
+import { validateCsrf } from "./index";
+import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertServiceSchema, insertExpenseSchema, updateUserProfileSchema } from "@shared/schema";
 import { z } from "zod";
 import { sanitizeObject } from "./sanitize";
+import multer from "multer";
+import { uploadToS3, deleteFromS3, extractS3KeyFromUrl } from "./services/s3-service";
+
+// Configure multer for in-memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+});
+
+// Rate limiter for file uploads
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 uploads per 15 minutes
+  message: 'Too many upload attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Apply auth middleware to all API routes
-  app.use("/api/clients", requireAuth);
-  app.use("/api/invoices", requireAuth);
-  app.use("/api/services", requireAuth);
-  app.use("/api/expenses", requireAuth);
+  // Apply auth and CSRF middleware to all API routes
+  app.use("/api/clients", requireAuth, validateCsrf);
+  app.use("/api/invoices", requireAuth, validateCsrf);
+  app.use("/api/services", requireAuth, validateCsrf);
+  app.use("/api/expenses", requireAuth, validateCsrf);
+  app.use("/api/users", requireAuth, validateCsrf);
+
+  // User profile routes
+  app.patch("/api/users/profile", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Sanitize text inputs to prevent XSS
+      const sanitized = sanitizeObject(req.body, ['name', 'companyName', 'address', 'phone', 'taxOfficeId']);
+
+      const data = updateUserProfileSchema.parse(sanitized);
+      const user = await storage.updateUser(userId, data);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Failed to update user profile:", error);
+      res.status(500).json({ error: "Failed to update user profile" });
+    }
+  });
   
   // Client routes
   app.get("/api/clients", async (req, res) => {
@@ -353,11 +409,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Line item routes
-  app.get("/api/invoices/:invoiceId/line-items", async (req, res) => {
+  app.get("/api/invoices/:invoiceId/line-items", requireAuth, async (req, res) => {
     try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Verify invoice belongs to user
+      const invoice = await storage.getInvoice(req.params.invoiceId, userId);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
       const lineItems = await storage.getLineItemsByInvoice(req.params.invoiceId);
       res.json(lineItems);
     } catch (error) {
+      console.error("Failed to fetch line items:", error);
       res.status(500).json({ error: "Failed to fetch line items" });
     }
   });
@@ -458,6 +526,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // File upload route
+  app.post("/api/upload", requireAuth, uploadLimiter, upload.single('file'), async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const { url, key } = await uploadToS3(
+        req.file.buffer,
+        req.file.originalname,
+        userId,
+        req.file.mimetype
+      );
+
+      res.json({ url, key });
+    } catch (error) {
+      console.error("Failed to upload file:", error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
   // Expense routes
   app.get("/api/expenses", async (req, res) => {
     try {
@@ -543,10 +637,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
+      
+      // Get the expense first to check if it has a receipt
+      const expense = await storage.getExpense(req.params.id, userId);
+      
       const deleted = await storage.deleteExpense(req.params.id, userId);
       if (!deleted) {
         return res.status(404).json({ error: "Expense not found" });
       }
+
+      // Clean up the S3 file if it exists
+      if (expense?.receipt) {
+        try {
+          const key = extractS3KeyFromUrl(expense.receipt);
+          if (key) {
+            await deleteFromS3(key);
+          }
+        } catch (error) {
+          console.error("Failed to delete S3 file:", error);
+          // Don't fail the expense deletion if S3 cleanup fails
+        }
+      }
+
       res.status(204).send();
     } catch (error) {
       console.error("Failed to delete expense:", error);

@@ -12,8 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EXPENSE_CATEGORIES } from "@/components/ExpenseForm";
 import type { Expense } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 export default function Expenses() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
@@ -89,12 +91,12 @@ export default function Expenses() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Expenses</h1>
-          <p className="text-muted-foreground">Track and manage your business expenses</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("expense.expenses")}</h1>
+          <p className="text-muted-foreground">{t("expense.trackExpenses")}</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Add Expense
+          {t("expense.addExpense")}
         </Button>
       </div>
 

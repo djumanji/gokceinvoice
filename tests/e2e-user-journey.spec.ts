@@ -24,9 +24,30 @@ test.describe('End-to-End User Journey', () => {
       await page.waitForURL(/.*onboarding/, { timeout: 5000 });
     });
 
-    // Step 3: Complete onboarding
+    // Step 3: Complete onboarding - first step should be profile setup
     await test.step('Complete onboarding flow', async () => {
-      await expect(page.locator('text=/onboarding/i, text=/Setup/i')).toBeVisible();
+      await expect(page.locator('text=Welcome to InvoiceHub!')).toBeVisible();
+      await expect(page.locator('text=Set your profile')).toBeVisible();
+      
+      // Navigate to profile setup
+      await page.locator('text=Set your profile').click();
+      await page.waitForLoadState('networkidle');
+      
+      // Should be on settings page
+      await expect(page.locator('text=Settings')).toBeVisible();
+      
+      // Fill in profile information
+      await page.locator('input[placeholder="Enter your company name"]').fill('Test Company E2E');
+      await page.locator('textarea[placeholder="Enter your address"]').fill('123 Test Street');
+      await page.locator('input[placeholder="Enter your phone number"]').fill('555-0000');
+      
+      // Save profile
+      await page.locator('button:has-text("Save Changes")').click();
+      await page.waitForTimeout(2000);
+      
+      // Go back to onboarding
+      await page.goto('http://localhost:3000/onboarding');
+      await page.waitForLoadState('networkidle');
     });
 
     // Step 4: Test navigation

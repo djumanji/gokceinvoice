@@ -62,6 +62,36 @@ export class PgStorage {
     return result[0];
   }
   
+  async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
+    const result = await this.db.update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async getUserByVerificationToken(token: string): Promise<User | undefined> {
+    const result = await this.db.select().from(users)
+      .where(eq(users.emailVerificationToken, token));
+    return result[0];
+  }
+
+  async verifyUserEmail(userId: string): Promise<void> {
+    await this.db.update(users)
+      .set({
+        isEmailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserByPasswordResetToken(token: string): Promise<User | undefined> {
+    const result = await this.db.select().from(users)
+      .where(eq(users.passwordResetToken, token));
+    return result[0];
+  }
+  
   // Clients
   async getClients(userId: string): Promise<Client[]> {
     return await this.db.select().from(clients).where(eq(clients.userId, userId));

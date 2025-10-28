@@ -190,6 +190,25 @@
     "allInvoices": "All Invoices",
     "deleteConfirmation": "Are you sure you want to delete this invoice?"
   },
+  "settings": {
+    "description": "Manage your profile information and preferences",
+    "profileInformation": "Profile Information",
+    "profileDescription": "Set your company details and preferred currency",
+    "name": "Name",
+    "namePlaceholder": "Enter your full name",
+    "companyName": "Company Name",
+    "companyNamePlaceholder": "Enter your company name",
+    "address": "Address",
+    "addressPlaceholder": "Enter your address",
+    "phone": "Phone",
+    "phonePlaceholder": "Enter your phone number",
+    "taxRegistrationNumber": "Tax Registration Number",
+    "taxRegistrationNumberPlaceholder": "Enter your tax registration number",
+    "preferredCurrency": "Preferred Currency",
+    "selectCurrency": "Select a currency",
+    "profileUpdated": "Your profile has been saved successfully.",
+    "profileUpdateFailed": "Failed to update profile. Please try again."
+  },
   "errors": {
     "passwordMismatch": "Passwords do not match",
     "genericError": "An error occurred",

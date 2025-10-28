@@ -25,7 +25,8 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async ({ email: loginEmail, password: loginPassword }: { email: string; password: string }) => {
-      return await apiRequest("POST", "/api/auth/login", { email: loginEmail, password: loginPassword });
+      const response = await apiRequest("POST", "/api/auth/login", { email: loginEmail, password: loginPassword });
+      return response;
     },
     onSuccess: (data) => {
       console.log('[Login] Login successful, data:', data);
@@ -52,23 +53,30 @@ export default function Login() {
     },
     onError: (error: any) => {
       console.error("Login failed:", error);
-      
+
       let errorMessage = "Login failed. Please check your credentials.";
-      
+
       try {
-        const errorMatch = error.message?.match(/\{[^}]+\}/);
-        if (errorMatch) {
-          const errorData = JSON.parse(errorMatch[0]);
-          errorMessage = errorData.error || errorMessage;
+        // Parse error message format: "401: {\"error\":\"message\"}"
+        const match = error.message?.match(/\d+:\s*(.+)/);
+        if (match) {
+          const errorBody = match[1];
+          try {
+            const errorData = JSON.parse(errorBody);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            errorMessage = errorBody;
+          }
         }
-        
+
+        // Handle rate limiting
         if (error.message?.includes('429') || error.message?.includes('Too many')) {
           errorMessage = "Too many login attempts. Please wait a few minutes and try again.";
         }
       } catch (e) {
-        // If parsing fails, use default message
+        console.error("Error parsing error message:", e);
       }
-      
+
       toast({
         title: t("auth.loginFailed"),
         description: errorMessage,

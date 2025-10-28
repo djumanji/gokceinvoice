@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { useOnboardingGuard } from "@/hooks/use-onboarding";
 import { useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 import type { Invoice, Client } from "@shared/schema";
 
 interface InvoiceWithClient extends Invoice {
@@ -16,6 +17,7 @@ interface InvoiceWithClient extends Invoice {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { isOnboardingComplete } = useOnboardingGuard();
 
@@ -30,7 +32,7 @@ export default function Dashboard() {
   if (!isOnboardingComplete) {
     return (
       <div className="p-6">
-        <div className="text-center py-12 text-muted-foreground">Loading...</div>
+        <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>
       </div>
     );
   }
@@ -47,7 +49,7 @@ export default function Dashboard() {
     const client = clients.find(c => c.id === invoice.clientId);
     return {
       ...invoice,
-      clientName: client?.name || "Unknown Client",
+      clientName: client?.name || t("invoice.unknownClient"),
     };
   });
 
@@ -70,7 +72,7 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this invoice?")) {
+    if (confirm(t("dashboard.deleteConfirmation"))) {
       try {
         await apiRequest("DELETE", `/api/invoices/${id}`);
         queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
@@ -84,35 +86,35 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your invoices and payments</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
+          <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
         </div>
         <Button onClick={() => setLocation("/invoices/new")} data-testid="button-create-invoice">
           <Plus className="w-4 h-4" />
-          Create Invoice
+          {t("dashboard.createInvoice")}
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Invoices"
+          title={t("dashboard.totalInvoices")}
           value={stats.total}
           icon={FileText}
         />
         <StatCard
-          title="Paid"
+          title={t("dashboard.paid")}
           value={`€${stats.paidAmount.toFixed(2)}`}
           icon={CheckCircle2}
           color="success"
         />
         <StatCard
-          title="Pending"
+          title={t("dashboard.pending")}
           value={`€${stats.pending.toFixed(2)}`}
           icon={Clock}
           color="warning"
         />
         <StatCard
-          title="Overdue"
+          title={t("dashboard.overdue")}
           value={`€${stats.overdue.toFixed(2)}`}
           icon={DollarSign}
           color="danger"
@@ -121,17 +123,17 @@ export default function Dashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Invoices</CardTitle>
+          <CardTitle>{t("dashboard.recentInvoices")}</CardTitle>
         </CardHeader>
         <CardContent>
           {invoicesLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground">{t("common.loading")}</div>
           ) : recentInvoices.length === 0 ? (
             <EmptyState
               icon={FileText}
-              title="No invoices yet"
-              description="Get started by creating your first invoice."
-              actionLabel="Create Invoice"
+              title={t("dashboard.noInvoicesYet")}
+              description={t("dashboard.noInvoicesDesc")}
+              actionLabel={t("dashboard.createInvoice")}
               onAction={() => setLocation("/invoices/new")}
             />
           ) : (

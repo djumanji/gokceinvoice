@@ -71,6 +71,14 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 005_add_user_profile_fields.sql"
+if psql "$DATABASE_URL" -f migrations/005_add_user_profile_fields.sql; then
+    echo "✅ User profile fields added"
+else
+    echo "⚠️  Profile fields may already exist - continuing..."
+fi
+echo ""
+
 # Verify tables exist
 echo "🔍 Verifying tables..."
 TABLE_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" 2>/dev/null || echo "0")
