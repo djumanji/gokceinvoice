@@ -200,6 +200,25 @@
     "allInvoices": "Tüm Faturalar",
     "deleteConfirmation": "Bu faturayı silmek istediğinizden emin misiniz?"
   },
+  "settings": {
+    "description": "Profil bilgilerinizi ve tercihlerinizi yönetin",
+    "profileInformation": "Profil Bilgileri",
+    "profileDescription": "Şirket detaylarınızı ve tercih ettiğiniz para birimini ayarlayın",
+    "name": "İsim",
+    "namePlaceholder": "Adınızı girin",
+    "companyName": "Şirket Adı",
+    "companyNamePlaceholder": "Şirket adınızı girin",
+    "address": "Adres",
+    "addressPlaceholder": "Adresinizi girin",
+    "phone": "Telefon",
+    "phonePlaceholder": "Telefon numaranızı girin",
+    "taxRegistrationNumber": "Vergi Sicil Numarası",
+    "taxRegistrationNumberPlaceholder": "Vergi sicil numaranızı girin",
+    "preferredCurrency": "Tercih Edilen Para Birimi",
+    "selectCurrency": "Para birimi seçin",
+    "profileUpdated": "Profiliniz başarıyla kaydedildi.",
+    "profileUpdateFailed": "Profil güncellenemedi. Lütfen tekrar deneyin."
+  },
   "errors": {
     "passwordMismatch": "Şifreler eşleşmiyor",
     "genericError": "Bir hata oluştu",
