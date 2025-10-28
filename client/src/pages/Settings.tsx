@@ -91,10 +91,10 @@ export default function Settings() {
     mutationFn: async (data: ProfileFormData) => {
       return apiRequest("PATCH", "/api/users/profile", data);
     },
-    onSuccess: async (response) => {
-      // Update the cache directly with the response data to avoid refetch
-      const updatedUser = await response.json();
-      queryClient.setQueryData(["/api/auth/me"], updatedUser);
+    onSuccess: async (data) => {
+      // The mutation already returns parsed JSON data
+      // Update the cache directly with the data to avoid refetch
+      queryClient.setQueryData(["/api/auth/me"], data);
       
       toast({
         title: t("common.success"),
@@ -118,19 +118,6 @@ export default function Settings() {
     updateProfileMutation.mutate(data);
   };
 
-  const handleCancel = () => {
-    // Reset form to original values
-    if (user) {
-      form.reset({
-        name: user.name || "",
-        companyName: user.companyName || "",
-        address: user.address || "",
-        phone: user.phone || "",
-        taxOfficeId: user.taxOfficeId || "",
-        preferredCurrency: user.preferredCurrency || "USD",
-      });
-    }
-  };
 
   if (isLoading) {
     return (
