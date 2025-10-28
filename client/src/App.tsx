@@ -87,7 +87,7 @@ function Router() {
 
 function AuthLayout({ children, style }: { children: React.ReactNode; style: React.CSSProperties }) {
   const [location] = useLocation();
-  const isAuthPage = location === '/login' || location === '/register' || location.startsWith('/verify-email') || location.startsWith('/reset-password');
+  const isAuthPage = location === '/login' || location === '/register' || location.startsWith('/verify-email') || location.startsWith('/reset-password') || location === '/forgot-password';
 
   if (isAuthPage) {
     return (
