@@ -252,5 +252,117 @@
     "alreadyHaveAccount": "Zaten hesabınız var mı?",
     "userAlreadyExists": "Kullanıcı zaten var",
     "registrationFailed": "Kayıt Başarısız"
+  },
+  "marketing": {
+    "nav": {
+      "aboutUs": "Hakkımızda",
+      "pricing": "Fiyatlandırma",
+      "testimonials": "Referanslar",
+      "contactUs": "İletişim",
+      "login": "Giriş Yap",
+      "signup": "Kayıt Ol"
+    },
+    "hero": {
+      "title": "Faturalama işlemlerinizi",
+      "titleLine2": "profesyonel,",
+      "titleLine3": "bulut tabanlı kontrol ile kolaylaştırın.",
+      "description": "Hallederik, faturalama sürecinizi kolaylaştırmak için tasarlanmış kapsamlı bir fatura yönetim platformudur. Sezgisel arayüzümüzle faturaları verimli bir şekilde oluşturun, takip edin ve yönetin.",
+      "getStarted": "Başlayın",
+      "emailPlaceholder": "ornek@email.com"
+    },
+    "trustedBy": {
+      "title": "Dünya çapında işletmeler tarafından güveniliyor",
+      "smallBusinesses": "Küçük İşletmeler",
+      "freelancers": "Serbest Çalışanlar",
+      "agencies": "Ajanslar"
+    },
+    "about": {
+      "title": "Fatura ihtiyaçlarınız için benzersiz bir platform",
+      "description": "Hallederik, güçlü özellikleri sezgisel bir arayüzle birleştirir. İlk faturanızı gönderen bir serbest çalışan veya yüzlerce müşteriyi yöneten bir işletme olun, platformumuz ihtiyaçlarınıza göre ölçeklenir."
+    },
+    "pricing": {
+      "title": "Basit, şeffaf fiyatlandırma",
+      "subtitle": "Ücretsiz başlayın ve büyüdükçe ölçeklendirin. Gizli ücret yok, sürpriz yok.",
+      "freePlan": {
+        "title": "Ücretsiz Plan",
+        "price": "$0",
+        "period": "/ay",
+        "features": {
+          "invoices": "Ayda 10 faturala kadar",
+          "templates": "Temel fatura şablonları",
+          "clients": "Müşteri yönetimi",
+          "support": "E-posta desteği"
+        },
+        "button": "Ücretsiz Başla"
+      },
+      "proPlan": {
+        "title": "Pro Plan",
+        "price": "$29",
+        "period": "/ay",
+        "comingSoon": "Yakında",
+        "features": {
+          "invoices": "Sınırsız fatura",
+          "templates": "Gelişmiş şablonlar ve özelleştirme",
+          "reminders": "Otomatik hatırlatmalar",
+          "support": "Öncelikli destek",
+          "reporting": "Gelişmiş raporlama"
+        },
+        "button": "Şimdi Kayıt Ol",
+        "subtext": "Ücretsiz başlayın ve erken adaptör olun"
+      }
+    },
+    "features": {
+      "title": "Hat içermez fatura oluşturma özellikleri",
+      "fastCreation": {
+        "title": "Hızlı Oluşturma",
+        "description": "Profesyonel faturaları dakikalar içinde oluşturun. Sezgisel arayüzümüz size her adımda rehberlik eder."
+      },
+      "trackManage": {
+        "title": "Takip Et ve Yönet",
+        "description": "Tüm faturalarınızı tek bir yerde takip edin. Ödeme durumunu izleyin, hatırlatmalar gönderin ve raporlar oluşturun."
+      },
+      "secure": {
+        "title": "Güvenli ve Güvenilir",
+        "description": "Verileriniz bizimle güvende. Bilgilerinizi korumak için endüstri standardı şifreleme ve düzenli yedeklemeler kullanıyoruz."
+      }
+    },
+    "cta": {
+      "title": "Daha fazla bilgi almak ister misiniz?",
+      "button": "Bir görüşme planlayın"
+    },
+    "testimonials": {
+      "title": "Müşterilerimizden bazıları ne diyor",
+      "reviews": {
+        "sarah": {
+          "name": "Sarah Johnson",
+          "text": "Hallederik, faturalama yönetimimizi tamamen dönüştürdü. Sezgisel, hızlı ve her hafta saatler kazandırıyor."
+        },
+        "michael": {
+          "name": "Michael Chen",
+          "text": "Serbest çalışan olarak, basit ama güçlü bir şeye ihtiyacım vardı. Hallederik tam olarak bunu sunuyor - sıfır zahmetle profesyonel faturalar."
+        },
+        "emma": {
+          "name": "Emma Williams",
+          "text": "Kullandığımız en iyi fatura yönetim sistemi. Otomatik özellikler ve temiz arayüz fatura işlemini çocuk oyuncağı haline getiriyor."
+        }
+      }
+    },
+    "newsletter": {
+      "title": "İletişimde kalın",
+      "subtitle": "Kendinizi güncel tutun",
+      "emailPlaceholder": "email@ornek.com",
+      "button": "Kayıt Ol",
+      "contactText": "Veya doğrudan bizimle iletişime geçin:",
+      "contactEmail": "support@hallederik.com"
+    },
+    "footer": {
+      "tagline": "Profesyonel Fatura Yönetimi",
+      "taglineLine2": "Basitçe Yapıldı",
+      "followUs": "Bizi takip edin",
+      "resources": "Kaynaklar",
+      "aboutUs": "Hakkımızda",
+      "contactUs": "İletişim",
+      "signUp": "Kayıt ol"
+    }
   }
 }

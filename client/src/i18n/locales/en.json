@@ -264,6 +264,118 @@
     "alreadyHaveAccount": "Already have an account?",
     "userAlreadyExists": "User already exists",
     "registrationFailed": "Registration Failed"
+  },
+  "marketing": {
+    "nav": {
+      "aboutUs": "About us",
+      "pricing": "Pricing",
+      "testimonials": "Testimonials",
+      "contactUs": "Contact us",
+      "login": "Login",
+      "signup": "Signup"
+    },
+    "hero": {
+      "title": "Streamline your invoicing",
+      "titleLine2": "with professional,",
+      "titleLine3": "cloud-based control.",
+      "description": "Hallederik is a comprehensive invoice management platform designed to streamline your billing process. Create, track, and manage invoices efficiently with our intuitive interface.",
+      "getStarted": "Get started",
+      "emailPlaceholder": "joe@example.com"
+    },
+    "trustedBy": {
+      "title": "Trusted by businesses worldwide",
+      "smallBusinesses": "Small Businesses",
+      "freelancers": "Freelancers",
+      "agencies": "Agencies"
+    },
+    "about": {
+      "title": "A unique platform for your invoice needs",
+      "description": "Hallederik combines powerful features with an intuitive interface. Whether you're a freelancer sending your first invoice or a business managing hundreds of clients, our platform scales with your needs."
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "Start free and scale as you grow. No hidden fees, no surprises.",
+      "freePlan": {
+        "title": "Free Plan",
+        "price": "$0",
+        "period": "/month",
+        "features": {
+          "invoices": "Up to 10 invoices/month",
+          "templates": "Basic invoice templates",
+          "clients": "Client management",
+          "support": "Email support"
+        },
+        "button": "Get Started Free"
+      },
+      "proPlan": {
+        "title": "Pro Plan",
+        "price": "$29",
+        "period": "/month",
+        "comingSoon": "Coming Soon",
+        "features": {
+          "invoices": "Unlimited invoices",
+          "templates": "Advanced templates & customization",
+          "reminders": "Automated reminders",
+          "support": "Priority support",
+          "reporting": "Advanced reporting"
+        },
+        "button": "Register Now",
+        "subtext": "Get started for free and be an early adopter"
+      }
+    },
+    "features": {
+      "title": "Features for error-free invoicing",
+      "fastCreation": {
+        "title": "Fast Creation",
+        "description": "Create professional invoices in minutes. Our intuitive interface guides you through every step."
+      },
+      "trackManage": {
+        "title": "Track & Manage",
+        "description": "Keep track of all your invoices in one place. Monitor payment status, send reminders, and generate reports."
+      },
+      "secure": {
+        "title": "Secure & Reliable",
+        "description": "Your data is safe with us. We use industry-standard encryption and regular backups to protect your information."
+      }
+    },
+    "cta": {
+      "title": "Want to learn more?",
+      "button": "Schedule a call"
+    },
+    "testimonials": {
+      "title": "What some of our clients say",
+      "reviews": {
+        "sarah": {
+          "name": "Sarah Johnson",
+          "text": "Hallederik has completely transformed how we manage our invoicing. It's intuitive, fast, and saves us hours every week."
+        },
+        "michael": {
+          "name": "Michael Chen",
+          "text": "As a freelancer, I needed something simple yet powerful. Hallederik delivers exactly that - professional invoices with zero hassle."
+        },
+        "emma": {
+          "name": "Emma Williams",
+          "text": "The best invoice management system we've used. The automated features and clean interface make billing a breeze."
+        }
+      }
+    },
+    "newsletter": {
+      "title": "Stay in touch",
+      "subtitle": "Keep yourself updated",
+      "emailPlaceholder": "your@email.com",
+      "button": "Signup",
+      "contactText": "Or contact us directly:",
+      "contactEmail": "support@hallederik.com"
+    },
+    "footer": {
+      "tagline": "Professional Invoice Management",
+      "taglineLine2": "Made Simple",
+      "followUs": "Follow us",
+      "resources": "Resources",
+      "aboutUs": "About us",
+      "contactUs": "Contact Us",
+      "signUp": "Sign up"
+    }
   }
 }
 

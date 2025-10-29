@@ -4,12 +4,51 @@ import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Menu, X } from "lucide-react";
 import { BiLogoLinkedin, BiLogoTwitter, BiLogoInstagram, BiLogoFacebook } from "react-icons/bi";
+import { useTranslation } from "react-i18next";
 
 const RESPONSIVE_WIDTH = 1024;
 
 export default function Marketing() {
+  const { t } = useTranslation();
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
+
+  // Handle smooth scrolling to anchor links
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    
+    // Close mobile menu if open
+    if (window.innerWidth < RESPONSIVE_WIDTH && !isHeaderCollapsed && headerRef.current) {
+      setIsHeaderCollapsed(true);
+      headerRef.current.style.width = "0vw";
+      headerRef.current.classList.remove("opacity-100");
+    }
+    
+    // Scroll to element
+    if (href.startsWith("#")) {
+      const id = href.slice(1);
+      const element = document.getElementById(id);
+      if (element) {
+        const headerOffset = 80; // Account for fixed header
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+      }
+    }
+  };
+
+  // Handle logo click - scroll to top
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  };
 
   useEffect(() => {
     // Initialize header state based on screen size
@@ -81,18 +120,18 @@ export default function Marketing() {
 
   const reviews = [
     {
-      name: "Sarah Johnson",
-      text: "Hallederik has completely transformed how we manage our invoicing. It's intuitive, fast, and saves us hours every week.",
+      name: t("marketing.testimonials.reviews.sarah.name"),
+      text: t("marketing.testimonials.reviews.sarah.text"),
       avatar: "👩"
     },
     {
-      name: "Michael Chen",
-      text: "As a freelancer, I needed something simple yet powerful. Hallederik delivers exactly that - professional invoices with zero hassle.",
+      name: t("marketing.testimonials.reviews.michael.name"),
+      text: t("marketing.testimonials.reviews.michael.text"),
       avatar: "👨"
     },
     {
-      name: "Emma Williams",
-      text: "The best invoice management system we've used. The automated features and clean interface make billing a breeze.",
+      name: t("marketing.testimonials.reviews.emma.name"),
+      text: t("marketing.testimonials.reviews.emma.text"),
       avatar: "👩"
     },
   ];
@@ -101,11 +140,11 @@ export default function Marketing() {
     <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
       <header className="absolute top-0 z-20 flex h-[60px] w-full bg-white px-[10%] text-black lg:justify-around max-lg:px-4 max-lg:mr-auto">
-        <Link href="/" className="h-[50px] w-[50px] p-1">
+        <a href="/" onClick={handleLogoClick} className="h-[50px] w-[50px] p-1">
           <div className="h-full w-full flex items-center justify-center bg-indigo-600 rounded-lg">
               <span className="text-white font-bold text-lg">H</span>
             </div>
-        </Link>
+        </a>
         
         <div
           ref={headerRef}
@@ -115,27 +154,43 @@ export default function Marketing() {
           id="collapsed-header-items"
         >
           <div className="flex h-full w-max gap-5 text-base text-black max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
-            <a href="#features" className="header-link hover:text-[#1e85ec] transition-colors duration-500 rounded-lg px-2.5 py-1.25 min-w-fit">
-              About us
+            <a 
+              href="#features" 
+              onClick={(e) => handleAnchorClick(e, "#features")}
+              className="header-link hover:text-[#1e85ec] transition-colors duration-500 rounded-lg px-2.5 py-1.25 min-w-fit cursor-pointer"
+            >
+              {t("marketing.nav.aboutUs")}
             </a>
-            <a href="#pricing" className="header-link hover:text-[#1e85ec] transition-colors duration-500 rounded-lg px-2.5 py-1.25 min-w-fit">
-              Pricing
+            <a 
+              href="#pricing" 
+              onClick={(e) => handleAnchorClick(e, "#pricing")}
+              className="header-link hover:text-[#1e85ec] transition-colors duration-500 rounded-lg px-2.5 py-1.25 min-w-fit cursor-pointer"
+            >
+              {t("marketing.nav.pricing")}
             </a>
-            <a href="#testimonials" className="header-link hover:text-[#1e85ec] transition-colors duration-500 rounded-lg px-2.5 py-1.25 min-w-fit">
-              Testimonials
+            <a 
+              href="#testimonials" 
+              onClick={(e) => handleAnchorClick(e, "#testimonials")}
+              className="header-link hover:text-[#1e85ec] transition-colors duration-500 rounded-lg px-2.5 py-1.25 min-w-fit cursor-pointer"
+            >
+              {t("marketing.nav.testimonials")}
             </a>
-            <a href="#contact" className="header-link hover:text-[#1e85ec] transition-colors duration-500 rounded-lg px-2.5 py-1.25 min-w-fit" rel="noreferrer">
-              Contact us
+            <a 
+              href="#contact" 
+              onClick={(e) => handleAnchorClick(e, "#contact")}
+              className="header-link hover:text-[#1e85ec] transition-colors duration-500 rounded-lg px-2.5 py-1.25 min-w-fit cursor-pointer"
+            >
+              {t("marketing.nav.contactUs")}
             </a>
           </div>
           
           <div className="flex items-center gap-5 text-lg max-md:w-full max-md:flex-col max-md:justify-center max-md:content-center">
             <Link href="/login" className="transition-colors duration-300">
-              Login
+              {t("marketing.nav.login")}
             </Link>
             <Link href="/register">
               <Button variant="outline" className="rounded-sm border-2 border-[#1c1c1c] px-2 transition-colors duration-300 hover:bg-black hover:text-white">
-                Signup
+                {t("marketing.nav.signup")}
               </Button>
             </Link>
           </div>
@@ -155,40 +210,57 @@ export default function Marketing() {
         <div className="flex h-full min-h-screen w-full place-content-center gap-6 p-[5%] max-xl:flex-col max-xl:items-center">
           <div className="flex min-w-[450px] max-w-[800px] flex-col place-content-center max-xl:min-w-[250px]">
             <div className="flex flex-wrap text-6xl font-semibold uppercase leading-[80px] max-lg:text-4xl max-md:leading-snug">
-              Streamline your invoicing
+              {t("marketing.hero.title")}
               <br />
-              with professional,
+              {t("marketing.hero.titleLine2")}
               <br />
-              cloud-based control.
+              {t("marketing.hero.titleLine3")}
             </div>
             
             <div className="mt-10 p-2 text-justify text-lg text-gray-600 max-lg:max-w-full">
-              Hallederik is a comprehensive invoice management platform designed to streamline your billing process. 
-              Create, track, and manage invoices efficiently with our intuitive interface.
+              {t("marketing.hero.description")}
             </div>
 
-            <h2 className="mt-6 text-lg font-semibold">Get started</h2>
+            <h2 className="mt-6 text-lg font-semibold">{t("marketing.hero.getStarted")}</h2>
             <div className="mt-4 flex h-[50px] w-[350px] max-w-[350px] items-center gap-2 overflow-hidden">
               <input
                 type="email"
                 className="h-full w-full rounded-md border-2 border-solid border-[#bfbfbf] bg-transparent p-2 px-3 outline-none transition-colors duration-300 focus:border-[#0c0c0c]"
-                placeholder="joe@example.com"
+                placeholder={t("marketing.hero.emailPlaceholder")}
               />
             <Link href="/register">
                 <Button className="h-full rounded-md bg-[#101010] text-[#fdfdfd] px-4 transition-colors duration-300 hover:bg-[#1a1a1a]">
-                  Signup
+                  {t("marketing.nav.signup")}
               </Button>
             </Link>
           </div>
 
             <div className="mt-6 flex gap-4 text-2xl">
-              <a href="https://linkedin.com" aria-label="LinkedIn" className="text-gray-700 hover:text-indigo-600 transition-colors">
+              <a 
+                href="https://linkedin.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                aria-label="LinkedIn" 
+                className="text-gray-700 hover:text-indigo-600 transition-colors"
+              >
                 <BiLogoLinkedin />
               </a>
-              <a href="https://twitter.com" aria-label="Twitter" className="text-gray-700 hover:text-indigo-600 transition-colors">
+              <a 
+                href="https://twitter.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                aria-label="Twitter" 
+                className="text-gray-700 hover:text-indigo-600 transition-colors"
+              >
                 <BiLogoTwitter />
               </a>
-              <a href="https://instagram.com" className="h-10 w-10 text-gray-700 hover:text-indigo-600 transition-colors" aria-label="Instagram">
+              <a 
+                href="https://instagram.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="h-10 w-10 text-gray-700 hover:text-indigo-600 transition-colors" 
+                aria-label="Instagram"
+              >
                 <BiLogoInstagram />
               </a>
             </div>
@@ -200,7 +272,7 @@ export default function Marketing() {
                 <div className="h-full w-full bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
                   <div className="text-center p-8">
                     <div className="text-6xl mb-4">📄</div>
-                    <div className="text-2xl font-semibold text-gray-800">Professional Invoice Management</div>
+                    <div className="text-2xl font-semibold text-gray-800">{t("marketing.footer.tagline")}</div>
                   </div>
                 </div>
               </div>
@@ -212,33 +284,77 @@ export default function Marketing() {
       {/* Trusted By Section */}
       <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6">
         <h2 className="text-3xl text-[#5d5d5d] max-lg:text-2xl">
-          Trusted by businesses worldwide
+          {t("marketing.trustedBy.title")}
         </h2>
         <div className="mt-8 flex w-full place-content-center gap-10 flex-wrap">
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">Small Businesses</div>
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">Freelancers</div>
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">Agencies</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">{t("marketing.trustedBy.smallBusinesses")}</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">{t("marketing.trustedBy.freelancers")}</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">{t("marketing.trustedBy.agencies")}</div>
         </div>
       </section>
 
-      {/* Technology Section */}
-      <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6" id="features">
+      {/* Technology/About Section */}
+      <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6 scroll-mt-20" id="features">
         <div className="flex max-w-[750px] flex-col gap-5 text-center">
           <h2 className="mt-5 text-4xl font-semibold max-lg:text-3xl">
-            A unique platform for your invoice needs
+            {t("marketing.about.title")}
           </h2>
           <div className="text-gray-700">
-            Hallederik combines powerful features with an intuitive interface. Whether you're a freelancer sending 
-            your first invoice or a business managing hundreds of clients, our platform scales with your needs.
+            {t("marketing.about.description")}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6 scroll-mt-20" id="pricing">
+        <div className="flex max-w-[750px] flex-col gap-5 text-center">
+          <h2 className="mt-5 text-4xl font-semibold max-lg:text-3xl">
+            {t("marketing.pricing.title")}
+          </h2>
+          <div className="text-gray-700 mb-8">
+            {t("marketing.pricing.subtitle")}
+          </div>
+          <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
+            <div className="w-full max-w-md p-6 border-2 border-gray-200 rounded-xl">
+              <h3 className="text-2xl font-semibold mb-2">{t("marketing.pricing.freePlan.title")}</h3>
+              <div className="text-4xl font-bold mb-4">{t("marketing.pricing.freePlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.freePlan.period")}</span></div>
+              <ul className="text-left space-y-2 mb-6 text-gray-600">
+                <li>✓ {t("marketing.pricing.freePlan.features.invoices")}</li>
+                <li>✓ {t("marketing.pricing.freePlan.features.templates")}</li>
+                <li>✓ {t("marketing.pricing.freePlan.features.clients")}</li>
+                <li>✓ {t("marketing.pricing.freePlan.features.support")}</li>
+              </ul>
+              <Link href="/register">
+                <Button className="w-full">{t("marketing.pricing.freePlan.button")}</Button>
+              </Link>
+            </div>
+            <div className="w-full max-w-md p-6 border-2 border-indigo-600 rounded-xl bg-indigo-50">
+              <div className="inline-block px-3 py-1 bg-indigo-600 text-white text-sm font-semibold rounded-full mb-3">
+                {t("marketing.pricing.proPlan.comingSoon")}
+              </div>
+              <h3 className="text-2xl font-semibold mb-2">{t("marketing.pricing.proPlan.title")}</h3>
+              <div className="text-4xl font-bold mb-4">{t("marketing.pricing.proPlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.proPlan.period")}</span></div>
+              <ul className="text-left space-y-2 mb-6 text-gray-600">
+                <li>✓ {t("marketing.pricing.proPlan.features.invoices")}</li>
+                <li>✓ {t("marketing.pricing.proPlan.features.templates")}</li>
+                <li>✓ {t("marketing.pricing.proPlan.features.reminders")}</li>
+                <li>✓ {t("marketing.pricing.proPlan.features.support")}</li>
+                <li>✓ {t("marketing.pricing.proPlan.features.reporting")}</li>
+              </ul>
+              <Link href="/register">
+                <Button className="w-full bg-indigo-600 hover:bg-indigo-700">{t("marketing.pricing.proPlan.button")}</Button>
+              </Link>
+              <p className="text-sm text-gray-500 text-center mt-2">{t("marketing.pricing.proPlan.subtext")}</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6">
+      <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6 scroll-mt-20">
         <div className="flex flex-col items-center gap-5">
           <h2 className="mt-5 text-4xl font-semibold">
-            Features for error-free invoicing
+            {t("marketing.features.title")}
           </h2>
 
           <div className="flex gap-6 max-lg:flex-col">
@@ -246,9 +362,9 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
                 <div className="text-6xl">⚡</div>
               </div>
-              <h3 className="text-2xl font-semibold">Fast Creation</h3>
+              <h3 className="text-2xl font-semibold">{t("marketing.features.fastCreation.title")}</h3>
               <div className="text-gray-600">
-                Create professional invoices in minutes. Our intuitive interface guides you through every step.
+                {t("marketing.features.fastCreation.description")}
               </div>
             </div>
             
@@ -256,9 +372,9 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
                 <div className="text-6xl">📊</div>
               </div>
-              <h3 className="text-2xl font-semibold">Track & Manage</h3>
+              <h3 className="text-2xl font-semibold">{t("marketing.features.trackManage.title")}</h3>
               <div className="text-gray-600">
-                Keep track of all your invoices in one place. Monitor payment status, send reminders, and generate reports.
+                {t("marketing.features.trackManage.description")}
               </div>
             </div>
             
@@ -266,9 +382,9 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                 <div className="text-6xl">🔒</div>
               </div>
-              <h3 className="text-2xl font-semibold">Secure & Reliable</h3>
+              <h3 className="text-2xl font-semibold">{t("marketing.features.secure.title")}</h3>
               <div className="text-gray-600">
-                Your data is safe with us. We use industry-standard encryption and regular backups to protect your information.
+                {t("marketing.features.secure.description")}
               </div>
             </div>
           </div>
@@ -277,18 +393,18 @@ export default function Marketing() {
 
       {/* CTA Section */}
       <section className="flex min-h-[30vh] w-full flex-col place-content-center items-center gap-[10%] overflow-hidden p-4 px-[10%] max-md:flex-col">
-        <h2 className="text-3xl max-md:text-2xl">Want to learn more?</h2>
+        <h2 className="text-3xl max-md:text-2xl">{t("marketing.cta.title")}</h2>
         <Link href="/register">
           <Button className="mt-[2%] duration-300 hover:scale-105 max-md:mt-8" size="lg">
-            Schedule a call
+            {t("marketing.cta.button")}
           </Button>
         </Link>
       </section>
 
       {/* Testimonials Section */}
-      <section className="mt-5 flex w-full flex-col items-center p-[2%]" id="testimonials">
+      <section className="mt-5 flex w-full flex-col items-center p-[2%] scroll-mt-20" id="testimonials">
         <h3 className="text-3xl font-medium text-[#1d1b1b] max-md:text-xl">
-          What some of our clients say
+          {t("marketing.testimonials.title")}
         </h3>
 
         <div className="mt-8 w-full max-w-[550px] p-6 max-lg:max-w-[300px]">
@@ -316,26 +432,35 @@ export default function Marketing() {
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="flex w-full flex-col place-content-center items-center gap-[10%] p-[5%] px-[10%]" id="contact">
+      {/* Newsletter/Contact Section */}
+      <section className="flex w-full flex-col place-content-center items-center gap-[10%] p-[5%] px-[10%] scroll-mt-20" id="contact">
         <div className="flex w-full flex-col place-content-center items-center gap-3">
           <h2 className="text-2xl text-[#1d1b1b] max-md:text-xl font-medium">
-            Special Newsletter signup
+            {t("marketing.newsletter.title")}
           </h2>
           <h2 className="text-xl max-md:text-lg">
-            Keep yourself updated
+            {t("marketing.newsletter.subtitle")}
           </h2>
 
-          <div className="flex h-[60px] items-center gap-2 overflow-hidden p-2">
+          <div className="flex h-[60px] items-center gap-2 overflow-hidden p-2 max-w-md w-full">
             <input
               type="email"
               className="h-full w-full rounded-md border-2 border-solid border-[#818080] bg-transparent p-2 outline-none transition-colors duration-300 focus:border-[#0c0c0c]"
-              placeholder="email"
+              placeholder={t("marketing.newsletter.emailPlaceholder")}
             />
-            <Button className="rounded-md bg-[#101010] text-[#fdfdfd] transition-colors duration-300 hover:bg-[#1a1a1a]">
-              Signup
-            </Button>
+            <Link href="/register">
+              <Button className="rounded-md bg-[#101010] text-[#fdfdfd] transition-colors duration-300 hover:bg-[#1a1a1a]">
+                {t("marketing.newsletter.button")}
+              </Button>
+            </Link>
           </div>
+
+          <div className="mt-6 text-center text-gray-600">
+            <p className="mb-2">{t("marketing.newsletter.contactText")}</p>
+            <a href={`mailto:${t("marketing.newsletter.contactEmail")}`} className="text-indigo-600 hover:underline">
+              {t("marketing.newsletter.contactEmail")}
+            </a>
+              </div>
         </div>
       </section>
 
@@ -346,38 +471,71 @@ export default function Marketing() {
             <span className="text-white font-bold text-2xl">H</span>
           </div>
           <div className="text-center text-gray-600">
-            Professional Invoice Management
+            {t("marketing.footer.tagline")}
             <br />
-            Made Simple
+            {t("marketing.footer.taglineLine2")}
           </div>
-          <div className="mt-3 text-lg font-semibold">Follow us</div>
+          <div className="mt-3 text-lg font-semibold">{t("marketing.footer.followUs")}</div>
           <div className="flex gap-4 text-2xl">
-            <a href="https://facebook.com" aria-label="Facebook" className="text-gray-700 hover:text-indigo-600 transition-colors">
+            <a 
+              href="https://facebook.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              aria-label="Facebook" 
+              className="text-gray-700 hover:text-indigo-600 transition-colors"
+            >
               <BiLogoFacebook />
             </a>
-            <a href="https://twitter.com" aria-label="Twitter" className="text-gray-700 hover:text-indigo-600 transition-colors">
+            <a 
+              href="https://twitter.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              aria-label="Twitter" 
+              className="text-gray-700 hover:text-indigo-600 transition-colors"
+            >
               <BiLogoTwitter />
             </a>
-            <a href="https://instagram.com" className="h-10 w-10 text-gray-700 hover:text-indigo-600 transition-colors" aria-label="Instagram">
+            <a 
+              href="https://instagram.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="h-10 w-10 text-gray-700 hover:text-indigo-600 transition-colors" 
+              aria-label="Instagram"
+            >
               <BiLogoInstagram />
             </a>
           </div>
         </div>
 
         <div className="flex h-full w-[250px] flex-col gap-4">
-          <h2 className="text-3xl max-md:text-xl">Resources</h2>
+          <h2 className="text-3xl max-md:text-xl">{t("marketing.footer.resources")}</h2>
           <div className="flex flex-col gap-3 max-md:text-sm">
-            <a href="#features" className="footer-link text-[#0d0d0d] transition-colors duration-300 hover:text-indigo-600">
-              About us
+            <a 
+              href="#features" 
+              onClick={(e) => handleAnchorClick(e, "#features")}
+              className="footer-link text-[#0d0d0d] transition-colors duration-300 hover:text-indigo-600 cursor-pointer"
+            >
+              {t("marketing.footer.aboutUs")}
             </a>
-            <a href="#contact" className="footer-link text-[#0d0d0d] transition-colors duration-300 hover:text-indigo-600">
-              Contact Us
+            <a 
+              href="#pricing" 
+              onClick={(e) => handleAnchorClick(e, "#pricing")}
+              className="footer-link text-[#0d0d0d] transition-colors duration-300 hover:text-indigo-600 cursor-pointer"
+            >
+              {t("marketing.nav.pricing")}
+            </a>
+            <a 
+              href="#contact" 
+              onClick={(e) => handleAnchorClick(e, "#contact")}
+              className="footer-link text-[#0d0d0d] transition-colors duration-300 hover:text-indigo-600 cursor-pointer"
+            >
+              {t("marketing.footer.contactUs")}
             </a>
             <Link href="/login" className="footer-link text-[#0d0d0d] transition-colors duration-300 hover:text-indigo-600">
-              Login
+              {t("marketing.nav.login")}
             </Link>
             <Link href="/register" className="footer-link text-[#0d0d0d] transition-colors duration-300 hover:text-indigo-600">
-              Sign up
+              {t("marketing.footer.signUp")}
             </Link>
           </div>
         </div>

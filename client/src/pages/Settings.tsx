@@ -32,6 +32,25 @@ const profileSchema = z.object({
   name: z.string().optional(),
   companyName: z.string().optional(),
   companySize: z.enum(["solo", "2-10", "11-50", "51-200", "201-500", "500+"]).optional(),
+  industry: z.enum([
+    "technology",
+    "consulting",
+    "marketing",
+    "design",
+    "finance",
+    "healthcare",
+    "education",
+    "legal",
+    "real-estate",
+    "construction",
+    "manufacturing",
+    "retail",
+    "hospitality",
+    "transportation",
+    "media",
+    "nonprofit",
+    "other"
+  ]).optional(),
   companyLogo: z.union([z.string().url(), z.literal("")]).optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
@@ -92,6 +111,7 @@ export default function Settings() {
       name: "",
       companyName: "",
       companySize: undefined,
+      industry: undefined,
       companyLogo: "",
       address: "",
       phone: "",
@@ -120,6 +140,7 @@ export default function Settings() {
         name: user.name || "",
         companyName: user.companyName || "",
         companySize: user.companySize || undefined,
+        industry: user.industry || undefined,
         companyLogo: user.companyLogo || "",
         address: user.address || "",
         phone: user.phone || "",
@@ -409,6 +430,43 @@ export default function Settings() {
                             <SelectItem value="51-200">51-200 employees</SelectItem>
                             <SelectItem value="201-500">201-500 employees</SelectItem>
                             <SelectItem value="500+">500+ employees</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={profileForm.control}
+                    name="industry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Industry</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select industry" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="technology">Technology</SelectItem>
+                            <SelectItem value="consulting">Consulting</SelectItem>
+                            <SelectItem value="marketing">Marketing & Advertising</SelectItem>
+                            <SelectItem value="design">Design & Creative</SelectItem>
+                            <SelectItem value="finance">Finance & Accounting</SelectItem>
+                            <SelectItem value="healthcare">Healthcare</SelectItem>
+                            <SelectItem value="education">Education & Training</SelectItem>
+                            <SelectItem value="legal">Legal Services</SelectItem>
+                            <SelectItem value="real-estate">Real Estate</SelectItem>
+                            <SelectItem value="construction">Construction</SelectItem>
+                            <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                            <SelectItem value="retail">Retail & E-commerce</SelectItem>
+                            <SelectItem value="hospitality">Hospitality & Tourism</SelectItem>
+                            <SelectItem value="transportation">Transportation & Logistics</SelectItem>
+                            <SelectItem value="media">Media & Entertainment</SelectItem>
+                            <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
