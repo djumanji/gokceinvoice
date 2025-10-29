@@ -98,7 +98,7 @@ function AuthLayout({ children, style }: { children: React.ReactNode; style: Rea
   const [location] = useLocation();
   const isAuthPage = location === '/login' || location === '/register' || location.startsWith('/verify-email') || location.startsWith('/reset-password') || location === '/forgot-password';
   const isOnboardingPage = location === '/onboarding';
-  const isMarketingPage = location === '/marketing';
+  const isMarketingPage = location === '/' || location === '/marketing';
   const hideSidebar = isAuthPage || isOnboardingPage || isMarketingPage;
 
   if (hideSidebar) {
