@@ -165,14 +165,29 @@ export default function Onboarding() {
 
   const handleSkipOnboarding = async () => {
     try {
-      // Mark onboarding as skipped by setting a flag in user profile
-      // Using address field as a marker (users can still update it later)
+      // To skip onboarding, we need to set a minimal companyName and create a dummy client
+      // This allows the user to bypass onboarding while still having valid data
       await apiRequest('PATCH', '/api/users/profile', {
-        onboardingSkipped: true,
+        companyName: 'Company', // Minimal value to mark onboarding as complete
+      });
+      
+      // Create a dummy client to satisfy onboarding requirements
+      await apiRequest('POST', '/api/clients', {
+        name: 'Client',
+        email: 'client@example.com',
+        company: '',
+        phone: '',
+        address: '',
       });
       
       // Invalidate queries to refresh onboarding status
-      window.location.href = '/dashboard';
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      
+      // Navigate to dashboard
+      setTimeout(() => {
+        setLocation('/dashboard');
+      }, 100);
     } catch (error) {
       console.error('Failed to skip onboarding:', error);
       toast({

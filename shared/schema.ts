@@ -9,6 +9,7 @@ export const paymentMethodEnum = pgEnum("payment_method", ["bank_transfer", "cre
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
 export const recurrenceFrequencyEnum = pgEnum("recurrence_frequency", ["weekly", "biweekly", "monthly", "quarterly", "yearly"]);
 export const currencyEnum = pgEnum("currency", ["USD", "EUR", "GBP", "AUD", "TRY"]);
+export const companySizeEnum = pgEnum("company_size", ["solo", "2-10", "11-50", "51-200", "201-500", "500+"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -27,6 +28,7 @@ export const users = pgTable("users", {
   // Profile fields
   name: text("name"), // User's full name for profile/invoicing
   companyName: text("company_name"),
+  companySize: text("company_size"), // Company size category
   companyLogo: text("company_logo"), // URL to company logo stored in S3
   address: text("address"),
   phone: text("phone"),
@@ -152,6 +154,7 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true }).ext
 export const updateUserProfileSchema = z.object({
   name: z.string().optional(),
   companyName: z.string().optional(),
+  companySize: z.enum(["solo", "2-10", "11-50", "51-200", "201-500", "500+"]).optional(),
   companyLogo: z.union([z.string().url(), z.literal("")]).optional(),
   address: z.string().optional(),
   phone: z.string().optional(),

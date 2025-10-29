@@ -31,6 +31,7 @@ import { Plus, Trash2, Edit, Upload, X } from "lucide-react";
 const profileSchema = z.object({
   name: z.string().optional(),
   companyName: z.string().optional(),
+  companySize: z.enum(["solo", "2-10", "11-50", "51-200", "201-500", "500+"]).optional(),
   companyLogo: z.union([z.string().url(), z.literal("")]).optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
@@ -90,6 +91,7 @@ export default function Settings() {
     defaultValues: {
       name: "",
       companyName: "",
+      companySize: undefined,
       companyLogo: "",
       address: "",
       phone: "",
@@ -117,6 +119,7 @@ export default function Settings() {
       profileForm.reset({
         name: user.name || "",
         companyName: user.companyName || "",
+        companySize: user.companySize || undefined,
         companyLogo: user.companyLogo || "",
         address: user.address || "",
         phone: user.phone || "",
@@ -382,6 +385,32 @@ export default function Settings() {
                         <FormControl>
                           <Input placeholder={t("settings.companyNamePlaceholder")} {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={profileForm.control}
+                    name="companySize"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Size</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select company size" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="solo">Solo (Just me)</SelectItem>
+                            <SelectItem value="2-10">2-10 employees</SelectItem>
+                            <SelectItem value="11-50">11-50 employees</SelectItem>
+                            <SelectItem value="51-200">51-200 employees</SelectItem>
+                            <SelectItem value="201-500">201-500 employees</SelectItem>
+                            <SelectItem value="500+">500+ employees</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
