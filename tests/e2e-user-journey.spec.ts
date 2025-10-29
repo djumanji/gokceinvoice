@@ -24,30 +24,41 @@ test.describe('End-to-End User Journey', () => {
       await page.waitForURL(/.*onboarding/, { timeout: 5000 });
     });
 
-    // Step 3: Complete onboarding - first step should be profile setup
-    await test.step('Complete onboarding flow', async () => {
+    // Step 3: Complete onboarding wizard flow
+    await test.step('Complete onboarding wizard flow', async () => {
+      // Step 3.1: Business Basics
       await expect(page.locator('text=Welcome to InvoiceHub!')).toBeVisible();
-      await expect(page.locator('text=Set your profile')).toBeVisible();
+      await expect(page.locator('input[id="companyName"]')).toBeVisible();
       
-      // Navigate to profile setup
-      await page.locator('text=Set your profile').click();
-      await page.waitForLoadState('networkidle');
+      await page.fill('input[id="companyName"]', 'Test Company E2E');
+      // Click currency selector - handle Select component
+      await page.click('[id="currency"]').catch(async () => {
+        await page.locator('button').filter({ hasText: /EUR|USD|GBP/i }).first().click();
+      });
+      await page.click('text=USD').catch(async () => {
+        await page.locator('[role="option"]').filter({ hasText: 'USD' }).click();
+      });
+      await page.click('button:has-text("Continue")');
       
-      // Should be on settings page
-      await expect(page.locator('text=Settings')).toBeVisible();
+      // Step 3.2: Add Client
+      await expect(page.locator('text=Who\'s your first client?')).toBeVisible();
+      await page.fill('input[id="clientName"]', 'Test Client E2E');
+      await page.fill('input[id="clientEmail"]', 'client@example.com');
+      await page.click('button:has-text("Add Client")');
       
-      // Fill in profile information
-      await page.locator('input[placeholder="Enter your company name"]').fill('Test Company E2E');
-      await page.locator('textarea[placeholder="Enter your address"]').fill('123 Test Street');
-      await page.locator('input[placeholder="Enter your phone number"]').fill('555-0000');
+      // Step 3.3: Add Service
+      await expect(page.locator('text=What are you selling?')).toBeVisible();
+      await page.fill('input[id="serviceName"]', 'Web Design');
+      await page.fill('input[id="servicePrice"]', '100');
+      await page.click('button:has-text("Add Service")');
       
-      // Save profile
-      await page.locator('button:has-text("Save Changes")').click();
-      await page.waitForTimeout(2000);
+      // Step 3.4: Review Invoice
+      await expect(page.locator('text=Review and generate your first invoice!')).toBeVisible();
+      await expect(page.locator('text=Test Company E2E')).toBeVisible();
+      await expect(page.locator('text=Test Client E2E')).toBeVisible();
       
-      // Go back to onboarding
-      await page.goto('http://localhost:3000/onboarding');
-      await page.waitForLoadState('networkidle');
+      // Note: The actual invoice generation would happen here
+      // but we'll skip it for now to avoid API calls in tests
     });
 
     // Step 4: Test navigation
