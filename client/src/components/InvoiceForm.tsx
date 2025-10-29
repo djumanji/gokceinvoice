@@ -268,7 +268,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Bank Account</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || !canEdit}>
+                      <Select onValueChange={field.onChange} value={field.value || undefined} disabled={isReadOnly || !canEdit}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select bank account" />
@@ -340,7 +340,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                     <FormLabel>For (Project Name)</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      value={field.value || ""} 
+                      value={field.value || undefined} 
                       disabled={isReadOnly || !canEdit || !selectedClientId}
                     >
                       <FormControl>
@@ -356,13 +356,13 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                             </SelectItem>
                           ))
                         ) : selectedClientId ? (
-                          <SelectItem value="" disabled>
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
                             No projects found
-                          </SelectItem>
+                          </div>
                         ) : (
-                          <SelectItem value="" disabled>
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
                             Select a client first
-                          </SelectItem>
+                          </div>
                         )}
                         {selectedClientId && (
                           <SelectItem value="__custom__" className="text-primary font-medium">
