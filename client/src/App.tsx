@@ -27,6 +27,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import Settings from "@/pages/Settings";
 import BankSettings from "@/pages/BankSettings";
 import Marketing from "@/pages/Marketing";
+import Leads from "@/pages/Leads";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -77,6 +78,11 @@ function Router() {
       <Route path="/expenses">
         <ProtectedRoute>
           <Expenses />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/leads">
+        <ProtectedRoute>
+          <Leads />
         </ProtectedRoute>
       </Route>
       <Route path="/settings">

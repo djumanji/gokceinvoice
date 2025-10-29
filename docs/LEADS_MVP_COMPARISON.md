@@ -116,7 +116,7 @@ Quick reference comparing current codebase (Invoice Management) with new Leads M
 ## 📋 IMPLEMENTATION CHECKLIST
 
 ### Phase 1: Database & Backend
-- [ ] Create `contractors` table (or extend `users`)
+- [ ] Extend `users` table with contractor fields (migration)
 - [ ] Create `categories` table + seed data
 - [ ] Create `leads` table
 - [ ] Create `bids` table
@@ -160,9 +160,8 @@ Quick reference comparing current codebase (Invoice Management) with new Leads M
 
 ## 🤔 DECISIONS NEEDED
 
-1. **Users vs Contractors**: Separate table or extend existing?
-2. **Routing**: Use `/leads` or integrate into existing `/dashboard`?
-3. **Auth Integration**: How to link contractors to existing user auth?
-4. **UI Library**: Continue with shadcn/ui or add new components?
-5. **Real-time Strategy**: Socket.io only or add Server-Sent Events fallback?
+1. **Routing**: Use `/leads` or integrate into existing `/dashboard`?
+2. **UI Library**: Continue with shadcn/ui or add new components?
+3. **Real-time Strategy**: Socket.io only or add Server-Sent Events fallback?
+4. **Contractor Onboarding**: How to convert regular users to contractors? (separate flow or settings toggle?)
 

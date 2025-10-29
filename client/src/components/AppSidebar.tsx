@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Users, Box, Receipt, Moon, Sun, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, FileText, Users, Box, Receipt, Moon, Sun, LogOut, Settings, Kanban } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
@@ -29,6 +29,11 @@ const menuItems = [
     title: "Invoices",
     url: "/invoices",
     icon: FileText,
+  },
+  {
+    title: "Leads",
+    url: "/leads",
+    icon: Kanban,
   },
   {
     title: "Expenses",
