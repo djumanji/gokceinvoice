@@ -230,7 +230,38 @@
     "bankBranch": "Bank Branch",
     "bankBranchPlaceholder": "Enter bank branch name",
     "bankAddress": "Bank Address",
-    "bankAddressPlaceholder": "Enter bank address"
+    "bankAddressPlaceholder": "Enter bank address",
+    "companySize": "Company Size",
+    "selectCompanySize": "Select company size",
+    "industry": "Industry",
+    "selectIndustry": "Select industry",
+    "companySizes": {
+      "solo": "Solo (Just me)",
+      "2-10": "2-10 employees",
+      "11-50": "11-50 employees",
+      "51-200": "51-200 employees",
+      "201-500": "201-500 employees",
+      "500+": "500+ employees"
+    },
+    "industries": {
+      "technology": "Technology",
+      "consulting": "Consulting",
+      "marketing": "Marketing & Advertising",
+      "design": "Design & Creative",
+      "finance": "Finance & Accounting",
+      "healthcare": "Healthcare",
+      "education": "Education & Training",
+      "legal": "Legal Services",
+      "realEstate": "Real Estate",
+      "construction": "Construction",
+      "manufacturing": "Manufacturing",
+      "retail": "Retail & E-commerce",
+      "hospitality": "Hospitality & Tourism",
+      "transportation": "Transportation & Logistics",
+      "media": "Media & Entertainment",
+      "nonprofit": "Nonprofit",
+      "other": "Other"
+    }
   },
   "errors": {
     "passwordMismatch": "Passwords do not match",

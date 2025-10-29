@@ -218,7 +218,38 @@
     "preferredCurrency": "Tercih Edilen Para Birimi",
     "selectCurrency": "Para birimi seçin",
     "profileUpdated": "Profiliniz başarıyla kaydedildi.",
-    "profileUpdateFailed": "Profil güncellenemedi. Lütfen tekrar deneyin."
+    "profileUpdateFailed": "Profil güncellenemedi. Lütfen tekrar deneyin.",
+    "companySize": "Şirket Büyüklüğü",
+    "selectCompanySize": "Şirket büyüklüğünü seçin",
+    "industry": "Sektör",
+    "selectIndustry": "Sektör seçin",
+    "companySizes": {
+      "solo": "Bireysel (Sadece ben)",
+      "2-10": "2-10 çalışan",
+      "11-50": "11-50 çalışan",
+      "51-200": "51-200 çalışan",
+      "201-500": "201-500 çalışan",
+      "500+": "500+ çalışan"
+    },
+    "industries": {
+      "technology": "Teknoloji",
+      "consulting": "Danışmanlık",
+      "marketing": "Pazarlama ve Reklam",
+      "design": "Tasarım ve Yaratıcılık",
+      "finance": "Finans ve Muhasebe",
+      "healthcare": "Sağlık",
+      "education": "Eğitim ve Öğretim",
+      "legal": "Hukuk Hizmetleri",
+      "realEstate": "Gayrimenkul",
+      "construction": "İnşaat",
+      "manufacturing": "İmalat",
+      "retail": "Perakende ve E-ticaret",
+      "hospitality": "Konaklama ve Turizm",
+      "transportation": "Ulaşım ve Lojistik",
+      "media": "Medya ve Eğlence",
+      "nonprofit": "Kâr Amacı Gütmeyen",
+      "other": "Diğer"
+    }
   },
   "errors": {
     "passwordMismatch": "Şifreler eşleşmiyor",

@@ -416,20 +416,20 @@ export default function Settings() {
                     name="companySize"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Size</FormLabel>
+                        <FormLabel>{t("settings.companySize")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || undefined}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select company size" />
+                              <SelectValue placeholder={t("settings.selectCompanySize")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="solo">Solo (Just me)</SelectItem>
-                            <SelectItem value="2-10">2-10 employees</SelectItem>
-                            <SelectItem value="11-50">11-50 employees</SelectItem>
-                            <SelectItem value="51-200">51-200 employees</SelectItem>
-                            <SelectItem value="201-500">201-500 employees</SelectItem>
-                            <SelectItem value="500+">500+ employees</SelectItem>
+                            <SelectItem value="solo">{t("settings.companySizes.solo")}</SelectItem>
+                            <SelectItem value="2-10">{t("settings.companySizes.2-10")}</SelectItem>
+                            <SelectItem value="11-50">{t("settings.companySizes.11-50")}</SelectItem>
+                            <SelectItem value="51-200">{t("settings.companySizes.51-200")}</SelectItem>
+                            <SelectItem value="201-500">{t("settings.companySizes.201-500")}</SelectItem>
+                            <SelectItem value="500+">{t("settings.companySizes.500+")}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -442,31 +442,31 @@ export default function Settings() {
                     name="industry"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Industry</FormLabel>
+                        <FormLabel>{t("settings.industry")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || undefined}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select industry" />
+                              <SelectValue placeholder={t("settings.selectIndustry")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="technology">Technology</SelectItem>
-                            <SelectItem value="consulting">Consulting</SelectItem>
-                            <SelectItem value="marketing">Marketing & Advertising</SelectItem>
-                            <SelectItem value="design">Design & Creative</SelectItem>
-                            <SelectItem value="finance">Finance & Accounting</SelectItem>
-                            <SelectItem value="healthcare">Healthcare</SelectItem>
-                            <SelectItem value="education">Education & Training</SelectItem>
-                            <SelectItem value="legal">Legal Services</SelectItem>
-                            <SelectItem value="real-estate">Real Estate</SelectItem>
-                            <SelectItem value="construction">Construction</SelectItem>
-                            <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                            <SelectItem value="retail">Retail & E-commerce</SelectItem>
-                            <SelectItem value="hospitality">Hospitality & Tourism</SelectItem>
-                            <SelectItem value="transportation">Transportation & Logistics</SelectItem>
-                            <SelectItem value="media">Media & Entertainment</SelectItem>
-                            <SelectItem value="nonprofit">Nonprofit</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="technology">{t("settings.industries.technology")}</SelectItem>
+                            <SelectItem value="consulting">{t("settings.industries.consulting")}</SelectItem>
+                            <SelectItem value="marketing">{t("settings.industries.marketing")}</SelectItem>
+                            <SelectItem value="design">{t("settings.industries.design")}</SelectItem>
+                            <SelectItem value="finance">{t("settings.industries.finance")}</SelectItem>
+                            <SelectItem value="healthcare">{t("settings.industries.healthcare")}</SelectItem>
+                            <SelectItem value="education">{t("settings.industries.education")}</SelectItem>
+                            <SelectItem value="legal">{t("settings.industries.legal")}</SelectItem>
+                            <SelectItem value="real-estate">{t("settings.industries.realEstate")}</SelectItem>
+                            <SelectItem value="construction">{t("settings.industries.construction")}</SelectItem>
+                            <SelectItem value="manufacturing">{t("settings.industries.manufacturing")}</SelectItem>
+                            <SelectItem value="retail">{t("settings.industries.retail")}</SelectItem>
+                            <SelectItem value="hospitality">{t("settings.industries.hospitality")}</SelectItem>
+                            <SelectItem value="transportation">{t("settings.industries.transportation")}</SelectItem>
+                            <SelectItem value="media">{t("settings.industries.media")}</SelectItem>
+                            <SelectItem value="nonprofit">{t("settings.industries.nonprofit")}</SelectItem>
+                            <SelectItem value="other">{t("settings.industries.other")}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
