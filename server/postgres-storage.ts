@@ -51,14 +51,14 @@ export class PgStorage {
   }
   
   async createUser(data: InsertUser): Promise<User> {
-    // Exclude companyLogo if it's not explicitly provided to avoid errors if column doesn't exist yet
+    // Explicitly exclude companyLogo to avoid errors if column doesn't exist yet
     // This is a temporary fix until migration 009_add_company_logo.sql is run on the database
-    const insertData = { ...data };
-    if (!('companyLogo' in data) || insertData.companyLogo === undefined || insertData.companyLogo === null) {
-      delete insertData.companyLogo;
-    }
+    const {
+      companyLogo,
+      ...insertData
+    } = data as any;
     
-    const result = await this.db.insert(users).values(insertData).returning();
+    const result = await this.db.insert(users).values(insertData as InsertUser).returning();
     return result[0];
   }
   
@@ -70,11 +70,11 @@ export class PgStorage {
   }
   
   async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
-    // Exclude companyLogo if it's not explicitly provided to avoid errors if column doesn't exist yet
-    const updateData = { ...data };
-    if (!('companyLogo' in data) || updateData.companyLogo === undefined || updateData.companyLogo === null) {
-      delete updateData.companyLogo;
-    }
+    // Explicitly exclude companyLogo to avoid errors if column doesn't exist yet
+    const {
+      companyLogo,
+      ...updateData
+    } = data as any;
     
     const result = await this.db.update(users)
       .set(updateData)
