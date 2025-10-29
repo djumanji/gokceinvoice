@@ -104,7 +104,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
   // Fetch projects for selected client
   const selectedClientId = form.watch("clientId");
   const { data: clientProjects = [] } = useQuery<Array<{ id: string; name: string; description?: string | null }>>({
-    queryKey: selectedClientId ? [`/api/clients/${selectedClientId}/projects`] : [""],
+    queryKey: [`/api/clients/${selectedClientId || 'none'}/projects`],
     enabled: !!selectedClientId,
   });
 

@@ -59,7 +59,7 @@ export function LineItemsSection({
                       const priceMatch = Math.abs(parseFloat(s.price) - item.price) < 0.01;
                       return s.name === item.description && priceMatch;
                     })?.id ||
-                    ""
+                    undefined
                   }
                   onValueChange={(value) => onSelectService(index, value)}
                 >

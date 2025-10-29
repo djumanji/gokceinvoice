@@ -1,9 +1,6 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import * as schema from "@shared/schema";
-
-neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -11,5 +8,12 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+// Use standard postgres driver for better performance with local PostgreSQL
+// This works with both Replit's local PostgreSQL and remote databases
+const client = postgres(process.env.DATABASE_URL, {
+  max: 10, // Connection pool size
+  idle_timeout: 20, // Close idle connections after 20s
+  connect_timeout: 10, // Connection timeout in seconds
+});
+
+export const db = drizzle(client, { schema });
