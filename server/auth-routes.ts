@@ -187,18 +187,21 @@ export function registerAuthRoutes(app: Express) {
   app.get('/api/auth/me', async (req, res) => {
     try {
       console.log('[Auth Me] Request received');
-      console.log('[Auth Me] Session:', req.session);
-      const userId = req.session.userId;
-      console.log('[Auth Me] User ID from session:', userId);
-      if (!userId) {
-        console.log('[Auth Me] No user ID in session, returning 401');
+      console.log('[Auth Me] Session exists:', !!req.session);
+      
+      // Check if session exists and has userId
+      if (!req.session || !req.session.userId) {
+        console.log('[Auth Me] No session or user ID, returning 401');
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
+      const userId = req.session.userId;
+      console.log('[Auth Me] User ID from session:', userId);
+      
       const user = await storage.getUserById(userId);
       if (!user) {
         console.log('[Auth Me] User not found in database');
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(401).json({ error: 'User not found' });
       }
       console.log('[Auth Me] User found, returning user data');
       
@@ -214,7 +217,8 @@ export function registerAuthRoutes(app: Express) {
       });
     } catch (error) {
       console.error('Get user error:', error);
-      res.status(500).json({ error: 'Failed to get user' });
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      res.status(401).json({ error: 'Failed to get user' });
     }
   });
   

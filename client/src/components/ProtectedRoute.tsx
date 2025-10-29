@@ -37,10 +37,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     console.log('[ProtectedRoute] Effect running:', { queryLoading, hasUser: !!user, hasError: !!error });
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (queryLoading) {
+        console.log('[ProtectedRoute] Timeout reached, assuming not authenticated');
+        setIsLoading(false);
+      }
+    }, 3000);
+
     if (queryLoading) {
       console.log('[ProtectedRoute] Still loading, waiting...');
-      return;
+      return () => clearTimeout(timeoutId);
     }
+
+    clearTimeout(timeoutId);
 
     // Only redirect on actual auth failure, not during refetch
     if (error) {
