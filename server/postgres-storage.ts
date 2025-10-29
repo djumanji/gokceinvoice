@@ -51,7 +51,14 @@ export class PgStorage {
   }
   
   async createUser(data: InsertUser): Promise<User> {
-    const result = await this.db.insert(users).values(data).returning();
+    // Exclude companyLogo if it's not explicitly provided to avoid errors if column doesn't exist yet
+    // This is a temporary fix until migration 009_add_company_logo.sql is run on the database
+    const insertData = { ...data };
+    if (!('companyLogo' in data) || insertData.companyLogo === undefined || insertData.companyLogo === null) {
+      delete insertData.companyLogo;
+    }
+    
+    const result = await this.db.insert(users).values(insertData).returning();
     return result[0];
   }
   
@@ -63,8 +70,14 @@ export class PgStorage {
   }
   
   async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
+    // Exclude companyLogo if it's not explicitly provided to avoid errors if column doesn't exist yet
+    const updateData = { ...data };
+    if (!('companyLogo' in data) || updateData.companyLogo === undefined || updateData.companyLogo === null) {
+      delete updateData.companyLogo;
+    }
+    
     const result = await this.db.update(users)
-      .set(data)
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
     return result[0];
