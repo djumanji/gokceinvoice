@@ -25,6 +25,7 @@ export interface IStorage {
   getInvoice(id: string, userId: string): Promise<Invoice | undefined>;
   getNextInvoiceNumber(userId: string): Promise<string>;
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  createInvoiceWithLineItems(invoice: InsertInvoice, lineItems: any[]): Promise<Invoice>;
   updateInvoice(id: string, userId: string, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
   deleteInvoice(id: string, userId: string): Promise<boolean>;
 
@@ -99,6 +100,7 @@ export class MemStorage implements IStorage {
       passwordResetToken: insertUser.passwordResetToken ?? null,
       passwordResetExpires: insertUser.passwordResetExpires ?? null,
       companyName: insertUser.companyName ?? null,
+      companyLogo: insertUser.companyLogo ?? null,
       address: insertUser.address ?? null,
       phone: insertUser.phone ?? null,
       taxOfficeId: insertUser.taxOfficeId ?? null,
@@ -243,6 +245,43 @@ export class MemStorage implements IStorage {
     };
     this.invoices.set(id, invoice);
     return invoice;
+  }
+
+  async createInvoiceWithLineItems(insertInvoice: InsertInvoice, lineItems: any[]): Promise<Invoice> {
+    // For in-memory storage, we can't have real transactions, but we'll simulate atomic behavior
+    let createdInvoiceId: string | null = null;
+    try {
+      const invoice = await this.createInvoice(insertInvoice);
+      createdInvoiceId = invoice.id;
+      
+      // Create line items
+      for (const item of lineItems) {
+        const qty = parseFloat(item.quantity);
+        const price = parseFloat(item.price);
+        const amount = qty * price;
+
+        const lineItem: LineItem = {
+          id: randomUUID(),
+          invoiceId: invoice.id,
+          description: item.description,
+          quantity: qty.toString(),
+          price: price.toFixed(2),
+          amount: amount.toFixed(2),
+        };
+        this.lineItems.set(lineItem.id, lineItem);
+      }
+      
+      return invoice;
+    } catch (error) {
+      // If anything fails, clean up the invoice
+      if (createdInvoiceId) {
+        this.invoices.delete(createdInvoiceId);
+        // Also clean up any line items that were created
+        const invoiceLineItems = Array.from(this.lineItems.values()).filter(li => li.invoiceId === createdInvoiceId);
+        invoiceLineItems.forEach(li => this.lineItems.delete(li.id));
+      }
+      throw error;
+    }
   }
 
   async updateInvoice(id: string, userId: string, updateData: Partial<InsertInvoice>): Promise<Invoice | undefined> {

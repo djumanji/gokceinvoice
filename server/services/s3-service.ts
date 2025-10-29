@@ -12,6 +12,7 @@ const s3Client = new S3Client({
 
 const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || '';
 const EXPENSE_UPLOADS_PREFIX = 'expenses/';
+const COMPANY_LOGOS_PREFIX = 'company-logos/';
 
 export interface FileUploadResult {
   url: string;
@@ -55,6 +56,46 @@ export async function uploadToS3(
   } catch (error) {
     console.error('Error uploading to S3:', error);
     throw new Error('Failed to upload file to S3');
+  }
+}
+
+/**
+ * Upload a company logo to S3
+ */
+export async function uploadCompanyLogo(
+  file: Buffer,
+  fileName: string,
+  userId: string,
+  contentType: string
+): Promise<FileUploadResult> {
+  if (!BUCKET_NAME) {
+    throw new Error('S3 bucket name is not configured');
+  }
+
+  // Generate unique key for the company logo
+  const timestamp = Date.now();
+  const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const key = `${COMPANY_LOGOS_PREFIX}${userId}/${timestamp}-${sanitizedFileName}`;
+
+  try {
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: file,
+      ContentType: contentType,
+    });
+
+    await s3Client.send(command);
+
+    // Return the public URL or generate a presigned URL
+    const url = process.env.AWS_S3_PUBLIC_URL 
+      ? `${process.env.AWS_S3_PUBLIC_URL}/${key}`
+      : await getPresignedUrl(key);
+
+    return { url, key };
+  } catch (error) {
+    console.error('Error uploading company logo to S3:', error);
+    throw new Error('Failed to upload company logo to S3');
   }
 }
 

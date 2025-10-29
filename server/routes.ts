@@ -8,7 +8,7 @@ import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertSe
 import { z } from "zod";
 import { sanitizeObject } from "./sanitize";
 import multer from "multer";
-import { uploadToS3, deleteFromS3, extractS3KeyFromUrl } from "./services/s3-service";
+import { uploadToS3, deleteFromS3, extractS3KeyFromUrl, uploadCompanyLogo } from "./services/s3-service";
 
 // Configure multer for in-memory storage
 const upload = multer({
@@ -53,6 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Sanitize text inputs to prevent XSS
+      // Note: companyLogo is a URL and is validated by Zod schema, no additional sanitization needed
       const sanitized = sanitizeObject(req.body, ['name', 'companyName', 'address', 'phone', 'taxOfficeId']);
 
       const data = updateUserProfileSchema.parse(sanitized);
@@ -262,24 +263,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total: total.toFixed(2),
       });
 
-      // Create invoice
-      const invoice = await storage.createInvoice(validatedInvoice);
-
-      // Create line items
-      for (const item of sanitizedLineItems) {
-        const qty = parseFloat(item.quantity);
-        const price = parseFloat(item.price);
-        const amount = qty * price;
-
-        const validatedItem = insertLineItemSchema.parse({
-          invoiceId: invoice.id,
-          description: item.description,
-          quantity: qty.toString(),
-          price: price.toFixed(2),
-          amount: amount.toFixed(2),
-        });
-        await storage.createLineItem(validatedItem);
-      }
+      // Create invoice and line items in a transaction
+      const invoice = await storage.createInvoiceWithLineItems(validatedInvoice, sanitizedLineItems);
 
       res.status(201).json(invoice);
     } catch (error) {
@@ -550,6 +535,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to upload file:", error);
       res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
+  // Company logo upload route
+  app.post("/api/upload/company-logo", requireAuth, uploadLimiter, upload.single('logo'), async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No logo file uploaded" });
+      }
+
+      // Validate file type - only allow common image formats
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ error: "Only JPEG, PNG, GIF, and WebP images are allowed" });
+      }
+
+      // Validate file size - max 5MB for logos
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (req.file.size > maxSize) {
+        return res.status(400).json({ error: "Logo file size must be less than 5MB" });
+      }
+
+      const { url, key } = await uploadCompanyLogo(
+        req.file.buffer,
+        req.file.originalname,
+        userId,
+        req.file.mimetype
+      );
+
+      res.json({ url, key });
+    } catch (error) {
+      console.error("Failed to upload company logo:", error);
+      res.status(500).json({ error: "Failed to upload company logo" });
     }
   });
 

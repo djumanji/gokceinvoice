@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,27 @@ export default function Register() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
+  const [animationSrc, setAnimationSrc] = useState<string>(
+    import.meta.env.PROD
+      ? "/lottie/hallederik-bg.lottie"
+      : "https://lottie.host/8aa90f89-3d22-4f51-99f6-8262f166f0a9/w07L1QkYUx.lottie"
+  );
+
+  // Prefer local asset in production to avoid external CORS/hotlinking issues.
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    const controller = new AbortController();
+    fetch("/lottie/hallederik-bg.lottie", { method: "HEAD", signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) {
+          setAnimationSrc("https://lottie.host/8aa90f89-3d22-4f51-99f6-8262f166f0a9/w07L1QkYUx.lottie");
+        }
+      })
+      .catch(() => {
+        setAnimationSrc("https://lottie.host/8aa90f89-3d22-4f51-99f6-8262f166f0a9/w07L1QkYUx.lottie");
+      });
+    return () => controller.abort();
+  }, []);
 
   const registerMutation = useMutation({
     mutationFn: async () => {
@@ -107,7 +128,7 @@ export default function Register() {
       {/* Background Lottie Animation */}
       <div className="absolute inset-0 z-0 opacity-30 overflow-hidden">
         <DotLottieReact
-          src="https://lottie.host/8aa90f89-3d22-4f51-99f6-8262f166f0a9/w07L1QkYUx.lottie"
+          src={animationSrc}
           loop
           autoplay
           className="w-full h-full object-cover"

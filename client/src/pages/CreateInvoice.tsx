@@ -35,21 +35,19 @@ export default function CreateInvoice() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { lineItems, clientId, date, orderNumber, projectNumber, forProject, notes, taxRate } = data;
-      
+      const { lineItems, clientId, bankAccountId, date, orderNumber, projectNumber, forProject, notes, taxRate } = data;
+
       // Calculate totals
-      const subtotal = lineItems.reduce((sum: number, item: any) => 
+      const subtotal = lineItems.reduce((sum: number, item: any) =>
         sum + (item.quantity * item.price), 0
       );
       const tax = subtotal * (taxRate || 0) / 100;
       const total = subtotal + tax;
-      
-      // Generate invoice number
-      const invoiceNumber = `INV-${String(Math.floor(Math.random() * 100000)).padStart(6, "0")}`;
-      
+
+      // Invoice number is generated server-side
       const invoiceData = {
-        invoiceNumber,
         clientId,
+        bankAccountId: bankAccountId || null,
         date: new Date(date).toISOString(),
         orderNumber: orderNumber || null,
         projectNumber: projectNumber || null,
@@ -71,13 +69,14 @@ export default function CreateInvoice() {
       const res = await apiRequest("POST", "/api/invoices", invoiceData);
       return res;
     },
-    onSuccess: () => {
+    onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       toast({
         title: t("common.success"),
         description: t("invoiceForm.invoiceCreated"),
       });
-      setLocation("/invoices");
+      // Don't redirect immediately - let the form handle the success state
+      return invoice;
     },
     onError: (error: any) => {
       console.error("Failed to create invoice:", error);
@@ -86,21 +85,23 @@ export default function CreateInvoice() {
         description: error.message || t("invoiceForm.invoiceCreateFailed"),
         variant: "destructive",
       });
+      throw error;
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { lineItems, clientId, date, orderNumber, projectNumber, forProject, notes, taxRate } = data;
-      
-      const subtotal = lineItems.reduce((sum: number, item: any) => 
+      const { lineItems, clientId, bankAccountId, date, orderNumber, projectNumber, forProject, notes, taxRate } = data;
+
+      const subtotal = lineItems.reduce((sum: number, item: any) =>
         sum + (item.quantity * item.price), 0
       );
       const tax = subtotal * (taxRate || 0) / 100;
       const total = subtotal + tax;
-      
+
       const invoiceData = {
         clientId,
+        bankAccountId: bankAccountId || null,
         date: new Date(date).toISOString(),
         orderNumber: orderNumber || null,
         projectNumber: projectNumber || null,
@@ -124,11 +125,12 @@ export default function CreateInvoice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
       toast({
         title: t("common.success"),
         description: t("invoiceForm.invoiceUpdated"),
       });
-      setLocation("/invoices");
+      // Don't redirect - let the form handle the success state
     },
     onError: (error: any) => {
       console.error("Failed to update invoice:", error);
@@ -137,15 +139,16 @@ export default function CreateInvoice() {
         description: error.message || t("invoiceForm.invoiceUpdateFailed"),
         variant: "destructive",
       });
+      throw error;
     },
   });
 
-  const handleSubmit = (data: any, status: string) => {
+  const handleSubmit = async (data: any, status: string) => {
     const submitData = { ...data, status };
     if (isEditing) {
-      updateMutation.mutate(submitData);
+      return await updateMutation.mutateAsync(submitData);
     } else {
-      createMutation.mutate(submitData);
+      return await createMutation.mutateAsync(submitData);
     }
   };
 
@@ -159,6 +162,7 @@ export default function CreateInvoice() {
 
   const initialData = isEditing && invoice ? {
     clientId: (invoice as any).clientId,
+    bankAccountId: (invoice as any).bankAccountId || "",
     date: new Date((invoice as any).date).toISOString().split('T')[0],
     orderNumber: (invoice as any).orderNumber || "",
     projectNumber: (invoice as any).projectNumber || "",
@@ -208,6 +212,8 @@ export default function CreateInvoice() {
           onSubmit={handleSubmit}
           initialData={initialData}
           isLoading={createMutation.isPending || updateMutation.isPending}
+          invoiceId={invoiceId}
+          invoiceStatus={(invoice as any)?.status}
         />
       )}
     </div>

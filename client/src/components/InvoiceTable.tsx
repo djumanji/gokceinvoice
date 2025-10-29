@@ -17,8 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "./StatusBadge";
-import { Eye, Pencil, Trash2, Search } from "lucide-react";
+import { Eye, Pencil, Trash2, Search, MoreHorizontal, FileDown, Link2 } from "lucide-react";
 
 interface Invoice {
   id: string;
@@ -35,9 +41,11 @@ interface InvoiceTableProps {
   onView?: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onDownloadPDF?: (id: string) => void;
+  onCopyLink?: (id: string) => void;
 }
 
-export function InvoiceTable({ invoices, onView, onEdit, onDelete }: InvoiceTableProps) {
+export function InvoiceTable({ invoices, onView, onEdit, onDelete, onDownloadPDF, onCopyLink }: InvoiceTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -48,6 +56,11 @@ export function InvoiceTable({ invoices, onView, onEdit, onDelete }: InvoiceTabl
     const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Check if editing is allowed based on invoice status
+  const canEdit = (status: string) => {
+    return status === "draft" || status === "sent";
+  };
 
   return (
     <div className="space-y-4">
@@ -123,22 +136,40 @@ export function InvoiceTable({ invoices, onView, onEdit, onDelete }: InvoiceTabl
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit?.(invoice.id)}
-                        data-testid={`button-edit-${invoice.id}`}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDelete?.(invoice.id)}
-                        data-testid={`button-delete-${invoice.id}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
+                      {canEdit(invoice.status) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEdit?.(invoice.id)}
+                          data-testid={`button-edit-${invoice.id}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid={`button-more-${invoice.id}`}>
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onDownloadPDF?.(invoice.id)}>
+                            <FileDown className="w-4 h-4 mr-2" />
+                            Download PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onCopyLink?.(invoice.id)}>
+                            <Link2 className="w-4 h-4 mr-2" />
+                            Copy Link
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => onDelete?.(invoice.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>

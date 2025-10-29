@@ -22,8 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
 import { InvoicePreview } from "./InvoicePreview";
+import { InvoiceSuccessBanner } from "./invoice/InvoiceSuccessBanner";
+import { SendLinkModal } from "./invoice/SendLinkModal";
+import { InvoiceStatusBadge } from "./invoice/InvoiceStatusBadge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Label } from "@/components/ui/label";
@@ -33,6 +36,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import type { Client } from "@shared/schema";
 
 interface Service {
@@ -76,9 +82,23 @@ interface InvoiceFormProps {
   onSubmit: (data: InvoiceFormData, status: string) => void;
   initialData?: Partial<InvoiceFormData>;
   isLoading?: boolean;
+  invoiceId?: string;
+  invoiceStatus?: string;
 }
 
-export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false }: InvoiceFormProps) {
+export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false, invoiceId, invoiceStatus }: InvoiceFormProps) {
+  const { toast } = useToast();
+  
+  // State for new workflow
+  const [isSaved, setIsSaved] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [savedInvoice, setSavedInvoice] = useState<any>(null);
+
+  // Check if editing is allowed based on invoice status
+  const canEdit = !invoiceStatus || invoiceStatus === "draft" || invoiceStatus === "sent";
+  const isPaid = invoiceStatus === "paid";
+  const isCancelled = invoiceStatus === "cancelled";
   // Fetch user data for invoice header/footer
   const { data: user } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -88,7 +108,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
   });
 
   // Fetch bank accounts
-  const { data: bankAccounts = [] } = useQuery({
+  const { data: bankAccounts = [], isLoading: bankAccountsLoading } = useQuery({
     queryKey: ["/api/bank-accounts"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/bank-accounts");
@@ -194,28 +214,142 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
     });
   };
 
-  const handleSubmit = async (status: "draft" | "sent") => {
-    // For "draft" status, allow saving without full validation
-    // For "sent" status, require validation
-    if (status === "sent") {
-      const isValid = await form.trigger();
-      if (!isValid) {
-        return;
-      }
+  const handleSubmit = async () => {
+    // Always save as draft
+    const isValid = await form.trigger();
+    if (!isValid) {
+      return;
     }
     
     const data = { ...form.getValues(), lineItems, taxRate };
-    onSubmit(data, status);
+    
+    try {
+      const result = await onSubmit(data, "draft");
+      setSavedInvoice(result);
+      setIsSaved(true);
+      setIsReadOnly(true);
+      toast({
+        title: "Invoice Saved",
+        description: "Invoice has been saved as draft",
+      });
+    } catch (error) {
+      console.error('Failed to save invoice:', error);
+    }
+  };
+
+  // PDF Download function
+  const downloadPDF = async () => {
+    try {
+      const previewElement = document.querySelector('.invoice-preview-container');
+      if (!previewElement) {
+        toast({
+          title: "Error",
+          description: "Invoice preview not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const canvas = await html2canvas(previewElement as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const invoiceNumber = savedInvoice?.invoiceNumber || '000001';
+      pdf.save(`invoice-${invoiceNumber}.pdf`);
+      
+      toast({
+        title: "PDF Downloaded",
+        description: `Invoice ${invoiceNumber} has been downloaded`,
+      });
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Copy shareable link function
+  const copyShareableLink = () => {
+    if (!savedInvoice) return;
+    
+    const selectedClient = clients.find((c) => c.id === form.watch("clientId"));
+    if (!selectedClient) {
+      toast({
+        title: "Error",
+        description: "Client not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowSendModal(true);
+  };
+
+  // View invoice function
+  const viewInvoice = () => {
+    if (savedInvoice?.id) {
+      window.open(`/invoices/${savedInvoice.id}`, '_blank');
+    }
+  };
+
+  // Edit invoice function
+  const editInvoice = () => {
+    setIsReadOnly(false);
+    setIsSaved(false);
   };
 
   const selectedClient = clients.find((c) => c.id === form.watch("clientId"));
+  const selectedBankAccountId = form.watch("bankAccountId");
+  const selectedBankAccount = bankAccounts.find((bank: any) => bank.id === selectedBankAccountId);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-6">
+        {/* Status Banner for Paid/Cancelled Invoices */}
+        {!canEdit && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <InvoiceStatusBadge status={invoiceStatus as any} />
+              <span className="text-red-800 font-medium">
+                {isPaid ? "This invoice has been paid and cannot be edited" : 
+                 isCancelled ? "This invoice has been cancelled and cannot be edited" : 
+                 "This invoice cannot be edited"}
+              </span>
+            </div>
+          </div>
+        )}
+
         <Card>
           <CardHeader>
-            <CardTitle>Invoice Details</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Invoice Details
+              {invoiceStatus && <InvoiceStatusBadge status={invoiceStatus as any} />}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Form {...form}>
@@ -225,7 +359,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isReadOnly || !canEdit}>
                       <FormControl>
                         <SelectTrigger data-testid="select-client">
                           <SelectValue placeholder="Select a client" />
@@ -251,7 +385,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Bank Account</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || !canEdit}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select bank account" />
@@ -278,7 +412,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
                   <FormItem>
                     <FormLabel>Invoice Date *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} data-testid="input-date" />
+                      <Input type="date" {...field} data-testid="input-date" disabled={isReadOnly || !canEdit} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -418,6 +552,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
                       <Input
                         type="number"
                         step="0.01"
+                        min="0.01"
                         placeholder="Qty"
                         value={item.quantity}
                         onChange={(e) => updateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
@@ -429,6 +564,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
                       <Input
                         type="number"
                         step="0.01"
+                        min="0"
                         placeholder="Price"
                         value={item.price}
                         onChange={(e) => updateLineItem(index, "price", parseFloat(e.target.value) || 0)}
@@ -542,53 +678,85 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false 
         </Dialog>
 
         <div className="flex gap-2 flex-wrap">
-          <Button
-            onClick={() => handleSubmit("draft")}
-            variant="outline"
-            data-testid="button-save-draft"
-            disabled={isLoading}
-          >
-            {isLoading ? "Saving..." : "Save as Draft"}
-          </Button>
-          <Button 
-            onClick={() => handleSubmit("sent")} 
-            data-testid="button-mark-sent"
-            disabled={isLoading}
-          >
-            {isLoading ? "Saving..." : "Mark as Sent"}
-          </Button>
+          {!isSaved && canEdit ? (
+            <Button
+              onClick={handleSubmit}
+              data-testid="button-save-invoice"
+              disabled={isLoading}
+            >
+              {isLoading ? "Saving..." : "Save Invoice"}
+            </Button>
+          ) : isSaved && canEdit ? (
+            <Button
+              onClick={editInvoice}
+              variant="outline"
+              data-testid="button-edit-invoice"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Invoice
+            </Button>
+          ) : !canEdit ? (
+            <div className="text-sm text-muted-foreground">
+              This invoice cannot be edited due to its status.
+            </div>
+          ) : null}
         </div>
       </div>
 
       <div className="sticky top-4">
-        <InvoicePreview
-          date={form.watch("date")}
-          orderNumber={form.watch("orderNumber")}
-          projectNumber={form.watch("projectNumber")}
-          forProject={form.watch("forProject")}
-          clientName={selectedClient?.name}
-          clientCompany={selectedClient?.company || undefined}
-          clientAddress={selectedClient?.address || undefined}
-          clientPhone={selectedClient?.phone || undefined}
-          lineItems={lineItems}
-          taxRate={taxRate}
-          notes={form.watch("notes")}
-          // Company data
-          companyName={user?.companyName}
-          companyAddress={user?.address}
-          companyPhone={user?.phone}
-          companyTaxId={user?.taxOfficeId}
-          // Bank details
-          swiftCode={user?.swiftCode}
-          iban={user?.iban}
-          accountHolderName={user?.accountHolderName}
-          bankAddress={user?.bankAddress}
-          // Footer contact
-          userName={user?.name}
-          userPhone={user?.phone}
-          userEmail={user?.email}
-        />
+        {isSaved && savedInvoice && (
+          <InvoiceSuccessBanner
+            invoiceNumber={savedInvoice.invoiceNumber}
+            onCopyLink={copyShareableLink}
+            onDownloadPDF={downloadPDF}
+            onViewInvoice={viewInvoice}
+          />
+        )}
+        
+        <div className="invoice-preview-container">
+          <InvoicePreview
+            invoiceNumber={savedInvoice?.invoiceNumber}
+            date={form.watch("date")}
+            orderNumber={form.watch("orderNumber")}
+            projectNumber={form.watch("projectNumber")}
+            forProject={form.watch("forProject")}
+            clientName={selectedClient?.name}
+            clientCompany={selectedClient?.company || undefined}
+            clientAddress={selectedClient?.address || undefined}
+            clientPhone={selectedClient?.phone || undefined}
+            lineItems={lineItems}
+            taxRate={taxRate}
+            notes={form.watch("notes")}
+            // Company data
+            companyName={user?.companyName}
+            companyAddress={user?.address}
+            companyPhone={user?.phone}
+            companyTaxId={user?.taxOfficeId}
+            // Bank details - use selected bank account or fall back to user profile
+            swiftCode={selectedBankAccount?.swiftCode || user?.swiftCode}
+            iban={selectedBankAccount?.iban || user?.iban}
+            accountHolderName={selectedBankAccount?.accountHolderName || user?.accountHolderName}
+            bankAddress={selectedBankAccount?.bankAddress || user?.bankAddress}
+            // Footer contact
+            userName={user?.name}
+            userPhone={user?.phone}
+            userEmail={user?.email}
+          />
+        </div>
       </div>
+
+      {/* Send Link Modal */}
+      {savedInvoice && selectedClient && (
+        <SendLinkModal
+          isOpen={showSendModal}
+          onClose={() => setShowSendModal(false)}
+          clientEmail={selectedClient.email}
+          clientName={selectedClient.name}
+          invoiceNumber={savedInvoice.invoiceNumber}
+          total={parseFloat(savedInvoice.total)}
+          shareableUrl={`${window.location.origin}/invoices/view/${savedInvoice.id}`}
+        />
+      )}
     </div>
   );
 }

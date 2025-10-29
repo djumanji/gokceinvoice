@@ -27,6 +27,7 @@ export const users = pgTable("users", {
   // Profile fields
   name: text("name"), // User's full name for profile/invoicing
   companyName: text("company_name"),
+  companyLogo: text("company_logo"), // URL to company logo stored in S3
   address: text("address"),
   phone: text("phone"),
   taxOfficeId: text("tax_office_id"), // Tax Registration Number
@@ -141,6 +142,7 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true }).ext
 export const updateUserProfileSchema = z.object({
   name: z.string().optional(),
   companyName: z.string().optional(),
+  companyLogo: z.union([z.string().url(), z.literal("")]).optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
   taxOfficeId: z.string().optional(),

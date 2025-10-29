@@ -146,6 +146,33 @@ export class PgStorage {
     return result[0];
   }
 
+  async createInvoiceWithLineItems(invoiceData: InsertInvoice, lineItems: any[]): Promise<Invoice> {
+    return await this.db.transaction(async (tx) => {
+      // Create invoice
+      const invoiceResult = await tx.insert(invoices).values(invoiceData).returning();
+      const invoice = invoiceResult[0];
+
+      // Create line items
+      for (const item of lineItems) {
+        const qty = parseFloat(item.quantity);
+        const price = parseFloat(item.price);
+        const amount = qty * price;
+
+        const lineItemData = {
+          invoiceId: invoice.id,
+          description: item.description,
+          quantity: qty.toString(),
+          price: price.toFixed(2),
+          amount: amount.toFixed(2),
+        };
+
+        await tx.insert(lineItems).values(lineItemData);
+      }
+
+      return invoice;
+    });
+  }
+
   async updateInvoice(id: string, userId: string, data: Partial<InsertInvoice>): Promise<Invoice | undefined> {
     const result = await this.db.update(invoices)
       .set(data)

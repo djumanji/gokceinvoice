@@ -26,11 +26,13 @@ import ResetPassword from "@/pages/ResetPassword";
 import ForgotPassword from "@/pages/ForgotPassword";
 import Settings from "@/pages/Settings";
 import BankSettings from "@/pages/BankSettings";
+import Marketing from "@/pages/Marketing";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/marketing" component={Marketing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/verify-email" component={VerifyEmail} />
@@ -96,7 +98,8 @@ function AuthLayout({ children, style }: { children: React.ReactNode; style: Rea
   const [location] = useLocation();
   const isAuthPage = location === '/login' || location === '/register' || location.startsWith('/verify-email') || location.startsWith('/reset-password') || location === '/forgot-password';
   const isOnboardingPage = location === '/onboarding';
-  const hideSidebar = isAuthPage || isOnboardingPage;
+  const isMarketingPage = location === '/marketing';
+  const hideSidebar = isAuthPage || isOnboardingPage || isMarketingPage;
 
   if (hideSidebar) {
     return (

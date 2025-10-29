@@ -26,11 +26,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Plus, Trash2, Edit, Upload, X } from "lucide-react";
 
 const profileSchema = z.object({
   name: z.string().optional(),
   companyName: z.string().optional(),
+  companyLogo: z.union([z.string().url(), z.literal("")]).optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
   taxOfficeId: z.string().optional(),
@@ -65,6 +66,7 @@ export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [isAddingBank, setIsAddingBank] = useState(false);
   const [editingBankId, setEditingBankId] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   // Fetch current user profile
   const { data: user, isLoading } = useQuery({
@@ -88,6 +90,7 @@ export default function Settings() {
     defaultValues: {
       name: "",
       companyName: "",
+      companyLogo: "",
       address: "",
       phone: "",
       taxOfficeId: "",
@@ -114,6 +117,7 @@ export default function Settings() {
       profileForm.reset({
         name: user.name || "",
         companyName: user.companyName || "",
+        companyLogo: user.companyLogo || "",
         address: user.address || "",
         phone: user.phone || "",
         taxOfficeId: user.taxOfficeId || "",
@@ -221,6 +225,44 @@ export default function Settings() {
     },
   });
 
+  const uploadLogoMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('logo', file);
+      
+      const response = await fetch('/api/upload/company-logo', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload logo');
+      }
+      
+      return response.json();
+    },
+    onSuccess: async (data) => {
+      // Update the profile with the new logo URL
+      await updateProfileMutation.mutateAsync({ companyLogo: data.url });
+      toast({
+        title: t("common.success"),
+        description: "Company logo uploaded successfully",
+      });
+      setIsUploadingLogo(false);
+    },
+    onError: (error) => {
+      console.error("Failed to upload logo:", error);
+      toast({
+        title: t("common.error"),
+        description: error instanceof Error ? error.message : "Failed to upload logo",
+        variant: "destructive",
+      });
+      setIsUploadingLogo(false);
+    },
+  });
+
   const onProfileSubmit = async (data: ProfileFormData) => {
     setIsSaving(true);
     updateProfileMutation.mutate(data);
@@ -242,6 +284,46 @@ export default function Settings() {
   const handleDeleteBank = (id: string) => {
     if (confirm("Are you sure you want to delete this bank account?")) {
       deleteBankMutation.mutate(id);
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: t("common.error"),
+        description: "Only JPEG, PNG, GIF, and WebP images are allowed",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: t("common.error"),
+        description: "Logo file size must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    uploadLogoMutation.mutate(file);
+  };
+
+  const handleRemoveLogo = async () => {
+    if (confirm("Are you sure you want to remove the company logo?")) {
+      await updateProfileMutation.mutateAsync({ companyLogo: "" });
+      toast({
+        title: t("common.success"),
+        description: "Company logo removed successfully",
+      });
     }
   };
 
@@ -299,6 +381,83 @@ export default function Settings() {
                         <FormLabel>{t("settings.companyName")}</FormLabel>
                         <FormControl>
                           <Input placeholder={t("settings.companyNamePlaceholder")} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Company Logo Section */}
+                  <FormField
+                    control={profileForm.control}
+                    name="companyLogo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Logo</FormLabel>
+                        <FormControl>
+                          <div className="space-y-4">
+                            {field.value ? (
+                              <div className="flex items-center space-x-4">
+                                <div className="relative">
+                                  <img
+                                    src={field.value}
+                                    alt="Company Logo"
+                                    className="w-20 h-20 object-cover rounded-lg border"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                                    onClick={handleRemoveLogo}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm text-muted-foreground">
+                                    Current company logo
+                                  </p>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => document.getElementById('logo-upload')?.click()}
+                                    disabled={isUploadingLogo}
+                                  >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    {isUploadingLogo ? "Uploading..." : "Change Logo"}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                                <p className="text-sm text-gray-600 mb-2">
+                                  Upload your company logo
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => document.getElementById('logo-upload')?.click()}
+                                  disabled={isUploadingLogo}
+                                >
+                                  <Upload className="h-4 w-4 mr-2" />
+                                  {isUploadingLogo ? "Uploading..." : "Choose Logo"}
+                                </Button>
+                                <p className="text-xs text-gray-500 mt-2">
+                                  PNG, JPG, GIF, WebP up to 5MB
+                                </p>
+                              </div>
+                            )}
+                            <input
+                              id="logo-upload"
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                              onChange={handleLogoUpload}
+                              className="hidden"
+                            />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

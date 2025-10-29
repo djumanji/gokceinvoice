@@ -7,6 +7,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import type { Invoice, Client } from "@shared/schema";
 import { useTranslation } from "react-i18next";
 
@@ -16,6 +19,7 @@ interface InvoiceWithClient extends Invoice {
 
 export default function Invoices() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
@@ -42,6 +46,57 @@ export default function Invoices() {
       } catch (error) {
         console.error("Failed to delete invoice:", error);
       }
+    }
+  };
+
+  // PDF Download function
+  const handleDownloadPDF = async (id: string) => {
+    try {
+      // Navigate to the invoice view page to capture the preview
+      const invoice = invoices.find(inv => inv.id === id);
+      if (!invoice) {
+        toast({
+          title: "Error",
+          description: "Invoice not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Open the invoice in a new tab for PDF generation
+      const newWindow = window.open(`/invoices/${id}`, '_blank');
+      if (newWindow) {
+        // Wait for the page to load, then trigger PDF download
+        setTimeout(() => {
+          newWindow.postMessage({ action: 'downloadPDF' }, window.location.origin);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Copy shareable link function
+  const handleCopyLink = async (id: string) => {
+    try {
+      const shareableUrl = `${window.location.origin}/invoices/view/${id}`;
+      await navigator.clipboard.writeText(shareableUrl);
+      toast({
+        title: "Link copied!",
+        description: "Invoice link has been copied to clipboard.",
+      });
+    } catch (error) {
+      console.error('Copy link failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy link. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -93,6 +148,8 @@ export default function Invoices() {
               onView={(id) => setLocation(`/invoices/${id}`)}
               onEdit={(id) => setLocation(`/invoices/edit/${id}`)}
               onDelete={handleDelete}
+              onDownloadPDF={handleDownloadPDF}
+              onCopyLink={handleCopyLink}
             />
           </CardContent>
         </Card>
