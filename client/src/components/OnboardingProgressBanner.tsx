@@ -27,7 +27,7 @@ export function OnboardingProgressBanner({ currentStep }: OnboardingProgressBann
     },
     invoices: {
       isComplete: invoiceCount > 0,
-      nextStep: { title: "Go to Dashboard", href: "/" },
+      nextStep: { title: "Go to Dashboard", href: "/dashboard" },
       message: "Perfect! You've created your first invoice.",
     },
   };

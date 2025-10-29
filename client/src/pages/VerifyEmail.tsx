@@ -64,7 +64,7 @@ export default function VerifyEmail() {
                   <strong>Success!</strong> Your email has been verified successfully.
                 </AlertDescription>
               </Alert>
-              <Button onClick={() => setLocation('/')} className="w-full" size="lg">
+              <Button onClick={() => setLocation('/dashboard')} className="w-full" size="lg">
                 Go to Dashboard
               </Button>
             </div>

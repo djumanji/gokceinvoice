@@ -27,6 +27,7 @@
   },
   "nav": {
     "home": "Home",
+    "dashboard": "Dashboard",
     "invoices": "Invoices",
     "expenses": "Expenses",
     "clients": "Clients",

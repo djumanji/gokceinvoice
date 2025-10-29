@@ -71,12 +71,8 @@ export default function CreateInvoice() {
     },
     onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      toast({
-        title: t("common.success"),
-        description: t("invoiceForm.invoiceCreated"),
-      });
+      // Don't show toast here - InvoiceForm will handle it
       // Don't redirect immediately - let the form handle the success state
-      return invoice;
     },
     onError: (error: any) => {
       console.error("Failed to create invoice:", error);
@@ -123,13 +119,10 @@ export default function CreateInvoice() {
       const res = await apiRequest("PATCH", `/api/invoices/${invoiceId}`, invoiceData);
       return res;
     },
-    onSuccess: () => {
+    onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
-      toast({
-        title: t("common.success"),
-        description: t("invoiceForm.invoiceUpdated"),
-      });
+      // Don't show toast here - InvoiceForm will handle it
       // Don't redirect - let the form handle the success state
     },
     onError: (error: any) => {

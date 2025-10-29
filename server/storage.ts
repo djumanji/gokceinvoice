@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount } from "@shared/schema";
+import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { PgStorage } from './postgres-storage';
 
@@ -57,6 +57,13 @@ export interface IStorage {
   updateBankAccount(id: string, userId: string, bankAccount: Partial<InsertBankAccount>): Promise<BankAccount | undefined>;
   deleteBankAccount(id: string, userId: string): Promise<boolean>;
   setDefaultBankAccount(id: string, userId: string): Promise<void>;
+
+  // Projects
+  getProjectsByClient(clientId: string, userId: string): Promise<Project[]>;
+  getProject(id: string, userId: string): Promise<Project | undefined>;
+  createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: string, userId: string, project: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: string, userId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -66,6 +73,7 @@ export class MemStorage implements IStorage {
   private lineItems: Map<string, LineItem>;
   private services: Map<string, Service>;
   private expenses: Map<string, Expense>;
+  private projects: Map<string, Project>;
 
   constructor() {
     this.users = new Map();
@@ -74,6 +82,7 @@ export class MemStorage implements IStorage {
     this.lineItems = new Map();
     this.services = new Map();
     this.expenses = new Map();
+    this.projects = new Map();
   }
   
   // Users
@@ -425,6 +434,81 @@ export class MemStorage implements IStorage {
     const existing = this.expenses.get(id);
     if (!existing || existing.userId !== userId) return false;
     this.expenses.delete(id);
+    return true;
+  }
+
+  // Bank Accounts - stub implementations
+  async getBankAccounts(userId: string): Promise<BankAccount[]> {
+    return [];
+  }
+
+  async getBankAccount(id: string, userId: string): Promise<BankAccount | undefined> {
+    return undefined;
+  }
+
+  async createBankAccount(userId: string, bankAccount: InsertBankAccount): Promise<BankAccount> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async updateBankAccount(id: string, userId: string, bankAccount: Partial<InsertBankAccount>): Promise<BankAccount | undefined> {
+    return undefined;
+  }
+
+  async deleteBankAccount(id: string, userId: string): Promise<boolean> {
+    return false;
+  }
+
+  async setDefaultBankAccount(id: string, userId: string): Promise<void> {
+    // Stub
+  }
+
+  // Projects
+  async getProjectsByClient(clientId: string, userId: string): Promise<Project[]> {
+    const client = this.clients.get(clientId);
+    if (!client || client.userId !== userId) {
+      return [];
+    }
+    return Array.from(this.projects.values()).filter(p => p.clientId === clientId && p.isActive);
+  }
+
+  async getProject(id: string, userId: string): Promise<Project | undefined> {
+    const project = this.projects.get(id);
+    if (!project) return undefined;
+    
+    const client = this.clients.get(project.clientId);
+    if (!client || client.userId !== userId) return undefined;
+    
+    return project;
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const id = randomUUID();
+    const project: Project = {
+      id,
+      clientId: insertProject.clientId,
+      name: insertProject.name,
+      description: insertProject.description ?? null,
+      isActive: insertProject.isActive ?? true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.projects.set(id, project);
+    return project;
+  }
+
+  async updateProject(id: string, userId: string, updateData: Partial<InsertProject>): Promise<Project | undefined> {
+    const existing = await this.getProject(id, userId);
+    if (!existing) return undefined;
+    
+    const updated: Project = { ...existing, ...updateData, updatedAt: new Date() };
+    this.projects.set(id, updated);
+    return updated;
+  }
+
+  async deleteProject(id: string, userId: string): Promise<boolean> {
+    const existing = await this.getProject(id, userId);
+    if (!existing) return false;
+    this.projects.delete(id);
     return true;
   }
 }

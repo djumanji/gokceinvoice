@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { users, clients, invoices, lineItems, services, expenses, bankAccounts, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount } from '@shared/schema';
+import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject } from '@shared/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 
 // Initialize PostgreSQL connection
@@ -341,6 +341,71 @@ export class PgStorage {
     await this.db.update(bankAccounts)
       .set({ isDefault: true })
       .where(and(eq(bankAccounts.id, id), eq(bankAccounts.userId, userId)));
+  }
+
+  // Projects
+  async getProjectsByClient(clientId: string, userId: string): Promise<Project[]> {
+    // Verify client belongs to user first
+    const client = await this.getClient(clientId, userId);
+    if (!client) {
+      return [];
+    }
+    
+    const result = await this.db.select()
+      .from(projects)
+      .where(and(eq(projects.clientId, clientId), eq(projects.isActive, true)))
+      .orderBy(projects.name);
+    return result;
+  }
+
+  async getProject(id: string, userId: string): Promise<Project | undefined> {
+    const result = await this.db.select()
+      .from(projects)
+      .innerJoin(clients, eq(projects.clientId, clients.id))
+      .where(and(eq(projects.id, id), eq(clients.userId, userId)));
+    
+    if (result.length === 0) {
+      return undefined;
+    }
+    
+    return result[0].projects;
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [project] = await this.db.insert(projects)
+      .values({
+        ...insertProject,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return project;
+  }
+
+  async updateProject(id: string, userId: string, data: Partial<InsertProject>): Promise<Project | undefined> {
+    // Verify project belongs to user's client
+    const project = await this.getProject(id, userId);
+    if (!project) {
+      return undefined;
+    }
+
+    const result = await this.db.update(projects)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteProject(id: string, userId: string): Promise<boolean> {
+    // Verify project belongs to user's client
+    const project = await this.getProject(id, userId);
+    if (!project) {
+      return false;
+    }
+
+    const result = await this.db.delete(projects)
+      .where(eq(projects.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 

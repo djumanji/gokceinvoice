@@ -73,6 +73,16 @@ export const clients = pgTable("clients", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id, { onDelete: 'cascade' }).notNull(), // Cascade delete projects when client deleted
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const invoices = pgTable("invoices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   invoiceNumber: text("invoice_number").notNull().unique(),
@@ -255,3 +265,7 @@ export type Expense = typeof expenses.$inferSelect;
 
 export type InsertBankAccount = z.infer<typeof bankAccountSchema>;
 export type BankAccount = typeof bankAccounts.$inferSelect;
+
+export const insertProjectSchema = createInsertSchema(projects).omit({ id: true });
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = typeof projects.$inferSelect;

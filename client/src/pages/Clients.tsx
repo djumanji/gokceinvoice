@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Users as UsersIcon } from "lucide-react";
+import { Plus, Users as UsersIcon, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClientCard } from "@/components/ClientCard";
 import { EmptyState } from "@/components/EmptyState";
@@ -14,12 +14,23 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Client } from "@shared/schema";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
+
+interface Project {
+  id: string;
+  clientId: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+}
 
 export default function Clients() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState({
@@ -29,10 +40,26 @@ export default function Clients() {
     phone: "",
     address: "",
   });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [newProject, setNewProject] = useState({ name: "", description: "" });
 
   const { data: clients = [], isLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
+
+  // Fetch projects for editing client
+  const { data: clientProjects = [] } = useQuery<Project[]>({
+    queryKey: editingClient ? [`/api/clients/${editingClient.id}/projects`] : [""],
+    enabled: !!editingClient,
+  });
+
+  useEffect(() => {
+    if (editingClient && clientProjects) {
+      setProjects(clientProjects);
+    } else {
+      setProjects([]);
+    }
+  }, [editingClient, clientProjects]);
 
   const { data: invoices = [] } = useQuery<any[]>({
     queryKey: ["/api/invoices"],
@@ -40,8 +67,23 @@ export default function Clients() {
 
   const createMutation = useMutation({
     mutationFn: (data: typeof formData) => apiRequest("POST", "/api/clients", data),
-    onSuccess: () => {
+    onSuccess: async (newClient) => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      
+      // Create projects if any were added
+      if (projects.length > 0) {
+        const projectPromises = projects
+          .filter((p) => p.id.startsWith("temp-"))
+          .map((project) =>
+            apiRequest("POST", "/api/projects", {
+              clientId: newClient.id,
+              name: project.name,
+              description: project.description || undefined,
+            })
+          );
+        await Promise.all(projectPromises);
+      }
+      
       setIsDialogOpen(false);
       resetForm();
     },
@@ -66,8 +108,52 @@ export default function Clients() {
     },
   });
 
+  const createProjectMutation = useMutation({
+    mutationFn: (data: { clientId: string; name: string; description?: string }) =>
+      apiRequest("POST", "/api/projects", data),
+    onSuccess: () => {
+      if (editingClient) {
+        queryClient.invalidateQueries({ queryKey: [`/api/clients/${editingClient.id}/projects`] });
+      }
+      setNewProject({ name: "", description: "" });
+      toast({
+        title: "Project Created",
+        description: "Project has been added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create project",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/projects/${id}`),
+    onSuccess: () => {
+      if (editingClient) {
+        queryClient.invalidateQueries({ queryKey: [`/api/clients/${editingClient.id}/projects`] });
+      }
+      toast({
+        title: "Project Deleted",
+        description: "Project has been deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete project",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetForm = () => {
     setFormData({ name: "", email: "", company: "", phone: "", address: "" });
+    setProjects([]);
+    setNewProject({ name: "", description: "" });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -89,6 +175,59 @@ export default function Clients() {
       address: client.address || "",
     });
     setIsDialogOpen(true);
+  };
+
+  const handleAddProject = () => {
+    if (!newProject.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Project name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editingClient && !formData.name) {
+      toast({
+        title: "Error",
+        description: "Please create the client first, then add projects",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If creating new client, store project temporarily
+    // Otherwise, create it immediately
+    if (editingClient) {
+      createProjectMutation.mutate({
+        clientId: editingClient.id,
+        name: newProject.name.trim(),
+        description: newProject.description?.trim() || undefined,
+      });
+    } else {
+      // Store for later creation after client is created
+      setProjects([
+        ...projects,
+        {
+          id: `temp-${Date.now()}`,
+          clientId: "",
+          name: newProject.name.trim(),
+          description: newProject.description?.trim() || null,
+          isActive: true,
+        },
+      ]);
+      setNewProject({ name: "", description: "" });
+    }
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    if (projectId.startsWith("temp-")) {
+      setProjects(projects.filter((p) => p.id !== projectId));
+    } else {
+      if (confirm("Are you sure you want to delete this project?")) {
+        deleteProjectMutation.mutate(projectId);
+      }
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -183,6 +322,81 @@ export default function Clients() {
                   data-testid="input-client-address"
                 />
               </div>
+
+              {/* Projects Section */}
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Projects</Label>
+                </div>
+                
+                {/* Add Project Form */}
+                <div className="space-y-2 p-3 bg-muted rounded-md">
+                  <div className="space-y-2">
+                    <Label htmlFor="project-name">Project Name *</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="project-name"
+                        value={newProject.name}
+                        onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                        placeholder="e.g., Website Redesign"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleAddProject}
+                        disabled={createProjectMutation.isPending}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="project-description">Description</Label>
+                    <Textarea
+                      id="project-description"
+                      value={newProject.description}
+                      onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                      placeholder="Project description"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+
+                {/* Projects List */}
+                {projects.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Existing Projects</Label>
+                    <div className="space-y-2">
+                      {projects.map((project) => (
+                        <div
+                          key={project.id}
+                          className="flex items-center justify-between p-2 bg-muted rounded-md"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium">{project.name}</div>
+                            {project.description && (
+                              <div className="text-sm text-muted-foreground">
+                                {project.description}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteProject(project.id)}
+                            disabled={deleteProjectMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   type="button"

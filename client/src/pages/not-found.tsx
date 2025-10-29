@@ -17,7 +17,7 @@ export default function NotFound() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/">
+          <Link href="/dashboard">
             <Home className="w-4 h-4" />
             {t("notFound.backToDashboard")}
           </Link>

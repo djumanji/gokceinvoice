@@ -70,7 +70,7 @@ export function StepComplete({ onNavigate }: StepCompleteProps) {
           <div className="text-center pt-4">
             <Button
               variant="link"
-              onClick={() => onNavigate('/')}
+              onClick={() => onNavigate('/dashboard')}
               className="text-muted-foreground hover:text-primary"
             >
               Or explore your dashboard →

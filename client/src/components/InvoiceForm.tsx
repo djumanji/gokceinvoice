@@ -1,8 +1,4 @@
 import { useState } from "react";
-import { format } from "date-fns";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,23 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Edit } from "lucide-react";
 import { InvoicePreview } from "./InvoicePreview";
 import { InvoiceSuccessBanner } from "./invoice/InvoiceSuccessBanner";
 import { SendLinkModal } from "./invoice/SendLinkModal";
 import { InvoiceStatusBadge } from "./invoice/InvoiceStatusBadge";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { LineItemsSection } from "./invoice/LineItemsSection";
+import { ServiceDialog } from "./invoice/ServiceDialog";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useInvoiceForm } from "@/hooks/use-invoice-form";
+import { useLineItems } from "@/hooks/use-line-items";
+import { generateInvoicePDF } from "@/lib/pdf-utils";
+import { invoiceFormSchema, type InvoiceFormData } from "@/lib/invoice-schemas";
 import { useToast } from "@/hooks/use-toast";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import type { Client } from "@shared/schema";
 
 interface Service {
@@ -50,36 +43,9 @@ interface Service {
   unit?: string;
 }
 
-const lineItemSchema = z.object({
-  description: z.string().min(1, "Description is required"),
-  quantity: z.number().min(0.01, "Quantity must be greater than 0"),
-  price: z.number().min(0, "Price must be positive"),
-});
-
-const invoiceFormSchema = z.object({
-  clientId: z.string().min(1, "Client is required"),
-  bankAccountId: z.string().optional(),
-  date: z.string(),
-  orderNumber: z.string().optional(),
-  projectNumber: z.string().optional(),
-  forProject: z.string().optional(),
-  taxRate: z.number().min(0).max(100).optional(),
-  notes: z.string().optional(),
-  lineItems: z.array(lineItemSchema).min(1, "At least one line item required"),
-});
-
-type InvoiceFormData = z.infer<typeof invoiceFormSchema>;
-
-interface LineItem {
-  description: string;
-  quantity: number;
-  price: number;
-}
-
-
 interface InvoiceFormProps {
   clients: Client[];
-  onSubmit: (data: InvoiceFormData, status: string) => void;
+  onSubmit: (data: InvoiceFormData, status: string) => Promise<any>;
   initialData?: Partial<InvoiceFormData>;
   isLoading?: boolean;
   invoiceId?: string;
@@ -89,102 +55,60 @@ interface InvoiceFormProps {
 export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false, invoiceId, invoiceStatus }: InvoiceFormProps) {
   const { toast } = useToast();
   
-  // State for new workflow
+  // Component state
   const [isSaved, setIsSaved] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [savedInvoice, setSavedInvoice] = useState<any>(null);
+  const [taxRate, setTaxRate] = useState<number>(initialData?.taxRate || 0);
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
+  const [pendingLineItemIndex, setPendingLineItemIndex] = useState<number | null>(null);
 
-  // Check if editing is allowed based on invoice status
+  // Permission checks
   const canEdit = !invoiceStatus || invoiceStatus === "draft" || invoiceStatus === "sent";
   const isPaid = invoiceStatus === "paid";
   const isCancelled = invoiceStatus === "cancelled";
-  // Fetch user data for invoice header/footer
+
+  // Data fetching
   const { data: user } = useQuery({
     queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      return await apiRequest("GET", "/api/auth/me");
-    },
+    queryFn: async () => await apiRequest("GET", "/api/auth/me"),
   });
 
-  // Fetch bank accounts
-  const { data: bankAccounts = [], isLoading: bankAccountsLoading } = useQuery({
+  const { data: bankAccounts = [] } = useQuery({
     queryKey: ["/api/bank-accounts"],
-    queryFn: async () => {
-      return await apiRequest("GET", "/api/bank-accounts");
-    },
+    queryFn: async () => await apiRequest("GET", "/api/bank-accounts"),
   });
-
-  const [lineItems, setLineItems] = useState<LineItem[]>(
-    initialData?.lineItems || [{ description: "", quantity: 1, price: 0 }]
-  );
-  const [taxRate, setTaxRate] = useState<number>(initialData?.taxRate || 0);
-  const [showServiceDialog, setShowServiceDialog] = useState(false);
-  const [newServiceData, setNewServiceData] = useState({
-    name: "",
-    description: "",
-    category: "",
-    price: "",
-    unit: "item",
-  });
-  const [pendingLineItemIndex, setPendingLineItemIndex] = useState<number | null>(null);
 
   const { data: services = [] } = useQuery<Service[]>({
     queryKey: ["/api/services"],
   });
 
-  const createServiceMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/services", data),
-    onSuccess: async (response) => {
-      const newService = await response.json();
-      await queryClient.invalidateQueries({ queryKey: ["/api/services"] });
-      setShowServiceDialog(false);
-      setNewServiceData({ name: "", description: "", category: "", price: "", unit: "item" });
-      
-      if (pendingLineItemIndex !== null) {
-        const updated = [...lineItems];
-        updated[pendingLineItemIndex] = {
-          description: newService.name,
-          quantity: 1,
-          price: parseFloat(newService.price),
-        };
-        setLineItems(updated);
-        setPendingLineItemIndex(null);
-      }
-    },
+  // Line items management
+  const {
+    lineItems,
+    selectedServiceIds,
+    addLineItem,
+    removeLineItem,
+    updateLineItem,
+    setLineItemService,
+  } = useLineItems({ initialItems: initialData?.lineItems });
+
+  // Form management
+  const { form, validateForm, getFormData } = useInvoiceForm({
+    initialData,
+    lineItems,
+    taxRate,
   });
 
-  const form = useForm<InvoiceFormData>({
-    resolver: zodResolver(invoiceFormSchema),
-    defaultValues: {
-      clientId: initialData?.clientId || "",
-      bankAccountId: initialData?.bankAccountId || "",
-      date: initialData?.date || format(new Date(), "yyyy-MM-dd"),
-      orderNumber: initialData?.orderNumber || "",
-      projectNumber: initialData?.projectNumber || "",
-      forProject: initialData?.forProject || "",
-      taxRate: initialData?.taxRate || 0,
-      notes: initialData?.notes || "",
-      lineItems: lineItems,
-    },
+  // Fetch projects for selected client
+  const selectedClientId = form.watch("clientId");
+  const { data: clientProjects = [] } = useQuery<Array<{ id: string; name: string; description?: string | null }>>({
+    queryKey: selectedClientId ? [`/api/clients/${selectedClientId}/projects`] : [""],
+    enabled: !!selectedClientId,
   });
 
-  const addLineItem = () => {
-    setLineItems([...lineItems, { description: "", quantity: 1, price: 0 }]);
-  };
-
-  const removeLineItem = (index: number) => {
-    if (lineItems.length > 1) {
-      setLineItems(lineItems.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
-    const updated = [...lineItems];
-    updated[index] = { ...updated[index], [field]: value };
-    setLineItems(updated);
-  };
-
+  // Handlers
   const handleServiceSelect = (index: number, value: string) => {
     if (value === "add-new") {
       setPendingLineItemIndex(index);
@@ -192,93 +116,55 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
     } else {
       const service = services.find((s) => s.id === value);
       if (service) {
-        const updated = [...lineItems];
-        updated[index] = {
-          description: service.name,
-          quantity: 1,
-          price: parseFloat(service.price),
-        };
-        setLineItems(updated);
+        setLineItemService(index, service.id, service.name, parseFloat(service.price));
       }
     }
   };
 
-  const handleNewServiceSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createServiceMutation.mutate({
-      name: newServiceData.name,
-      description: newServiceData.description || undefined,
-      category: newServiceData.category || undefined,
-      price: parseFloat(newServiceData.price),
-      unit: newServiceData.unit,
-    });
+  const handleServiceCreated = (newService: { id: string; name: string; price: string }) => {
+    if (pendingLineItemIndex !== null) {
+      setLineItemService(pendingLineItemIndex, newService.id, newService.name, parseFloat(newService.price));
+      setPendingLineItemIndex(null);
+    }
   };
 
   const handleSubmit = async () => {
-    // Always save as draft
-    const isValid = await form.trigger();
-    if (!isValid) {
-      return;
-    }
-    
-    const data = { ...form.getValues(), lineItems, taxRate };
-    
-    try {
-      const result = await onSubmit(data, "draft");
-      setSavedInvoice(result);
-      setIsSaved(true);
-      setIsReadOnly(true);
+    const validation = await validateForm();
+    if (!validation.valid) {
       toast({
-        title: "Invoice Saved",
-        description: "Invoice has been saved as draft",
+        title: "Validation Error",
+        description: validation.error || "Please fill in all required fields",
+        variant: "destructive",
       });
-    } catch (error) {
+        return;
+    }
+
+    try {
+      const data = getFormData();
+      const result = await onSubmit(data, "draft");
+      if (result) {
+        setSavedInvoice(result);
+        setIsSaved(true);
+        setIsReadOnly(true);
+        toast({
+          title: "Invoice Saved",
+          description: "Invoice has been saved as draft",
+        });
+      }
+    } catch (error: any) {
       console.error('Failed to save invoice:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to save invoice. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  // PDF Download function
   const downloadPDF = async () => {
     try {
-      const previewElement = document.querySelector('.invoice-preview-container');
-      if (!previewElement) {
-        toast({
-          title: "Error",
-          description: "Invoice preview not found",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const canvas = await html2canvas(previewElement as HTMLElement, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgWidth = 210;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
       const invoiceNumber = savedInvoice?.invoiceNumber || '000001';
-      pdf.save(`invoice-${invoiceNumber}.pdf`);
-      
+      await generateInvoicePDF(invoiceNumber);
       toast({
         title: "PDF Downloaded",
         description: `Invoice ${invoiceNumber} has been downloaded`,
@@ -293,10 +179,8 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
     }
   };
 
-  // Copy shareable link function
   const copyShareableLink = () => {
     if (!savedInvoice) return;
-    
     const selectedClient = clients.find((c) => c.id === form.watch("clientId"));
     if (!selectedClient) {
       toast({
@@ -306,23 +190,21 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
       });
       return;
     }
-
     setShowSendModal(true);
   };
 
-  // View invoice function
   const viewInvoice = () => {
     if (savedInvoice?.id) {
       window.open(`/invoices/${savedInvoice.id}`, '_blank');
     }
   };
 
-  // Edit invoice function
   const editInvoice = () => {
     setIsReadOnly(false);
     setIsSaved(false);
   };
 
+  // Derived values
   const selectedClient = clients.find((c) => c.id === form.watch("clientId"));
   const selectedBankAccountId = form.watch("bankAccountId");
   const selectedBankAccount = bankAccounts.find((bank: any) => bank.id === selectedBankAccountId);
@@ -330,7 +212,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-6">
-        {/* Status Banner for Paid/Cancelled Invoices */}
+        {/* Status Banner */}
         {!canEdit && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center gap-2">
@@ -344,6 +226,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
           </div>
         )}
 
+        {/* Invoice Details Form */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -455,9 +338,50 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>For (Project Name)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Bracha Bridge" {...field} data-testid="input-for-project" />
-                    </FormControl>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value || ""} 
+                      disabled={isReadOnly || !canEdit || !selectedClientId}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-for-project">
+                          <SelectValue placeholder={selectedClientId ? "Select a project" : "Select a client first"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {clientProjects.length > 0 ? (
+                          clientProjects.map((project) => (
+                            <SelectItem key={project.id} value={project.name}>
+                              {project.name}
+                            </SelectItem>
+                          ))
+                        ) : selectedClientId ? (
+                          <SelectItem value="" disabled>
+                            No projects found
+                          </SelectItem>
+                        ) : (
+                          <SelectItem value="" disabled>
+                            Select a client first
+                          </SelectItem>
+                        )}
+                        {selectedClientId && (
+                          <SelectItem value="__custom__" className="text-primary font-medium">
+                            + Custom Project Name
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {field.value === "__custom__" || (!clientProjects.find(p => p.name === field.value) && field.value) ? (
+                      <FormControl>
+                        <Input 
+                          placeholder="e.g., Bracha Bridge" 
+                          value={field.value === "__custom__" ? "" : field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          onBlur={field.onBlur}
+                          data-testid="input-for-project-custom"
+                        />
+                      </FormControl>
+                    ) : null}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -513,188 +437,43 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-            <CardTitle>Line Items</CardTitle>
-            <Button size="sm" onClick={addLineItem} data-testid="button-add-line-item">
-              <Plus className="w-4 h-4" />
-              Add Item
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {lineItems.map((item, index) => (
-              <div key={index} className="flex gap-2 items-start" data-testid={`line-item-${index}`}>
-                <div className="flex-1 space-y-2">
-                  <div className="space-y-2">
-                    <Label>Service</Label>
-                    <Select
-                      value={services.find((s) => s.name === item.description && parseFloat(s.price) === item.price)?.id || ""}
-                      onValueChange={(value) => handleServiceSelect(index, value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a service" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {services.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.name} - €{parseFloat(service.price).toFixed(2)}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="add-new" className="text-primary font-medium">
-                          <Plus className="w-4 h-4 mr-2 inline" /> Add New Service
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-2">
-                      <Label>Qty</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        placeholder="Qty"
-                        value={item.quantity}
-                        onChange={(e) => updateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
-                        data-testid={`input-quantity-${index}`}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Price</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Price"
-                        value={item.price}
-                        onChange={(e) => updateLineItem(index, "price", parseFloat(e.target.value) || 0)}
-                        data-testid={`input-price-${index}`}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Total</Label>
-                      <div className="flex items-center h-10 px-3 font-mono font-medium text-sm border rounded-md bg-muted">
-                        €{(item.quantity * item.price).toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {lineItems.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeLineItem(index)}
-                    data-testid={`button-remove-${index}`}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Line Items Section */}
+        <LineItemsSection
+          lineItems={lineItems}
+          services={services}
+          selectedServiceIds={selectedServiceIds}
+          onAddItem={addLineItem}
+          onRemoveItem={removeLineItem}
+          onUpdateItem={updateLineItem}
+          onSelectService={handleServiceSelect}
+        />
 
-        {/* Add New Service Dialog */}
-        <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Service</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleNewServiceSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Service Name *</Label>
-                <Input
-                  value={newServiceData.name}
-                  onChange={(e) => setNewServiceData({ ...newServiceData, name: e.target.value })}
-                  required
-                  placeholder="e.g., Web Development"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={newServiceData.description}
-                  onChange={(e) => setNewServiceData({ ...newServiceData, description: e.target.value })}
-                  placeholder="Service description"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Input
-                  value={newServiceData.category}
-                  onChange={(e) => setNewServiceData({ ...newServiceData, category: e.target.value })}
-                  placeholder="e.g., Development, Consulting"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Price *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={newServiceData.price}
-                    onChange={(e) => setNewServiceData({ ...newServiceData, price: e.target.value })}
-                    required
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Unit</Label>
-                  <Select
-                    value={newServiceData.unit}
-                    onValueChange={(value) => setNewServiceData({ ...newServiceData, unit: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="item">Item</SelectItem>
-                      <SelectItem value="hour">Hour</SelectItem>
-                      <SelectItem value="day">Day</SelectItem>
-                      <SelectItem value="week">Week</SelectItem>
-                      <SelectItem value="month">Month</SelectItem>
-                      <SelectItem value="project">Project</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowServiceDialog(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createServiceMutation.isPending}
-                >
-                  {createServiceMutation.isPending ? "Adding..." : "Add Service"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        {/* Service Dialog */}
+        <ServiceDialog
+          isOpen={showServiceDialog}
+          onClose={() => setShowServiceDialog(false)}
+          onServiceCreated={handleServiceCreated}
+        />
 
+        {/* Action Buttons */}
         <div className="flex gap-2 flex-wrap">
           {!isSaved && canEdit ? (
-            <Button
+          <Button
               onClick={handleSubmit}
               data-testid="button-save-invoice"
-              disabled={isLoading}
-            >
+            disabled={isLoading}
+          >
               {isLoading ? "Saving..." : "Save Invoice"}
-            </Button>
+          </Button>
           ) : isSaved && canEdit ? (
-            <Button
+          <Button 
               onClick={editInvoice}
               variant="outline"
               data-testid="button-edit-invoice"
             >
               <Edit className="w-4 h-4 mr-2" />
               Edit Invoice
-            </Button>
+          </Button>
           ) : !canEdit ? (
             <div className="text-sm text-muted-foreground">
               This invoice cannot be edited due to its status.
@@ -703,6 +482,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
         </div>
       </div>
 
+      {/* Preview Section */}
       <div className="sticky top-4">
         {isSaved && savedInvoice && (
           <InvoiceSuccessBanner
@@ -714,35 +494,32 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
         )}
         
         <div className="invoice-preview-container">
-          <InvoicePreview
+        <InvoicePreview
             invoiceNumber={savedInvoice?.invoiceNumber}
-            date={form.watch("date")}
-            orderNumber={form.watch("orderNumber")}
-            projectNumber={form.watch("projectNumber")}
-            forProject={form.watch("forProject")}
-            clientName={selectedClient?.name}
-            clientCompany={selectedClient?.company || undefined}
-            clientAddress={selectedClient?.address || undefined}
-            clientPhone={selectedClient?.phone || undefined}
-            lineItems={lineItems}
-            taxRate={taxRate}
-            notes={form.watch("notes")}
-            // Company data
-            companyName={user?.companyName}
-            companyAddress={user?.address}
-            companyPhone={user?.phone}
-            companyTaxId={user?.taxOfficeId}
-            // Bank details - use selected bank account or fall back to user profile
-            swiftCode={selectedBankAccount?.swiftCode || user?.swiftCode}
-            iban={selectedBankAccount?.iban || user?.iban}
-            accountHolderName={selectedBankAccount?.accountHolderName || user?.accountHolderName}
-            bankAddress={selectedBankAccount?.bankAddress || user?.bankAddress}
-            // Footer contact
-            userName={user?.name}
-            userPhone={user?.phone}
-            userEmail={user?.email}
-          />
-        </div>
+          date={form.watch("date")}
+          orderNumber={form.watch("orderNumber")}
+          projectNumber={form.watch("projectNumber")}
+          forProject={form.watch("forProject")}
+          clientName={selectedClient?.name}
+          clientCompany={selectedClient?.company || undefined}
+          clientAddress={selectedClient?.address || undefined}
+          clientPhone={selectedClient?.phone || undefined}
+          lineItems={lineItems}
+          taxRate={taxRate}
+          notes={form.watch("notes")}
+          companyName={user?.companyName}
+          companyAddress={user?.address}
+          companyPhone={user?.phone}
+          companyTaxId={user?.taxOfficeId}
+          swiftCode={selectedBankAccount?.swiftCode || user?.swiftCode}
+          iban={selectedBankAccount?.iban || user?.iban}
+          accountHolderName={selectedBankAccount?.accountHolderName || user?.accountHolderName}
+          bankAddress={selectedBankAccount?.bankAddress || user?.bankAddress}
+          userName={user?.name}
+          userPhone={user?.phone}
+          userEmail={user?.email}
+        />
+      </div>
       </div>
 
       {/* Send Link Modal */}

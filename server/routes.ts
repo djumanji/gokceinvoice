@@ -4,11 +4,13 @@ import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { requireAuth } from "./middleware";
 import { validateCsrf } from "./index";
-import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertServiceSchema, insertExpenseSchema, updateUserProfileSchema, bankAccountSchema } from "@shared/schema";
+import { insertClientSchema, insertInvoiceSchema, insertLineItemSchema, insertServiceSchema, insertExpenseSchema, updateUserProfileSchema, bankAccountSchema, insertProjectSchema } from "@shared/schema";
 import { z } from "zod";
 import { sanitizeObject } from "./sanitize";
 import multer from "multer";
 import { uploadToS3, deleteFromS3, extractS3KeyFromUrl, uploadCompanyLogo } from "./services/s3-service";
+import path from "path";
+import fs from "fs/promises";
 
 // Configure multer for in-memory storage
 const upload = multer({
@@ -164,6 +166,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete client:", error);
       res.status(500).json({ error: "Failed to delete client" });
+    }
+  });
+
+  // Project routes
+  app.get("/api/clients/:clientId/projects", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const projects = await storage.getProjectsByClient(req.params.clientId, userId);
+      res.json(projects);
+    } catch (error) {
+      console.error("Failed to fetch projects:", error);
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const project = await storage.getProject(req.params.id, userId);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Failed to fetch project:", error);
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Sanitize text inputs to prevent XSS
+      const sanitized = sanitizeObject(req.body, ['name', 'description']);
+
+      // Verify client belongs to user
+      const client = await storage.getClient(req.body.clientId, userId);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      const data = insertProjectSchema.parse(sanitized);
+      const project = await storage.createProject(data);
+      res.status(201).json(project);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Failed to create project:", error);
+      res.status(500).json({ error: "Failed to create project" });
+    }
+  });
+
+  app.patch("/api/projects/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Sanitize text inputs to prevent XSS
+      const sanitized = sanitizeObject(req.body, ['name', 'description']);
+
+      const data = insertProjectSchema.partial().parse(sanitized);
+      const project = await storage.updateProject(req.params.id, userId, data);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Failed to update project:", error);
+      res.status(500).json({ error: "Failed to update project" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const deleted = await storage.deleteProject(req.params.id, userId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      res.status(500).json({ error: "Failed to delete project" });
     }
   });
 
@@ -512,6 +616,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve locally uploaded files (dev mode)
+  app.get("/api/uploads/:filename", async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      const uploadsDir = path.join(process.cwd(), 'attached_assets');
+      const filePath = path.join(uploadsDir, filename);
+
+      // Security: prevent path traversal
+      const normalizedPath = path.normalize(filePath);
+      if (!normalizedPath.startsWith(path.normalize(uploadsDir))) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      // Check if file exists
+      try {
+        await fs.access(filePath);
+      } catch {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      // Determine content type
+      const ext = path.extname(filename).toLowerCase();
+      const contentTypes: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.pdf': 'application/pdf',
+      };
+      const contentType = contentTypes[ext] || 'application/octet-stream';
+
+      res.setHeader('Content-Type', contentType);
+      const fileBuffer = await fs.readFile(filePath);
+      res.send(fileBuffer);
+    } catch (error) {
+      console.error("Failed to serve file:", error);
+      res.status(500).json({ error: "Failed to serve file" });
+    }
+  });
+
   // File upload route
   app.post("/api/upload", requireAuth, uploadLimiter, upload.single('file'), async (req, res) => {
     try {
@@ -534,7 +679,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ url, key });
     } catch (error) {
       console.error("Failed to upload file:", error);
-      res.status(500).json({ error: "Failed to upload file" });
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload file";
+      res.status(500).json({ error: errorMessage });
     }
   });
 

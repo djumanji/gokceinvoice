@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, FileText, Users, Box, Receipt, Moon, Sun, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, FileText, Users, Box, Receipt, Moon, Sun, LogOut, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
@@ -21,9 +21,9 @@ import { useTheme } from "./ThemeProvider";
 
 const menuItems = [
   {
-    title: "Home",
-    url: "/",
-    icon: Home,
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: LayoutDashboard,
   },
   {
     title: "Invoices",
