@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarReveal } from "@/components/SidebarReveal";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LoadingModal } from "@/components/LoadingModal";
 import Dashboard from "@/pages/Dashboard";
@@ -94,8 +95,10 @@ function Router() {
 function AuthLayout({ children, style }: { children: React.ReactNode; style: React.CSSProperties }) {
   const [location] = useLocation();
   const isAuthPage = location === '/login' || location === '/register' || location.startsWith('/verify-email') || location.startsWith('/reset-password') || location === '/forgot-password';
+  const isOnboardingPage = location === '/onboarding';
+  const hideSidebar = isAuthPage || isOnboardingPage;
 
-  if (isAuthPage) {
+  if (hideSidebar) {
     return (
       <div className="h-screen w-full">
         {children}
@@ -106,7 +109,9 @@ function AuthLayout({ children, style }: { children: React.ReactNode; style: Rea
   return (
     <SidebarProvider style={style}>
       <div className="flex h-screen w-full">
-        <AppSidebar />
+        <SidebarReveal>
+          <AppSidebar />
+        </SidebarReveal>
         <div className="flex flex-col flex-1 overflow-hidden">
           <header className="flex items-center gap-2 px-4 h-14 border-b shrink-0">
             <SidebarTrigger data-testid="button-sidebar-toggle" />

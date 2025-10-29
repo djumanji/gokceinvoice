@@ -1,111 +1,123 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, ChevronRight, FileText, Users, Settings, Box } from "lucide-react";
-import { Link } from "wouter";
-import { useOnboardingGuard } from "@/hooks/use-onboarding";
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { StepBasics } from "@/components/onboarding/StepBasics";
+import { StepAddClient } from "@/components/onboarding/StepAddClient";
+import { StepAddService } from "@/components/onboarding/StepAddService";
+import { StepReview } from "@/components/onboarding/StepReview";
+import { SuccessStep } from "@/components/onboarding/SuccessStep";
 import { apiRequest } from "@/lib/queryClient";
+
+type Step = 'basics' | 'client' | 'service' | 'review' | 'success';
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
-  const { isOnboardingComplete, clientCount, invoiceCount, serviceCount } = useOnboardingGuard();
-
-  // Redirect to dashboard if onboarding is complete
-  useEffect(() => {
-    if (isOnboardingComplete) {
-      setLocation("/");
-    }
-  }, [isOnboardingComplete, setLocation]);
-
-  // Fetch user profile to check if profile is set
-  const { data: user } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      return await apiRequest("GET", "/api/auth/me");
-    },
+  const [step, setStep] = useState<Step>('basics');
+  
+  const [data, setData] = useState({
+    companyName: '',
+    currency: 'EUR',
+    clientName: '',
+    clientEmail: '',
+    serviceName: '',
+    price: '',
   });
 
-  const hasProfile = user && (user.companyName || user.address || user.phone || user.taxOfficeId);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
 
-  const setupSteps = [
-    { title: "Set your profile", completed: hasProfile, time: "1 min", href: "/settings" },
-    { title: "Add your first client", completed: clientCount > 0, time: "2 mins", href: "/clients" },
-    { title: "Add your first service", completed: serviceCount > 0, time: "2 mins", href: "/services" },
-    { title: "Create your first invoice", completed: invoiceCount > 0, time: "3 mins", href: "/invoices/new" },
-  ];
+  const handleBasicsContinue = (values: { companyName: string; currency: string }) => {
+    setData(prev => ({ ...prev, ...values }));
+    setStep('client');
+  };
 
-  const quickActions = [
-    { title: "Manage Clients", icon: Users, href: "/clients" },
-    { title: "Manage Services", icon: Box, href: "/services" },
-    { title: "Create Invoice", icon: FileText, href: "/invoices/new" },
-    { title: "View Invoices", icon: FileText, href: "/invoices" },
-  ];
+  const handleClientContinue = (values: { name: string; email: string }) => {
+    setData(prev => ({ ...prev, clientName: values.name, clientEmail: values.email }));
+    setStep('service');
+  };
 
-  const completedCount = setupSteps.filter(step => step.completed).length;
-  const progressPercentage = (completedCount / setupSteps.length) * 100;
+  const handleClientSkip = () => {
+    setStep('service');
+  };
+
+  const handleServiceContinue = (values: { name: string; price: string }) => {
+    setData(prev => ({ ...prev, serviceName: values.name, price: values.price }));
+    setStep('review');
+  };
+
+  const handleServiceSkip = () => {
+    setStep('review');
+  };
+
+  const handleGenerate = async () => {
+    const num = Math.floor(Math.random() * 1000000);
+    const invNum = `INV-${String(num).padStart(6, '0')}`;
+    setInvoiceNumber(invNum);
+
+    try {
+      await apiRequest('POST', '/api/invoices', {
+        clientName: data.clientName,
+        clientEmail: data.clientEmail,
+        items: [{
+          name: data.serviceName,
+          quantity: 1,
+          price: data.price,
+        }],
+        currency: data.currency,
+      });
+      
+      setStep('success');
+    } catch (error) {
+      console.error('Failed to create invoice:', error);
+    }
+  };
+
+  const handleGoToDashboard = () => {
+    sessionStorage.setItem('onboarding-just-completed', 'true');
+    setTimeout(() => {
+      setLocation('/');
+    }, 200);
+  };
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
-          Welcome to InvoiceHub!
-        </h1>
-        <p className="text-muted-foreground">
-          Let's get you set up and ready to send your first invoice
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      {step === 'basics' && (
+        <StepBasics onContinue={handleBasicsContinue} />
+      )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Let's start step-by-step</CardTitle>
-            <span className="text-sm text-muted-foreground">{completedCount}/{setupSteps.length} completed</span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="w-full bg-muted rounded-full h-2 mb-6">
-            <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progressPercentage}%` }}></div>
-          </div>
+      {step === 'client' && (
+        <StepAddClient
+          onBack={() => setStep('basics')}
+          onContinue={handleClientContinue}
+          onSkip={handleClientSkip}
+        />
+      )}
 
-          <div className="space-y-3">
-            {setupSteps.map((step, index) => (
-              <Link key={index} href={step.href}>
-                <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      step.completed 
-                        ? 'bg-green-500 border-2 border-green-600' 
-                        : 'border-2 border-muted-foreground'
-                    }`}>
-                      {step.completed && <CheckCircle2 className="w-5 h-5 text-white" />}
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{step.title}</h3>
-                      <p className="text-sm text-muted-foreground">{step.time}</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {step === 'service' && (
+        <StepAddService
+          currency={data.currency}
+          onBack={() => setStep('client')}
+          onContinue={handleServiceContinue}
+          onSkip={handleServiceSkip}
+        />
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {quickActions.map((action, index) => (
-          <Link key={index} href={action.href}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-              <CardContent className="p-6">
-                <action.icon className="w-8 h-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                <h3 className="font-semibold">{action.title}</h3>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {step === 'review' && (
+        <StepReview
+          companyName={data.companyName}
+          clientName={data.clientName}
+          serviceName={data.serviceName}
+          price={data.price}
+          currency={data.currency}
+          onBack={() => setStep('service')}
+          onGenerate={handleGenerate}
+        />
+      )}
+
+      {step === 'success' && (
+        <SuccessStep
+          invoiceNumber={invoiceNumber}
+          onGoToDashboard={handleGoToDashboard}
+        />
+      )}
     </div>
   );
 }

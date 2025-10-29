@@ -31,15 +31,15 @@ export function useOnboardingGuard() {
     },
   });
 
-  const hasProfile = user && (user.companyName || user.address || user.phone || user.taxOfficeId);
-  const isOnboardingComplete = hasProfile && clients.length > 0 && invoices.length > 0 && services.length > 0;
+  const hasCompanyName = user && user.companyName;
+  const isOnboardingComplete = hasCompanyName && invoices.length > 0;
 
   return { 
     isOnboardingComplete, 
     clientCount: clients.length, 
     invoiceCount: invoices.length, 
     serviceCount: services.length,
-    hasProfile: !!hasProfile
+    hasProfile: !!hasCompanyName
   };
 }
 
