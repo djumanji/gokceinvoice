@@ -50,7 +50,7 @@ const lineItemSchema = z.object({
   price: z.number().min(0, "Price must be positive"),
 });
 
-const invoiceFormSchema = z charge({
+const invoiceFormSchema = z.object({
   clientId: z.string().min(1, "Client is required"),
   bankAccountId: z.string().optional(),
   date: z.string(),
