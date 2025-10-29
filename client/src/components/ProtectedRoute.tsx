@@ -32,7 +32,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     },
     retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true, // Changed to true to refetch when component mounts (on navigation)
+    staleTime: 30000, // Cache for 30 seconds (reduced from Infinity to allow refresh after onboarding)
   });
 
   useEffect(() => {
@@ -53,11 +54,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     clearTimeout(timeoutId);
 
+    // Check if user is null/undefined (logged out or not authenticated)
+    if (!user && !queryLoading) {
+      console.log('[ProtectedRoute] No user found, redirecting to /login');
+      setLocation("/login");
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      return;
+    }
+
     // Only redirect on actual auth failure, not during refetch
     if (error) {
       console.log('[ProtectedRoute] Error detected, redirecting to /login');
       setLocation("/login");
       setIsLoading(false);
+      setIsAuthenticated(false);
       return;
     }
 

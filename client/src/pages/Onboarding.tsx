@@ -5,7 +5,7 @@ import { StepBankAccount } from "@/components/onboarding/StepBankAccount";
 import { StepFirstClient } from "@/components/onboarding/StepFirstClient";
 import { StepReviewConfirm } from "@/components/onboarding/StepReviewConfirm";
 import { StepComplete } from "@/components/onboarding/StepComplete";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type Step = 'company' | 'bank' | 'client' | 'review' | 'complete';
@@ -147,11 +147,20 @@ export default function Onboarding() {
     setStep('complete');
   };
 
-  const handleNavigate = (path: string) => {
+  const handleNavigate = async (path: string) => {
     sessionStorage.setItem('onboarding-just-completed', 'true');
+    
+    // Invalidate auth and onboarding queries to force fresh fetch
+    // This ensures ProtectedRoute gets the latest auth state
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+    
+    // Small delay to allow cache invalidation to propagate
     setTimeout(() => {
       setLocation(path);
-    }, 200);
+    }, 100);
   };
 
   const handleSkipOnboarding = async () => {

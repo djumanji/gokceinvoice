@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, FileText, Users, Box, Receipt, Moon, Sun, LogOut, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import {
@@ -62,8 +62,7 @@ export function AppSidebar() {
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/auth/me");
-      return res.json();
+      return await apiRequest("GET", "/api/auth/me");
     },
   });
 
@@ -71,12 +70,17 @@ export function AppSidebar() {
     try {
       console.log('[Logout] Starting logout');
       await apiRequest("POST", "/api/auth/logout");
-      console.log('[Logout] Logout successful, invalidating queries');
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      console.log('[Logout] Logout successful, clearing all queries');
+      // Clear all queries and cache
+      queryClient.clear();
+      // Use window.location for a hard redirect to ensure complete logout
       console.log('[Logout] Redirecting to /login');
-      setLocation("/login");
+      window.location.href = '/login';
     } catch (error) {
       console.error('[Logout] Logout failed:', error);
+      // Even on error, try to redirect
+      queryClient.clear();
+      window.location.href = '/login';
     }
   };
 
