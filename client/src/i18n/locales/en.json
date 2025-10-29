@@ -150,7 +150,7 @@
     "expenses_plural": "expenses"
   },
   "clients": {
-    "title": "Clients",
+    "title": "Manage Clients",
     "subtitle": "Manage your client information and relationships",
     "addClient": "Add Client",
     "editClient": "Edit Client",

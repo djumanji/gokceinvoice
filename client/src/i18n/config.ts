@@ -11,6 +11,13 @@ const resources = {
   el: { translation: el },
 };
 
+// Force English during e2e to make text assertions stable
+if (typeof window !== 'undefined' && (import.meta as any).env?.VITE_E2E_BYPASS_AUTH === '1') {
+  try {
+    window.localStorage.setItem('i18nextLng', 'en');
+  } catch {}
+}
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)

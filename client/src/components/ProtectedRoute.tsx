@@ -8,6 +8,12 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  // In e2e test mode, bypass auth checks to allow UI tests to run
+  // This is enabled by starting the dev server with VITE_E2E_BYPASS_AUTH=1
+  if (import.meta.env.VITE_E2E_BYPASS_AUTH === '1') {
+    return <>{children}</>;
+  }
+
   const [, setLocation] = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
