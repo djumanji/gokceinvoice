@@ -875,18 +875,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      // Sanitize text inputs
+      // Sanitize text inputs (empty strings become null)
       const sanitized = sanitizeObject(req.body, ['accountHolderName', 'bankName', 'accountNumber', 'iban', 'swiftCode', 'bankAddress', 'bankBranch']);
+      
+      // Convert null values to undefined for optional fields (Zod expects undefined, not null)
+      const cleaned: any = { ...sanitized };
+      const optionalFields = ['accountNumber', 'iban', 'swiftCode', 'bankAddress', 'bankBranch'];
+      for (const field of optionalFields) {
+        if (cleaned[field] === null || cleaned[field] === '') {
+          delete cleaned[field];
+        }
+      }
 
-      const data = bankAccountSchema.parse(sanitized);
+      const data = bankAccountSchema.parse(cleaned);
       const bankAccount = await storage.createBankAccount(userId, data);
       res.status(201).json(bankAccount);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+        console.error("Bank account validation error:", error.errors);
+        return res.status(400).json({ 
+          error: "Validation failed",
+          details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        });
       }
       console.error("Failed to create bank account:", error);
-      res.status(500).json({ error: "Failed to create bank account" });
+      const errorMessage = error instanceof Error ? error.message : "Failed to create bank account";
+      res.status(500).json({ 
+        error: "Failed to create bank account",
+        message: errorMessage 
+      });
     }
   });
 

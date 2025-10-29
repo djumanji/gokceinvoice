@@ -19,17 +19,17 @@ interface InvoiceWithClient extends Invoice {
 export default function Dashboard() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
-  const { isOnboardingComplete } = useOnboardingGuard();
+  const { isOnboardingComplete, isLoading: onboardingLoading } = useOnboardingGuard();
 
   // Redirect to onboarding if not complete
   useEffect(() => {
-    if (!isOnboardingComplete) {
+    if (!onboardingLoading && !isOnboardingComplete) {
       setLocation("/onboarding");
     }
-  }, [isOnboardingComplete, setLocation]);
+  }, [isOnboardingComplete, onboardingLoading, setLocation]);
 
   // Show loading or empty state while checking
-  if (!isOnboardingComplete) {
+  if (onboardingLoading || !isOnboardingComplete) {
     return (
       <div className="p-6">
         <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>

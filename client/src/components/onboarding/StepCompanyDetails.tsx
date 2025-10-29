@@ -28,9 +28,10 @@ interface StepCompanyDetailsProps {
     phone: string;
     currency: string;
   }) => void;
+  onSkip?: () => void;
 }
 
-export function StepCompanyDetails({ initialData, onContinue }: StepCompanyDetailsProps) {
+export function StepCompanyDetails({ initialData, onContinue, onSkip }: StepCompanyDetailsProps) {
   const [formData, setFormData] = useState(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -157,6 +158,19 @@ export function StepCompanyDetails({ initialData, onContinue }: StepCompanyDetai
               Continue to Bank Account →
             </Button>
           </form>
+
+          {onSkip && (
+            <div className="mt-4 text-center">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onSkip}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Skip setup and go to dashboard
+              </Button>
+            </div>
+          )}
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>Step 1 of 4</p>

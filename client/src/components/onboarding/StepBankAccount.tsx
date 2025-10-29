@@ -96,13 +96,20 @@ export function StepBankAccount({ currency, onBack, onContinue }: StepBankAccoun
     }
   };
 
+  const handleBack = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onBack();
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12 relative">
       <Button
+        type="button"
         variant="ghost"
         size="sm"
-        onClick={onBack}
-        className="absolute top-8 left-8 z-10"
+        onClick={handleBack}
+        className="absolute top-8 left-8 z-50 cursor-pointer"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back

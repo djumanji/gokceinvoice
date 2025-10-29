@@ -40,12 +40,12 @@ function startRequestTracking() {
     clearTimeout(loadingTimeout);
   }
   
-  // Only show loading after 1 second
+  // Only show loading after 300ms for faster feedback
   loadingTimeout = setTimeout(() => {
     if (activeRequests > 0 && setGlobalLoadingState) {
       setGlobalLoadingState(true);
     }
-  }, 1000);
+  }, 300);
 }
 
 function endRequestTracking() {

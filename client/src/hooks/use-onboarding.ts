@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -8,34 +6,51 @@ import { apiRequest } from "@/lib/queryClient";
  * Onboarding is complete when user has:
  * 1. Set profile (company name, address, phone, or tax ID)
  * 2. Created at least 1 client
- * 3. Created at least 1 invoice  
- * 4. Created at least 1 service
+ * 
+ * Note: Invoice and service creation are not required for onboarding completion.
+ * The onboarding wizard only requires company details and a client.
  */
 export function useOnboardingGuard() {
-  const [, setLocation] = useLocation();
-  const { data: clients = [] } = useQuery<any[]>({
-    queryKey: ["/api/clients"],
-  });
-  const { data: invoices = [] } = useQuery<any[]>({
-    queryKey: ["/api/invoices"],
-  });
-  const { data: services = [] } = useQuery<any[]>({
-    queryKey: ["/api/services"],
-  });
   
-  // Fetch user profile to check if profile is set
-  const { data: user } = useQuery({
+  // Run all queries in parallel with proper queryFn for better caching
+  // Use enabled flag to only fetch data we actually need for onboarding check
+  const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/auth/me");
     },
+    staleTime: 30000, // Cache for 30 seconds
   });
 
-  const hasCompanyName = user && user.companyName;
-  const isOnboardingComplete = hasCompanyName && invoices.length > 0;
+  const { data: clients = [], isLoading: clientsLoading } = useQuery<any[]>({
+    queryKey: ["/api/clients"],
+    enabled: !!user, // Only fetch if user exists (already authenticated)
+    staleTime: 30000,
+  });
+  
+  // Only fetch these if needed - they're not required for onboarding check
+  // but keeping for backward compatibility
+  const { data: invoices = [] } = useQuery<any[]>({
+    queryKey: ["/api/invoices"],
+    enabled: !!user,
+    staleTime: 30000,
+  });
+  
+  const { data: services = [] } = useQuery<any[]>({
+    queryKey: ["/api/services"],
+    enabled: !!user,
+    staleTime: 30000,
+  });
+
+  const hasCompanyName = user?.companyName;
+  // Onboarding is complete if user has company name and at least one client
+  // This matches what the onboarding wizard actually creates
+  const isOnboardingComplete = hasCompanyName && clients.length > 0;
+  const isLoading = userLoading || (!!user && clientsLoading);
 
   return { 
     isOnboardingComplete, 
+    isLoading,
     clientCount: clients.length, 
     invoiceCount: invoices.length, 
     serviceCount: services.length,

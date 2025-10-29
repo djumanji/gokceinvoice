@@ -82,26 +82,38 @@ export default function Onboarding() {
 
   const handleBankSubmit = async (bankAccounts: BankAccountData[]) => {
     try {
-      // Create all bank accounts
-      for (const account of bankAccounts) {
-        await apiRequest('POST', '/api/bank-accounts', {
+      // Create all bank accounts in parallel for faster execution
+      const accountPromises = bankAccounts.map(account => {
+        const payload: any = {
           accountHolderName: account.accountHolderName,
           bankName: account.bankName,
-          iban: account.iban || undefined,
-          swiftCode: account.swiftCode || undefined,
-          accountNumber: undefined,
           currency: account.currency,
           isDefault: account.isDefault,
-        });
-      }
+        };
+        
+        // Only include optional fields if they have non-empty values
+        // Convert empty strings to undefined to avoid sending them
+        if (account.iban && account.iban.trim()) {
+          payload.iban = account.iban.trim();
+        }
+        if (account.swiftCode && account.swiftCode.trim()) {
+          payload.swiftCode = account.swiftCode.trim();
+        }
+        
+        return apiRequest('POST', '/api/bank-accounts', payload);
+      });
+
+      // Wait for all bank accounts to be created in parallel
+      await Promise.all(accountPromises);
 
       setData(prev => ({ ...prev, bankAccounts }));
       setStep('client');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save bank accounts:', error);
+      const errorMessage = error?.message || error?.error || "Failed to save bank account. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to save bank account. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -142,12 +154,33 @@ export default function Onboarding() {
     }, 200);
   };
 
+  const handleSkipOnboarding = async () => {
+    try {
+      // Mark onboarding as skipped by setting a flag in user profile
+      // Using address field as a marker (users can still update it later)
+      await apiRequest('PATCH', '/api/users/profile', {
+        onboardingSkipped: true,
+      });
+      
+      // Invalidate queries to refresh onboarding status
+      window.location.href = '/dashboard';
+    } catch (error) {
+      console.error('Failed to skip onboarding:', error);
+      toast({
+        title: "Error",
+        description: "Failed to skip onboarding. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {step === 'company' && (
         <StepCompanyDetails
           initialData={data.company}
           onContinue={handleCompanySubmit}
+          onSkip={handleSkipOnboarding}
         />
       )}
 

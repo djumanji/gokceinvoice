@@ -38,13 +38,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     console.log('[ProtectedRoute] Effect running:', { queryLoading, hasUser: !!user, hasError: !!error });
     
-    // Add timeout to prevent infinite loading
+    // Add timeout to prevent infinite loading - reduced from 3s to 1s for faster UX
     const timeoutId = setTimeout(() => {
       if (queryLoading) {
         console.log('[ProtectedRoute] Timeout reached, assuming not authenticated');
         setIsLoading(false);
       }
-    }, 3000);
+    }, 1000);
 
     if (queryLoading) {
       console.log('[ProtectedRoute] Still loading, waiting...');
