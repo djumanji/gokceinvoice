@@ -185,11 +185,20 @@ export default function Onboarding() {
       )}
 
       {step === 'bank' && (
-        <StepBankAccount
-          currency={data.company.currency}
-          onBack={() => setStep('company')}
-          onContinue={handleBankSubmit}
-        />
+        <>
+          <StepBankAccount
+            key="bank-step"
+            currency={data.company.currency}
+            onBack={() => {
+              console.log('onBack callback called');
+              setStep((prev) => {
+                console.log('setStep called with prev:', prev);
+                return 'company';
+              });
+            }}
+            onContinue={handleBankSubmit}
+          />
+        </>
       )}
 
       {step === 'client' && (

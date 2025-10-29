@@ -99,23 +99,33 @@ export function StepBankAccount({ currency, onBack, onContinue }: StepBankAccoun
   const handleBack = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    onBack();
+    console.log('Back button clicked, calling onBack');
+    // Force immediate callback
+    if (onBack) {
+      onBack();
+    } else {
+      console.error('onBack is not defined!');
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12 relative">
-      <Button
+    <div className="min-h-screen px-4 py-12 relative" style={{ overflow: 'visible' }}>
+      <button
         type="button"
-        variant="ghost"
-        size="sm"
         onClick={handleBack}
-        className="absolute top-8 left-8 z-50 cursor-pointer"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        className="absolute top-8 left-8 z-[9999] cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium px-3 py-2 min-h-8 hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1"
+        style={{ pointerEvents: 'auto', position: 'fixed' }}
       >
-        <ArrowLeft className="mr-2 h-4 w-4" />
+        <ArrowLeft className="h-4 w-4" />
         Back
-      </Button>
+      </button>
 
-      <Card className="w-full max-w-2xl">
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-2xl relative">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
             <Building2 className="h-8 w-8 text-primary" />
@@ -230,7 +240,8 @@ export function StepBankAccount({ currency, onBack, onContinue }: StepBankAccoun
             <p>Step 2 of 4</p>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

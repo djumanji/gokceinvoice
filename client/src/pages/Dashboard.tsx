@@ -21,6 +21,17 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { isOnboardingComplete, isLoading: onboardingLoading } = useOnboardingGuard();
 
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  const { data: invoices = [], isLoading: invoicesLoading } = useQuery<Invoice[]>({
+    queryKey: ["/api/invoices"],
+    enabled: isOnboardingComplete && !onboardingLoading, // Only fetch when onboarding is complete
+  });
+
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+    enabled: isOnboardingComplete && !onboardingLoading, // Only fetch when onboarding is complete
+  });
+
   // Redirect to onboarding if not complete
   useEffect(() => {
     if (!onboardingLoading && !isOnboardingComplete) {
@@ -36,14 +47,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const { data: invoices = [], isLoading: invoicesLoading } = useQuery<Invoice[]>({
-    queryKey: ["/api/invoices"],
-  });
-
-  const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
-  });
 
   const invoicesWithClients: InvoiceWithClient[] = invoices.map(invoice => {
     const client = clients.find(c => c.id === invoice.clientId);
