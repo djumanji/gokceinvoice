@@ -111,6 +111,14 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 009_add_company_logo.sql"
+if psql "$DATABASE_URL" -f migrations/009_add_company_logo.sql; then
+    echo "✅ Company logo column added to users"
+else
+    echo "⚠️  Company logo column may already exist - continuing..."
+fi
+echo ""
+
 # Verify tables exist
 echo "🔍 Verifying tables..."
 TABLE_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" 2>/dev/null || echo "0")
