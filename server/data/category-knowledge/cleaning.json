@@ -1,0 +1,17 @@
+{
+  "qualificationQuestions": [
+    "Briefly describe the problem or project.",
+    "What is the location/area size involved?",
+    "How soon do you need help?"
+  ],
+  "commonPainPoints": [
+    "Scheduling availability",
+    "Unexpected costs",
+    "Quality assurance"
+  ],
+  "budgetHints": {
+    "low": "Minor repair or short visit",
+    "medium": "Standard job with materials",
+    "high": "Larger scope or urgent service"
+  }
+}

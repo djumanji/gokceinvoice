@@ -1,0 +1,17 @@
+{
+  "qualificationQuestions": [
+    "Is it an emergency?",
+    "What fixture or pipe is affected?",
+    "Any leaks or water damage visible?"
+  ],
+  "commonPainPoints": [
+    "Burst pipes",
+    "Clogged drains",
+    "Leak detection"
+  ],
+  "budgetHints": {
+    "low": "Basic unclogging or small fixes",
+    "medium": "Fixture replacement or minor leaks",
+    "high": "Re-piping or major repair"
+  }
+}
