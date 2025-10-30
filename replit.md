@@ -142,3 +142,53 @@ Preferred communication style: Simple, everyday language.
 - AWS credentials for S3
 - Resend API key for emails
 - Optional analytics keys (Mixpanel, PostHog)
+
+# Deployment
+
+## Reserved VM Deployment on Replit
+
+The application is configured for Reserved VM deployment using Google Compute Engine (GCE).
+
+**Deployment Configuration:**
+- Deployment target: `gce` (Reserved VM)
+- Build command: `npm install && npm run build`
+- Start command: `npm run start`
+- Server binding: `0.0.0.0:5000`
+- External port: 80 (HTTPS)
+
+**How to Deploy:**
+
+1. Click the **Deploy** button in your Replit workspace (or search "Deployments" in the command palette)
+2. Select **Reserved VM** as the deployment type
+3. Choose your machine configuration (default recommended for most cases)
+4. Select a subdomain (e.g., `your-app-name.replit.app`)
+5. Click **Deploy** - Replit will create a dedicated VM and deploy your app
+
+**Environment Variables for Production:**
+Before deploying, make sure you've set up the required environment variables in Replit Secrets:
+- `DATABASE_URL` - PostgreSQL connection string
+- `SESSION_SECRET` - Secure random string for session encryption
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL` - For email verification and password reset
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET` - For file uploads
+- OAuth credentials (if using Google/GitHub login)
+
+**Note:** The server automatically uses `process.env.PORT` (default: 5000) for binding, which matches the port configuration in `.replit`.
+
+For more details on Reserved VM deployments, see [Replit's official documentation](https://docs.replit.com/cloud-services/deployments/reserved-vm-deployments).
+
+**Post-Deployment:**
+- Your app will be available at `https://your-subdomain.replit.app`
+- The Reserved VM stays always-on, with no cold starts
+- Logs and monitoring are available in the Deployments tab
+
+**Performance Optimization:**
+For better performance, consider switching from Neon PostgreSQL to Replit's built-in PostgreSQL:
+- **Current setup:** Neon PostgreSQL (AWS us-east-2) - 700ms-3.6s API response times
+- **Recommended:** Replit PostgreSQL (co-located with app) - 5-50ms API response times
+- Storage limit: 10 GiB per database (sufficient for most invoice management needs)
+
+## Recent Changes (October 30, 2025)
+
+- Fixed deployment configuration: Changed `deploymentTarget` from `"reserved-vm"` to `"gce"` for proper Reserved VM deployment
+- Fixed build error in `server/services/llm.ts`: Changed `const daysUntilWeekend` to `let` to allow reassignment
+- Verified production build succeeds (frontend: 2.1 MB → 524 KB gzipped, backend: 121 KB)
