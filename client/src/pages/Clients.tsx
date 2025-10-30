@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Users as UsersIcon, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,11 +44,7 @@ export default function Clients() {
     address: "",
   });
   const [projects, setProjects] = useState<Project[]>([]);
-  const [newProject, setNewProject] = useState({ name: "", description: "" });
-
-  const { data: clients = [], isLoading } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
-  });
+  const prevProjectIdsRef = useRef<string>("");
 
   // Fetch projects for editing client
   const { data: clientProjects = [] } = useQuery<Project[]>({
@@ -62,17 +58,19 @@ export default function Clients() {
 
   useEffect(() => {
     if (editingClient && clientProjects && clientProjects.length > 0) {
-      // Only update if projects actually changed (compare by IDs to avoid infinite loop)
-      const currentProjectIds = projects.map(p => p.id).sort().join(',');
+      // Create a stable ID string for comparison
       const newProjectIds = clientProjects.map(p => p.id).sort().join(',');
       
-      if (currentProjectIds !== newProjectIds) {
+      // Only update if projects actually changed
+      if (prevProjectIdsRef.current !== newProjectIds) {
         setProjects(clientProjects);
+        prevProjectIdsRef.current = newProjectIds;
       }
     } else if (!editingClient || !clientProjects || clientProjects.length === 0) {
       // Only clear if we're not editing or projects are empty
-      if (projects.length > 0) {
+      if (prevProjectIdsRef.current !== "") {
         setProjects([]);
+        prevProjectIdsRef.current = "";
       }
     }
   }, [editingClient?.id, clientProjects]); // Use editingClient.id instead of editingClient object
