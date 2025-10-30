@@ -307,7 +307,7 @@ export default function Marketing() {
             </h1>
             
             <div className="mt-10 p-2 text-justify text-lg text-gray-700 max-lg:max-w-full">
-              {t("marketing.hero.description")}
+              {t("marketing.hero.description") || "Streamline your billing process with our comprehensive professional invoice management solution. Easily create, send, and track invoices, ensuring timely payments and efficient financial oversight."}
             </div>
 
             <h2 className="mt-6 text-lg font-semibold text-gray-900">{t("marketing.hero.getStarted")}</h2>
@@ -456,8 +456,8 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
                 <div className="text-6xl">⚡</div>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-100">{t("marketing.features.fastCreation.title")}</h3>
-              <div className="text-gray-300">
+              <h3 className="text-2xl font-semibold text-white">{t("marketing.features.fastCreation.title")}</h3>
+              <div className="text-gray-200">
                 {t("marketing.features.fastCreation.description")}
               </div>
             </div>
@@ -466,8 +466,8 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
                 <div className="text-6xl">📊</div>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-100">{t("marketing.features.trackManage.title")}</h3>
-              <div className="text-gray-300">
+              <h3 className="text-2xl font-semibold text-white">{t("marketing.features.trackManage.title")}</h3>
+              <div className="text-gray-200">
                 {t("marketing.features.trackManage.description")}
               </div>
             </div>
@@ -476,8 +476,8 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                 <div className="text-6xl">🔒</div>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-100">{t("marketing.features.secure.title")}</h3>
-              <div className="text-gray-300">
+              <h3 className="text-2xl font-semibold text-white">{t("marketing.features.secure.title")}</h3>
+              <div className="text-gray-200">
                 {t("marketing.features.secure.description")}
               </div>
             </div>
