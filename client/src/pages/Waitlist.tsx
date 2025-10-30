@@ -145,9 +145,12 @@ export default function Waitlist() {
             <button
               onClick={(e) => {
                 e.preventDefault();
-                setLocation("/register");
+                e.stopPropagation();
+                console.log('Register here clicked');
+                window.location.href = '/register';
               }}
-              className="text-primary hover:underline cursor-pointer"
+              className="text-primary hover:underline cursor-pointer font-medium"
+              type="button"
             >
               Register here
             </button>

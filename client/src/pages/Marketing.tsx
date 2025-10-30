@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
@@ -154,7 +154,9 @@ export default function Marketing() {
     e.stopPropagation();
     
     if (window.innerWidth < RESPONSIVE_WIDTH) {
-      setIsHeaderCollapsed((prev) => !prev);
+      const newState = !isHeaderCollapsed;
+      console.log('Toggling menu:', { from: isHeaderCollapsed, to: newState });
+      setIsHeaderCollapsed(newState);
     }
   };
 
@@ -175,30 +177,36 @@ export default function Marketing() {
     }
   }, [isHeaderCollapsed]);
 
-  const handleClickOutside = (e: MouseEvent) => {
+  const handleClickOutside = useCallback((e: MouseEvent) => {
     const target = e.target as Node;
+    const menuButton = document.querySelector('button[aria-controls="collapsed-header-items"]');
+    
+    // Don't close if clicking on the menu button or its children
+    if (menuButton && (menuButton === target || menuButton.contains(target))) {
+      return;
+    }
+    
     if (headerRef.current && !headerRef.current.contains(target)) {
-      // Check if click is on the menu button
-      const menuButton = document.querySelector('[aria-controls="collapsed-header-items"]');
-      if (menuButton && menuButton.contains(target)) {
-        return;
-      }
-      
-      if (window.innerWidth < RESPONSIVE_WIDTH && !isHeaderCollapsed && headerRef.current) {
+      if (window.innerWidth < RESPONSIVE_WIDTH) {
         setIsHeaderCollapsed(true);
-        headerRef.current.style.width = "0vw";
-        headerRef.current.style.opacity = "0";
-        headerRef.current.classList.remove("opacity-100");
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // Only add click outside listener when menu is open
     if (!isHeaderCollapsed && window.innerWidth < RESPONSIVE_WIDTH) {
-      setTimeout(() => window.addEventListener("click", handleClickOutside), 1);
-      return () => window.removeEventListener("click", handleClickOutside);
+      // Use a small delay to avoid immediate closure on toggle
+      const timeoutId = setTimeout(() => {
+        document.addEventListener("click", handleClickOutside, true);
+      }, 100);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener("click", handleClickOutside, true);
+      };
     }
-  }, [isHeaderCollapsed]);
+  }, [isHeaderCollapsed, handleClickOutside]);
 
   const reviews = [
     {
@@ -280,8 +288,10 @@ export default function Marketing() {
         </div>
         
         <button
-          className="absolute right-3 top-3 z-[100] text-3xl text-gray-900 lg:hidden cursor-pointer"
+          className="absolute right-3 top-3 z-[100] text-3xl text-gray-900 lg:hidden cursor-pointer hover:bg-gray-100 rounded p-1"
           onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             console.log('Hamburger button clicked', { isHeaderCollapsed, width: window.innerWidth });
             toggleHeader(e);
           }}
@@ -289,6 +299,9 @@ export default function Marketing() {
           aria-label={isHeaderCollapsed ? "Open menu" : "Close menu"}
           aria-controls="collapsed-header-items"
           aria-expanded={!isHeaderCollapsed}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
         >
           {isHeaderCollapsed ? <Menu className="h-8 w-8" /> : <X className="h-8 w-8" />}
         </button>
