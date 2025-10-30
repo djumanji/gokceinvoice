@@ -15,7 +15,7 @@ test.describe('Email Authentication Flow', () => {
   const timestamp = Date.now();
   const testEmail = `test-${timestamp}@example.com`;
   const testPassword = 'SecurePassword123!';
-  const testUsername = `testuser-${timestamp}`;
+  // Username field is not present in current UI
 
   test.describe('User Registration & Email Verification', () => {
     test('should register new user and send verification email', async ({ page }) => {
@@ -27,13 +27,9 @@ test.describe('Email Authentication Flow', () => {
       
       // Fill registration form
       await page.fill('input[type="email"]', testEmail);
-      await page.fill('input[placeholder="johndoe"]', testUsername);
-      await page.fill('input[type="password"]', testPassword);
-      
-      // Find confirm password field (second password input)
       const passwordInputs = page.locator('input[type="password"]');
-      const confirmPasswordInput = passwordInputs.nth(1);
-      await confirmPasswordInput.fill(testPassword);
+      await passwordInputs.first().fill(testPassword);
+      await passwordInputs.nth(1).fill(testPassword);
       
       // Submit registration
       const registerButton = page.locator('button:has-text("Register")');
@@ -197,19 +193,16 @@ test.describe('Email Authentication Flow', () => {
       const uniqueTimestamp = Date.now();
       const uniqueEmail = `e2e-test-${uniqueTimestamp}@example.com`;
       const uniquePassword = 'SecurePassword123!';
-      const uniqueUsername = `e2e-user-${uniqueTimestamp}`;
+      // No username in UI
       
       // Step 1: Register
       await page.goto('http://localhost:3000/register');
       await expect(page.locator('text=Create an Account')).toBeVisible();
       
       await page.fill('input[type="email"]', uniqueEmail);
-      await page.fill('input[placeholder="johndoe"]', uniqueUsername);
-      await page.fill('input[type="password"]', uniquePassword);
-      
-      const passwordInputs = page.locator('input[type="password"]');
-      const confirmPasswordInput = passwordInputs.nth(1);
-      await confirmPasswordInput.fill(uniquePassword);
+      const passwordInputs2 = page.locator('input[type="password"]');
+      await passwordInputs2.first().fill(uniquePassword);
+      await passwordInputs2.nth(1).fill(uniquePassword);
       
       await page.locator('button:has-text("Register")').click();
       await page.waitForTimeout(2000);

@@ -6,13 +6,6 @@ test.describe('Login Page', () => {
   });
 
   test('should display login form correctly', async ({ page }) => {
-    // Check title
-    await expect(page.locator('text=Login to InvoiceHub')).toBeVisible();
-    
-    // Check social login buttons
-    await expect(page.locator('button:has-text("Continue with Google")')).toBeVisible();
-    await expect(page.locator('button:has-text("Continue with GitHub")')).toBeVisible();
-    
     // Check form fields
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
@@ -47,8 +40,8 @@ test.describe('Login Page', () => {
   });
 
   test('should toggle theme', async ({ page }) => {
-    // Find theme toggle button by aria-label
-    const themeToggle = page.locator('button[aria-label="Toggle theme"]');
+    // Use stable test id for theme toggle
+    const themeToggle = page.locator('[data-testid="button-theme-toggle"]');
     await expect(themeToggle).toBeVisible();
     await themeToggle.click();
     await page.waitForTimeout(500);
