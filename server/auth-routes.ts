@@ -223,9 +223,11 @@ export function registerAuthRoutes(app: Express) {
   // Login endpoint
   app.post('/api/auth/login', authLimiter, validateCsrf, async (req, res) => {
     try {
+      console.log('[Login] ========== LOGIN REQUEST STARTED ==========');
       console.log('[Login] Login attempt received');
       const { email, password } = req.body;
-      console.log('[Login] Email:', email);
+      console.log('[Login] Email/username from request:', email);
+      console.log('[Login] Has password:', !!password);
 
       if (!email || !password) {
         console.log('[Login] Missing email or password');
@@ -234,14 +236,28 @@ export function registerAuthRoutes(app: Express) {
 
       // Find user by email or username
       console.log('[Login] Looking up user by email or username:', email);
+      console.log('[Login] Storage type:', storage.constructor.name);
       let user = await storage.getUserByEmail(email);
-      console.log('[Login] User found by email:', user ? 'YES' : 'NO');
+      console.log('[Login] User found by email:', user ? `YES - ${user.email}` : 'NO');
       
       // If not found by email, try finding by username (if input doesn't look like email)
       if (!user && !email.includes('@')) {
         console.log('[Login] Trying username lookup for:', email);
-        user = await storage.getUserByUsername(email);
-        console.log('[Login] User found by username:', user ? 'YES' : 'NO');
+        try {
+          user = await storage.getUserByUsername(email);
+          console.log('[Login] User found by username:', user ? `YES - ${user.email}` : 'NO');
+          if (user) {
+            console.log('[Login] User details:', {
+              id: user.id,
+              email: user.email,
+              username: user.username,
+              isAdmin: user.isAdmin,
+              hasPassword: !!user.password
+            });
+          }
+        } catch (err) {
+          console.error('[Login] Error in getUserByUsername:', err);
+        }
       }
 
       // Always perform bcrypt comparison to prevent timing attacks
@@ -249,19 +265,22 @@ export function registerAuthRoutes(app: Express) {
       // This is intentional for security - generates a constant-time comparison
       // even when user doesn't exist to prevent user enumeration attacks
       const passwordHash = (user?.password) || DUMMY_PASSWORD_HASH;
-      console.log('[Login] Comparing password');
+      console.log('[Login] Comparing password (has user:', !!user, ', has password:', !!user?.password, ')');
       const isValid = await comparePassword(password, passwordHash);
+      console.log('[Login] Password comparison result:', isValid);
 
       // Check both conditions after timing-constant operation
       // For OAuth users (no password), the dummy hash comparison will fail
       if (!user || !isValid) {
-        console.log('[Login] Authentication failed');
+        console.log('[Login] Authentication failed - user:', !!user, ', password valid:', isValid);
+        console.log('[Login] ========== LOGIN REQUEST FAILED ==========');
         return res.status(401).json({ error: 'Invalid email or password' });
       }
 
       // Additional check: OAuth users must use OAuth login, not password login
       if (!user.password) {
         console.log('[Login] OAuth user attempted password login');
+        console.log('[Login] ========== LOGIN REQUEST FAILED ==========');
         return res.status(401).json({ error: 'Invalid email or password' });
       }
 
