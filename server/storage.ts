@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject } from "@shared/schema";
+import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type RecurringInvoice, type InsertRecurringInvoice, type RecurringInvoiceItem, type InsertRecurringInvoiceItem } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { PgStorage } from './postgres-storage';
 
@@ -67,6 +67,15 @@ export interface IStorage {
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, userId: string, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string, userId: string): Promise<boolean>;
+
+  // Recurring Invoices
+  getRecurringInvoices(userId: string): Promise<RecurringInvoice[]>;
+  getRecurringInvoice(id: string, userId: string): Promise<RecurringInvoice | undefined>;
+  createRecurringInvoice(recurringInvoice: InsertRecurringInvoice, items: InsertRecurringInvoiceItem[]): Promise<RecurringInvoice>;
+  updateRecurringInvoice(id: string, userId: string, recurringInvoice: Partial<InsertRecurringInvoice>): Promise<RecurringInvoice | undefined>;
+  deleteRecurringInvoice(id: string, userId: string): Promise<boolean>;
+  getRecurringInvoiceItems(recurringInvoiceId: string): Promise<RecurringInvoiceItem[]>;
+  getRecurringInvoicesDueForGeneration(): Promise<RecurringInvoice[]>;
 }
 
 export class MemStorage implements IStorage {

@@ -251,3 +251,80 @@ export const processScheduled = asyncHandler(async (req: Request, res: Response)
   });
 });
 
+/**
+ * POST /api/invoices/bulk
+ * Create multiple invoices for different clients
+ */
+export const createBulk = asyncHandler(async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const { invoices } = req.body;
+
+  if (!Array.isArray(invoices) || invoices.length === 0) {
+    throw new AppError(400, 'At least one invoice is required');
+  }
+
+  if (invoices.length > 100) {
+    throw new AppError(400, 'Cannot create more than 100 invoices at once');
+  }
+
+  const createdInvoices = [];
+  const errors = [];
+
+  for (let i = 0; i < invoices.length; i++) {
+    try {
+      const { lineItems, taxRate, ...invoiceData } = invoices[i];
+
+      // Validate each invoice
+      const calculations = calculateInvoiceTotals(lineItems, taxRate || '0');
+      
+      if (invoiceData.total) {
+        validateTotalMatch(calculations.total, invoiceData.total);
+      }
+
+      const invoiceNumber = await storage.getNextInvoiceNumber(userId);
+
+      let status = "draft";
+      if (invoiceData.scheduledDate) {
+        const scheduledDate = new Date(invoiceData.scheduledDate);
+        const now = new Date();
+        if (scheduledDate > now) {
+          status = "scheduled";
+        }
+      }
+
+      const validatedInvoice = insertInvoiceSchema.parse({
+        ...invoiceData,
+        userId,
+        invoiceNumber,
+        status,
+        subtotal: calculations.subtotal,
+        tax: calculations.tax,
+        taxRate: (taxRate || '0').toString(),
+        total: calculations.total,
+      });
+
+      const preparedLineItems = prepareLineItems(lineItems);
+
+      const invoice = await storage.createInvoiceWithLineItems(
+        validatedInvoice,
+        preparedLineItems
+      );
+
+      createdInvoices.push(invoice);
+    } catch (error) {
+      errors.push({
+        index: i,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  res.status(201).json({
+    success: true,
+    created: createdInvoices.length,
+    failed: errors.length,
+    invoices: createdInvoices,
+    errors: errors.length > 0 ? errors : undefined,
+  });
+});
+

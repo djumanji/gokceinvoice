@@ -17,6 +17,7 @@ import {
   userController,
   uploadController,
   chatbotController,
+  recurringInvoiceController,
 } from "./controllers";
 
 // Configure multer for in-memory storage
@@ -53,6 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/users", requireAuth, validateCsrf);
   app.use("/api/bank-accounts", requireAuth, validateCsrf);
   app.use("/api/projects", requireAuth, validateCsrf);
+  app.use("/api/recurring-invoices", requireAuth, validateCsrf);
 
   // Public Chatbot routes (no auth, no CSRF for MVP)
   const sessionLimiter = rateLimit({
@@ -343,6 +345,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Manual trigger for processing scheduled invoices (admin/testing)
   app.post("/api/invoices/process-scheduled", invoiceController.processScheduled);
+
+  // Bulk invoice creation
+  app.post(
+    "/api/invoices/bulk",
+    sanitizeBody([...SanitizationFields.invoice, ...SanitizationFields.lineItem]),
+    invoiceController.createBulk
+  );
+
+  // ============================================================================
+  // RECURRING INVOICE ROUTES
+  // ============================================================================
+  app.get("/api/recurring-invoices", recurringInvoiceController.list);
+  app.get("/api/recurring-invoices/:id", recurringInvoiceController.getOne);
+  app.post(
+    "/api/recurring-invoices",
+    sanitizeBody([...SanitizationFields.invoice, ...SanitizationFields.lineItem]),
+    recurringInvoiceController.create
+  );
+  app.patch(
+    "/api/recurring-invoices/:id",
+    sanitizeBody([...SanitizationFields.invoice, ...SanitizationFields.lineItem]),
+    recurringInvoiceController.update
+  );
+  app.delete("/api/recurring-invoices/:id", recurringInvoiceController.remove);
+  app.post("/api/recurring-invoices/:id/pause", recurringInvoiceController.pause);
+  app.post("/api/recurring-invoices/:id/resume", recurringInvoiceController.resume);
+  app.post("/api/recurring-invoices/:id/generate", recurringInvoiceController.generate);
 
   // ============================================================================
   // SERVICE ROUTES

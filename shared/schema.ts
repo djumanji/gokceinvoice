@@ -124,6 +124,7 @@ export const invoices = pgTable("invoices", {
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0"),
   taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  recurringInvoiceId: varchar("recurring_invoice_id").references(() => recurringInvoices.id, { onDelete: 'set null' }),
 });
 
 export const lineItems = pgTable("line_items", {
@@ -146,6 +147,33 @@ export const services = pgTable("services", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const recurringInvoices = pgTable("recurring_invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  clientId: varchar("client_id").references(() => clients.id, { onDelete: 'restrict' }).notNull(),
+  bankAccountId: varchar("bank_account_id").references(() => bankAccounts.id, { onDelete: 'set null' }),
+  templateName: varchar("template_name", { length: 255 }).notNull(),
+  frequency: varchar("frequency", { length: 20 }).notNull(), // 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  nextGenerationDate: date("next_generation_date").notNull(),
+  isActive: boolean("is_active").default(true),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default("0"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const recurringInvoiceItems = pgTable("recurring_invoice_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recurringInvoiceId: varchar("recurring_invoice_id").references(() => recurringInvoices.id, { onDelete: 'cascade' }).notNull(),
+  description: text("description").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  position: integer("position").notNull().default(0),
 });
 
 export const expenses = pgTable("expenses", {
@@ -303,6 +331,43 @@ export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true 
     .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Amount must have max 2 decimal places"),
 });
 
+export const insertRecurringInvoiceSchema = createInsertSchema(recurringInvoices).omit({ id: true }).extend({
+  startDate: z.string().transform((str) => str),
+  endDate: z.string().transform((str) => str).optional().nullable(),
+  nextGenerationDate: z.string().transform((str) => str),
+  taxRate: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num >= 0 && num <= 100;
+    }, "Tax rate must be between 0 and 100"),
+  frequency: z.enum(['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']),
+});
+
+export const insertRecurringInvoiceItemSchema = createInsertSchema(recurringInvoiceItems).omit({ id: true }).extend({
+  quantity: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0 && num < 100000000;
+    }, "Quantity must be positive and less than 100,000,000")
+    .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Quantity must have max 2 decimal places"),
+  price: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num >= 0 && num < 100000000;
+    }, "Price must be between 0 and 99,999,999.99")
+    .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Price must have max 2 decimal places"),
+  amount: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num >= 0 && num < 100000000;
+    }, "Amount must be between 0 and 99,999,999.99")
+    .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Amount must have max 2 decimal places"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -327,3 +392,9 @@ export type BankAccount = typeof bankAccounts.$inferSelect;
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true });
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
+
+export type InsertRecurringInvoice = z.infer<typeof insertRecurringInvoiceSchema>;
+export type RecurringInvoice = typeof recurringInvoices.$inferSelect;
+
+export type InsertRecurringInvoiceItem = z.infer<typeof insertRecurringInvoiceItemSchema>;
+export type RecurringInvoiceItem = typeof recurringInvoiceItems.$inferSelect;

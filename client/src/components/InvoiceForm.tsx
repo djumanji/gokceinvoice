@@ -26,6 +26,9 @@ import { SendLinkModal } from "./invoice/SendLinkModal";
 import { InvoiceStatusBadge } from "./invoice/InvoiceStatusBadge";
 import { LineItemsSection } from "./invoice/LineItemsSection";
 import { ServiceDialog } from "./invoice/ServiceDialog";
+import { InvoiceTypeSelector, type InvoiceType } from "./invoice/InvoiceTypeSelector";
+import { RecurringFields } from "./invoice/RecurringFields";
+import { BulkClientSelector } from "./invoice/BulkClientSelector";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useInvoiceForm } from "@/hooks/use-invoice-form";
@@ -65,6 +68,16 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
   const [showServiceDialog, setShowServiceDialog] = useState(false);
   const [pendingLineItemIndex, setPendingLineItemIndex] = useState<number | null>(null);
   const [isScheduled, setIsScheduled] = useState<boolean>(!!initialData?.scheduledDate);
+  
+  // Invoice type state (only for new invoices, not editing)
+  const [invoiceType, setInvoiceType] = useState<InvoiceType>("one-time");
+  const [recurringFields, setRecurringFields] = useState({
+    frequency: "monthly",
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: "",
+    templateName: "",
+  });
+  const [bulkClientIds, setBulkClientIds] = useState<string[]>([]);
 
   // Permission checks
   const canEdit = !invoiceStatus || invoiceStatus === "draft" || invoiceStatus === "sent";
@@ -143,6 +156,73 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
 
     try {
       const data = getFormData();
+      
+      // Handle recurring invoices
+      if (invoiceType === "recurring" && !invoiceId) {
+        if (!recurringFields.templateName) {
+          toast({
+            title: "Validation Error",
+            description: "Template name is required for recurring invoices",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const recurringData = {
+          ...data,
+          templateName: recurringFields.templateName,
+          frequency: recurringFields.frequency,
+          startDate: recurringFields.startDate,
+          endDate: recurringFields.endDate || null,
+          items: data.lineItems.map((item: any, index: number) => ({
+            ...item,
+            position: index,
+          })),
+        };
+        
+        const result = await apiRequest("POST", "/api/recurring-invoices", recurringData);
+        if (result) {
+          setSavedInvoice(result);
+          setIsSaved(true);
+          setIsReadOnly(true);
+          toast({
+            title: "Recurring Invoice Created",
+            description: "Recurring invoice template has been created",
+          });
+        }
+        return;
+      }
+      
+      // Handle bulk invoices
+      if (invoiceType === "bulk" && !invoiceId) {
+        if (bulkClientIds.length === 0) {
+          toast({
+            title: "Validation Error",
+            description: "Please select at least one client for bulk invoices",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const invoices = bulkClientIds.map(clientId => ({
+          ...data,
+          clientId,
+        }));
+        
+        const result = await apiRequest("POST", "/api/invoices/bulk", { invoices });
+        if (result) {
+          setSavedInvoice(result);
+          setIsSaved(true);
+          setIsReadOnly(true);
+          toast({
+            title: "Bulk Invoices Created",
+            description: `Successfully created ${result.created} invoice${result.created !== 1 ? 's' : ''}`,
+          });
+        }
+        return;
+      }
+      
+      // Handle regular one-time invoice
       const result = await onSubmit(data, "draft");
       if (result) {
         setSavedInvoice(result);
@@ -237,31 +317,61 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Form {...form}>
-              <FormField
-                control={form.control}
-                name="clientId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Client *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || undefined} disabled={isReadOnly || !canEdit}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-client">
-                          <SelectValue placeholder="Select a client" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {/* Invoice Type Selector (only for new invoices) */}
+            {!invoiceId && (
+              <InvoiceTypeSelector
+                value={invoiceType}
+                onChange={setInvoiceType}
               />
+            )}
+            
+            <Form {...form}>
+              {invoiceType === "bulk" && !invoiceId ? (
+                <BulkClientSelector
+                  clients={clients}
+                  selectedClientIds={bulkClientIds}
+                  onSelectionChange={setBulkClientIds}
+                />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="clientId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Client *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || undefined} disabled={isReadOnly || !canEdit}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-client">
+                            <SelectValue placeholder="Select a client" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Recurring Fields (only for recurring invoices) */}
+              {invoiceType === "recurring" && !invoiceId && (
+                <RecurringFields
+                  frequency={recurringFields.frequency}
+                  startDate={recurringFields.startDate}
+                  endDate={recurringFields.endDate}
+                  templateName={recurringFields.templateName}
+                  onFrequencyChange={(freq) => setRecurringFields({ ...recurringFields, frequency: freq })}
+                  onStartDateChange={(date) => setRecurringFields({ ...recurringFields, startDate: date })}
+                  onEndDateChange={(date) => setRecurringFields({ ...recurringFields, endDate: date })}
+                  onTemplateNameChange={(name) => setRecurringFields({ ...recurringFields, templateName: name })}
+                />
+              )}
 
               {bankAccounts.length > 0 && (
                 <FormField

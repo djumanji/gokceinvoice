@@ -1,7 +1,7 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
-import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject } from '@shared/schema';
-import { eq, desc, and, sql, lte } from 'drizzle-orm';
+import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, recurringInvoices, recurringInvoiceItems, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type RecurringInvoice, type InsertRecurringInvoice, type RecurringInvoiceItem, type InsertRecurringInvoiceItem } from '@shared/schema';
+import { eq, desc, and, sql, lte, or, isNull, gte } from 'drizzle-orm';
 
 // Initialize PostgreSQL connection
 let connectionString: string | undefined;
@@ -432,6 +432,82 @@ export class PgStorage {
       )
     );
     return result;
+  }
+
+  // Recurring Invoices
+  async getRecurringInvoices(userId: string): Promise<RecurringInvoice[]> {
+    return await this.db.select()
+      .from(recurringInvoices)
+      .where(eq(recurringInvoices.userId, userId))
+      .orderBy(desc(recurringInvoices.createdAt));
+  }
+
+  async getRecurringInvoice(id: string, userId: string): Promise<RecurringInvoice | undefined> {
+    const result = await this.db.select()
+      .from(recurringInvoices)
+      .where(and(eq(recurringInvoices.id, id), eq(recurringInvoices.userId, userId)));
+    return result[0];
+  }
+
+  async createRecurringInvoice(data: InsertRecurringInvoice, items: InsertRecurringInvoiceItem[]): Promise<RecurringInvoice> {
+    return await this.db.transaction(async (tx) => {
+      // Create recurring invoice
+      const recurringResult = await tx.insert(recurringInvoices).values(data).returning();
+      const recurringInvoice = recurringResult[0];
+
+      // Create recurring invoice items
+      for (const item of items) {
+        await tx.insert(recurringInvoiceItems).values({
+          ...item,
+          recurringInvoiceId: recurringInvoice.id,
+        });
+      }
+
+      return recurringInvoice;
+    });
+  }
+
+  async updateRecurringInvoice(id: string, userId: string, data: Partial<InsertRecurringInvoice>): Promise<RecurringInvoice | undefined> {
+    const result = await this.db.update(recurringInvoices)
+      .set(data)
+      .where(and(eq(recurringInvoices.id, id), eq(recurringInvoices.userId, userId)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteRecurringInvoice(id: string, userId: string): Promise<boolean> {
+    // Delete items first due to foreign key (cascade should handle this, but being explicit)
+    await this.db.delete(recurringInvoiceItems).where(eq(recurringInvoiceItems.recurringInvoiceId, id));
+    
+    const result = await this.db.delete(recurringInvoices)
+      .where(and(eq(recurringInvoices.id, id), eq(recurringInvoices.userId, userId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getRecurringInvoiceItems(recurringInvoiceId: string): Promise<RecurringInvoiceItem[]> {
+    return await this.db.select()
+      .from(recurringInvoiceItems)
+      .where(eq(recurringInvoiceItems.recurringInvoiceId, recurringInvoiceId))
+      .orderBy(recurringInvoiceItems.position);
+  }
+
+  async getRecurringInvoicesDueForGeneration(): Promise<RecurringInvoice[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return await this.db.select()
+      .from(recurringInvoices)
+      .where(
+        and(
+          eq(recurringInvoices.isActive, true),
+          lte(recurringInvoices.nextGenerationDate, today),
+          // Check if endDate is null or in the future
+          or(
+            isNull(recurringInvoices.endDate),
+            gte(recurringInvoices.endDate, today)
+          )
+        )
+      );
   }
 }
 
