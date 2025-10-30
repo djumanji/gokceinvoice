@@ -61,12 +61,21 @@ export default function Clients() {
   });
 
   useEffect(() => {
-    if (editingClient && clientProjects) {
-      setProjects(clientProjects);
-    } else {
-      setProjects([]);
+    if (editingClient && clientProjects && clientProjects.length > 0) {
+      // Only update if projects actually changed (compare by IDs to avoid infinite loop)
+      const currentProjectIds = projects.map(p => p.id).sort().join(',');
+      const newProjectIds = clientProjects.map(p => p.id).sort().join(',');
+      
+      if (currentProjectIds !== newProjectIds) {
+        setProjects(clientProjects);
+      }
+    } else if (!editingClient || !clientProjects || clientProjects.length === 0) {
+      // Only clear if we're not editing or projects are empty
+      if (projects.length > 0) {
+        setProjects([]);
+      }
     }
-  }, [editingClient, clientProjects]);
+  }, [editingClient?.id, clientProjects]); // Use editingClient.id instead of editingClient object
 
   const { data: invoices = [] } = useQuery<any[]>({
     queryKey: ["/api/invoices"],
