@@ -216,14 +216,16 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
   };
 
   const handleSubmit = async () => {
-    const validation = await validateForm();
-    if (!validation.valid) {
-      toast({
-        title: "Validation Error",
-        description: validation.error || "Please fill in all required fields",
-        variant: "destructive",
-      });
-        return;
+    // Trigger validation which will show inline errors automatically
+    const formIsValid = await form.trigger();
+    if (!formIsValid) {
+      // Validation errors will be shown inline via FormMessage components
+      // Scroll to first error field
+      const firstErrorField = document.querySelector('[data-invalid="true"], .text-destructive');
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
     }
 
     try {
