@@ -26,6 +26,8 @@ interface Project {
   clientId: string;
   name: string;
   description?: string | null;
+  projectNumber?: string | null;
+  createdAt?: string | Date;
   isActive: boolean;
 }
 
@@ -398,13 +400,31 @@ export default function Clients() {
                       {projects.map((project) => (
                         <div
                           key={project.id}
-                          className="flex items-center justify-between p-2 bg-muted rounded-md"
+                          className="flex items-center justify-between p-3 bg-muted rounded-md"
                         >
-                          <div className="flex-1">
-                            <div className="font-medium">{project.name}</div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium">{project.name}</div>
+                              {project.projectNumber && (
+                                <span className="text-xs font-mono text-muted-foreground bg-background px-2 py-0.5 rounded">
+                                  {project.projectNumber}
+                                </span>
+                              )}
+                            </div>
                             {project.description && (
                               <div className="text-sm text-muted-foreground">
                                 {project.description}
+                              </div>
+                            )}
+                            {project.createdAt && (
+                              <div className="text-xs text-muted-foreground">
+                                Created: {new Date(project.createdAt).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
                               </div>
                             )}
                           </div>
