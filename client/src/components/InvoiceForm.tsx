@@ -4,6 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -20,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Edit } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InvoicePreview } from "./InvoicePreview";
 import { InvoiceSuccessBanner } from "./invoice/InvoiceSuccessBanner";
 import { SendLinkModal } from "./invoice/SendLinkModal";
@@ -78,6 +87,9 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
     templateName: "",
   });
   const [bulkClientIds, setBulkClientIds] = useState<string[]>([]);
+  const [showCustomProjectModal, setShowCustomProjectModal] = useState(false);
+  const [customProjectData, setCustomProjectData] = useState({ name: "", description: "" });
+  const queryClient = useQueryClient();
 
   // Permission checks
   const canEdit = !invoiceStatus || invoiceStatus === "draft" || invoiceStatus === "sent";
@@ -118,13 +130,47 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
 
   // Fetch projects for selected client
   const selectedClientId = form.watch("clientId");
-  const { data: clientProjects = [], isLoading: isLoadingProjects } = useQuery<Array<{ id: string; name: string; description?: string | null }>>({
+  const { data: clientProjects = [], isLoading: isLoadingProjects } = useQuery<Array<{ id: string; name: string; description?: string | null; projectNumber?: string | null }>>({
     queryKey: [`/api/clients/${selectedClientId || 'none'}/projects`],
     queryFn: async () => {
       if (!selectedClientId) return [];
       return await apiRequest("GET", `/api/clients/${selectedClientId}/projects`);
     },
     enabled: !!selectedClientId,
+  });
+
+  // Mutation to create custom project
+  const createCustomProjectMutation = useMutation({
+    mutationFn: (data: { clientId: string; name: string; description?: string }) =>
+      apiRequest("POST", "/api/projects", data),
+    onSuccess: async (newProject) => {
+      // Refetch projects to update dropdown
+      await queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${selectedClientId}/projects`] 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: [`/api/clients/${selectedClientId}/projects`] 
+      });
+      
+      // Update the form field with the new project name
+      form.setValue("forProject", newProject.name);
+      
+      // Close modal and reset form
+      setShowCustomProjectModal(false);
+      setCustomProjectData({ name: "", description: "" });
+      
+      toast({
+        title: "Project Created",
+        description: "Project has been added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create project",
+        variant: "destructive",
+      });
+    },
   });
 
   // Handlers
@@ -498,7 +544,14 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                   <FormItem>
                     <FormLabel>For (Project Name)</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
+                      onValueChange={(value) => {
+                        if (value === "__custom__") {
+                          // Open modal instead of setting value
+                          setShowCustomProjectModal(true);
+                        } else {
+                          field.onChange(value);
+                        }
+                      }}
                       value={field.value || undefined} 
                       disabled={isReadOnly || !canEdit || !selectedClientId}
                     >
@@ -534,17 +587,6 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                         )}
                       </SelectContent>
                     </Select>
-                    {field.value === "__custom__" || (!clientProjects.find(p => p.name === field.value) && field.value) ? (
-                      <FormControl>
-                        <Input 
-                          placeholder="e.g., Bracha Bridge" 
-                          value={field.value === "__custom__" ? "" : field.value}
-                          onChange={(e) => field.onChange(e.target.value)}
-                          onBlur={field.onBlur}
-                          data-testid="input-for-project-custom"
-                        />
-                      </FormControl>
-                    ) : null}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -617,6 +659,82 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
           onClose={() => setShowServiceDialog(false)}
           onServiceCreated={handleServiceCreated}
         />
+
+        {/* Custom Project Modal */}
+        <Dialog open={showCustomProjectModal} onOpenChange={setShowCustomProjectModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Project</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="custom-project-name">Project Name *</Label>
+                <Input
+                  id="custom-project-name"
+                  value={customProjectData.name}
+                  onChange={(e) => setCustomProjectData({ ...customProjectData, name: e.target.value })}
+                  placeholder="e.g., Website Redesign"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="custom-project-description">Description</Label>
+                <Textarea
+                  id="custom-project-description"
+                  value={customProjectData.description}
+                  onChange={(e) => setCustomProjectData({ ...customProjectData, description: e.target.value })}
+                  placeholder="Project description"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Project Number</Label>
+                <div className="text-sm font-mono text-muted-foreground bg-muted p-2 rounded">
+                  Will be auto-generated (e.g., PRJ-000001)
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCustomProjectModal(false);
+                  setCustomProjectData({ name: "", description: "" });
+                }}
+                disabled={createCustomProjectMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!customProjectData.name.trim()) {
+                    toast({
+                      title: "Validation Error",
+                      description: "Project name is required",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  if (!selectedClientId) {
+                    toast({
+                      title: "Error",
+                      description: "Please select a client first",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  createCustomProjectMutation.mutate({
+                    clientId: selectedClientId,
+                    name: customProjectData.name.trim(),
+                    description: customProjectData.description.trim() || undefined,
+                  });
+                }}
+                disabled={createCustomProjectMutation.isPending}
+              >
+                {createCustomProjectMutation.isPending ? "Saving..." : "Save Project"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Action Buttons */}
         <div className="flex gap-2 flex-wrap">
