@@ -197,22 +197,72 @@ export const resume = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/recurring-invoices/:id/generate
- * Manually generate an invoice from a recurring template
+ * POST /api/recurring-invoices/bulk
+ * Create multiple recurring invoices for different clients
  */
-export const generate = asyncHandler(async (req: Request, res: Response) => {
+export const createBulk = asyncHandler(async (req: Request, res: Response) => {
   const userId = getUserId(req);
-  const { id } = req.params;
+  const { recurringInvoices } = req.body;
 
-  const recurringInvoice = await storage.getRecurringInvoice(id, userId);
-  if (!recurringInvoice) {
-    throw new AppError(404, 'Recurring invoice not found');
+  if (!Array.isArray(recurringInvoices) || recurringInvoices.length === 0) {
+    throw new AppError(400, 'At least one recurring invoice is required');
   }
 
-  // Import the recurring invoice generation service
-  const { generateInvoiceFromRecurring } = await import('../services/recurring-invoice.service');
-  
-  const invoice = await generateInvoiceFromRecurring(recurringInvoice.id, userId);
+  if (recurringInvoices.length > 100) {
+    throw new AppError(400, 'Cannot create more than 100 recurring invoices at once');
+  }
 
-  res.status(201).json(invoice);
+  const createdRecurringInvoices = [];
+  const errors = [];
+
+  for (let i = 0; i < recurringInvoices.length; i++) {
+    try {
+      const { items, ...recurringInvoiceData } = recurringInvoices[i];
+
+      // Validate recurring invoice data
+      const validatedRecurringInvoice = insertRecurringInvoiceSchema.parse({
+        ...recurringInvoiceData,
+        userId,
+      });
+
+      // Validate items
+      if (!Array.isArray(items) || items.length === 0) {
+        throw new AppError(400, 'At least one line item is required');
+      }
+
+      const validatedItems = items.map((item: any, index: number) =>
+        insertRecurringInvoiceItemSchema.parse({
+          ...item,
+          position: index,
+        })
+      );
+
+      // Create recurring invoice with items
+      const recurringInvoice = await storage.createRecurringInvoice(
+        validatedRecurringInvoice,
+        validatedItems
+      );
+
+      const createdItems = await storage.getRecurringInvoiceItems(recurringInvoice.id);
+
+      createdRecurringInvoices.push({
+        ...recurringInvoice,
+        items: createdItems,
+      });
+    } catch (error) {
+      errors.push({
+        index: i,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  res.status(201).json({
+    success: true,
+    created: createdRecurringInvoices.length,
+    failed: errors.length,
+    recurringInvoices: createdRecurringInvoices,
+    errors: errors.length > 0 ? errors : undefined,
+  });
 });
+

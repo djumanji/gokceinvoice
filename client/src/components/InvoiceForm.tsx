@@ -243,7 +243,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
         return;
       }
       
-      // Handle bulk invoices
+      // Handle bulk invoices (one-time or recurring)
       if (invoiceType === "bulk" && !invoiceId) {
         if (bulkClientIds.length === 0) {
           toast({
@@ -253,21 +253,63 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
           });
           return;
         }
+
+        // Check if this is a bulk recurring invoice
+        const isBulkRecurring = recurringFields.templateName || false;
         
-        const invoices = bulkClientIds.map(clientId => ({
-          ...data,
-          clientId,
-        }));
-        
-        const result = await apiRequest("POST", "/api/invoices/bulk", { invoices });
-        if (result) {
-          setSavedInvoice(result);
-          setIsSaved(true);
-          setIsReadOnly(true);
-          toast({
-            title: "Bulk Invoices Created",
-            description: `Successfully created ${result.created} invoice${result.created !== 1 ? 's' : ''}`,
-          });
+        if (isBulkRecurring) {
+          // Create bulk recurring invoices
+          if (!recurringFields.templateName) {
+            toast({
+              title: "Validation Error",
+              description: "Template name is required for recurring invoices",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const recurringInvoices = bulkClientIds.map(clientId => ({
+            clientId,
+            bankAccountId: data.bankAccountId || null,
+            templateName: `${recurringFields.templateName} - ${clients.find(c => c.id === clientId)?.name || 'Client'}`,
+            frequency: recurringFields.frequency,
+            startDate: recurringFields.startDate,
+            endDate: recurringFields.endDate || null,
+            taxRate: (data.taxRate || 0).toString(),
+            notes: data.notes || null,
+            items: data.lineItems.map((item: any, index: number) => ({
+              ...item,
+              position: index,
+            })),
+          }));
+
+          const result = await apiRequest("POST", "/api/recurring-invoices/bulk", { recurringInvoices });
+          if (result) {
+            setSavedInvoice(result);
+            setIsSaved(true);
+            setIsReadOnly(true);
+            toast({
+              title: "Bulk Recurring Invoices Created",
+              description: `Successfully created ${result.created} recurring invoice template${result.created !== 1 ? 's' : ''}`,
+            });
+          }
+        } else {
+          // Create bulk one-time invoices
+          const invoices = bulkClientIds.map(clientId => ({
+            ...data,
+            clientId,
+          }));
+          
+          const result = await apiRequest("POST", "/api/invoices/bulk", { invoices });
+          if (result) {
+            setSavedInvoice(result);
+            setIsSaved(true);
+            setIsReadOnly(true);
+            toast({
+              title: "Bulk Invoices Created",
+              description: `Successfully created ${result.created} invoice${result.created !== 1 ? 's' : ''}`,
+            });
+          }
         }
         return;
       }
@@ -409,8 +451,8 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                 />
               )}
 
-              {/* Recurring Fields (only for recurring invoices) */}
-              {invoiceType === "recurring" && !invoiceId && (
+              {/* Recurring Fields (for recurring and bulk recurring invoices) */}
+              {(invoiceType === "recurring" || invoiceType === "bulk") && !invoiceId && (
                 <RecurringFields
                   frequency={recurringFields.frequency}
                   startDate={recurringFields.startDate}

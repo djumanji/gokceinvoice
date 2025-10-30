@@ -447,6 +447,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sanitizeBody([...SanitizationFields.invoice, ...SanitizationFields.lineItem]),
     recurringInvoiceController.create
   );
+  app.post(
+    "/api/recurring-invoices/bulk",
+    sanitizeBody([...SanitizationFields.invoice, ...SanitizationFields.lineItem]),
+    recurringInvoiceController.createBulk
+  );
   app.patch(
     "/api/recurring-invoices/:id",
     sanitizeBody([...SanitizationFields.invoice, ...SanitizationFields.lineItem]),
