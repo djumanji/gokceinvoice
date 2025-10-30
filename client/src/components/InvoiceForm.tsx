@@ -118,8 +118,12 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
 
   // Fetch projects for selected client
   const selectedClientId = form.watch("clientId");
-  const { data: clientProjects = [] } = useQuery<Array<{ id: string; name: string; description?: string | null }>>({
+  const { data: clientProjects = [], isLoading: isLoadingProjects } = useQuery<Array<{ id: string; name: string; description?: string | null }>>({
     queryKey: [`/api/clients/${selectedClientId || 'none'}/projects`],
+    queryFn: async () => {
+      if (!selectedClientId) return [];
+      return await apiRequest("GET", `/api/clients/${selectedClientId}/projects`);
+    },
     enabled: !!selectedClientId,
   });
 
@@ -504,7 +508,11 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {(clientProjects || []).length > 0 ? (
+                        {isLoadingProjects ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                            Loading projects...
+                          </div>
+                        ) : (clientProjects || []).length > 0 ? (
                           clientProjects.map((project) => (
                             <SelectItem key={project.id} value={project.name}>
                               {project.name}
@@ -519,7 +527,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                             Select a client first
                           </div>
                         )}
-                        {selectedClientId && (
+                        {selectedClientId && !isLoadingProjects && (
                           <SelectItem value="__custom__" className="text-primary font-medium">
                             + Custom Project Name
                           </SelectItem>
