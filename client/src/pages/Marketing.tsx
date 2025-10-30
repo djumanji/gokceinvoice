@@ -298,7 +298,7 @@ export default function Marketing() {
       <section className="relative flex min-h-screen w-full max-w-screen overflow-hidden max-lg:p-4 max-md:mt-[50px]" id="main-content">
         <div className="flex h-full min-h-screen w-full place-content-center gap-6 p-[5%] max-xl:flex-col max-xl:items-center">
           <div className="flex min-w-[450px] max-w-[800px] flex-col place-content-center max-xl:min-w-[250px]">
-            <h1 className="flex flex-wrap text-6xl font-semibold uppercase leading-[80px] max-lg:text-4xl max-md:leading-snug">
+            <h1 className="flex flex-wrap text-6xl font-semibold uppercase leading-[80px] text-gray-900 max-lg:text-4xl max-md:leading-snug">
               {t("marketing.hero.title")}
               <br />
               {t("marketing.hero.titleLine2")}
@@ -306,11 +306,11 @@ export default function Marketing() {
               {t("marketing.hero.titleLine3")}
             </h1>
             
-            <div className="mt-10 p-2 text-justify text-lg text-muted-foreground max-lg:max-w-full">
+            <div className="mt-10 p-2 text-justify text-lg text-gray-700 max-lg:max-w-full">
               {t("marketing.hero.description")}
             </div>
 
-            <h2 className="mt-6 text-lg font-semibold">{t("marketing.hero.getStarted")}</h2>
+            <h2 className="mt-6 text-lg font-semibold text-gray-900">{t("marketing.hero.getStarted")}</h2>
             <div className="mt-4 flex h-[50px] w-[350px] max-w-[350px] items-center gap-2 overflow-hidden">
               <label htmlFor="hero-email" className="sr-only">{t("marketing.newsletter.emailPlaceholder")}</label>
               <input
@@ -366,7 +366,7 @@ export default function Marketing() {
                 <div className="h-full w-full bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
                   <div className="text-center p-8">
                     <div className="text-6xl mb-4">📄</div>
-                    <div className="text-2xl font-semibold text-foreground">{t("marketing.footer.tagline")}</div>
+                    <div className="text-2xl font-semibold text-gray-900">{t("marketing.footer.tagline")}</div>
                   </div>
                 </div>
               </div>
@@ -377,20 +377,20 @@ export default function Marketing() {
 
       {/* Trusted By Section */}
       <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6">
-        <h2 className="text-3xl text-muted-foreground max-lg:text-2xl">
+        <h2 className="text-3xl text-gray-900 max-lg:text-2xl">
           {t("marketing.trustedBy.title")}
         </h2>
         <div className="mt-8 flex w-full place-content-center gap-10 flex-wrap">
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-muted-foreground font-semibold">{t("marketing.trustedBy.smallBusinesses")}</div>
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-muted-foreground font-semibold">{t("marketing.trustedBy.freelancers")}</div>
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-muted-foreground font-semibold">{t("marketing.trustedBy.agencies")}</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-700 font-semibold">{t("marketing.trustedBy.smallBusinesses")}</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-700 font-semibold">{t("marketing.trustedBy.freelancers")}</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-700 font-semibold">{t("marketing.trustedBy.agencies")}</div>
         </div>
       </section>
 
       {/* Technology/About Section */}
       <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6 scroll-mt-20" id="features">
         <div className="flex max-w-[750px] flex-col gap-5 text-center">
-          <h2 className="mt-5 text-4xl font-semibold max-lg:text-3xl">
+          <h2 className="mt-5 text-4xl font-semibold text-gray-900 max-lg:text-3xl">
             {t("marketing.about.title")}
           </h2>
           <div className="text-gray-700">
@@ -402,7 +402,7 @@ export default function Marketing() {
       {/* Pricing Section */}
       <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6 scroll-mt-20" id="pricing">
         <div className="flex max-w-[750px] flex-col gap-5 text-center">
-          <h2 className="mt-5 text-4xl font-semibold max-lg:text-3xl">
+          <h2 className="mt-5 text-4xl font-semibold text-gray-900 max-lg:text-3xl">
             {t("marketing.pricing.title")}
           </h2>
           <div className="text-gray-700 mb-8">
@@ -410,9 +410,9 @@ export default function Marketing() {
           </div>
           <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
             <div className="w-full max-w-md p-6 border-2 border-gray-200 rounded-xl">
-              <h3 className="text-2xl font-semibold mb-2">{t("marketing.pricing.freePlan.title")}</h3>
-              <div className="text-4xl font-bold mb-4">{t("marketing.pricing.freePlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.freePlan.period")}</span></div>
-              <ul className="text-left space-y-2 mb-6 text-muted-foreground">
+              <h3 className="text-2xl font-semibold mb-2 text-gray-900">{t("marketing.pricing.freePlan.title")}</h3>
+              <div className="text-4xl font-bold mb-4 text-gray-900">{t("marketing.pricing.freePlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.freePlan.period")}</span></div>
+              <ul className="text-left space-y-2 mb-6 text-gray-700">
                 <li>✓ {t("marketing.pricing.freePlan.features.invoices")}</li>
                 <li>✓ {t("marketing.pricing.freePlan.features.templates")}</li>
                 <li>✓ {t("marketing.pricing.freePlan.features.clients")}</li>
@@ -426,9 +426,9 @@ export default function Marketing() {
               <div className="inline-block px-3 py-1 bg-indigo-600 text-white text-sm font-semibold rounded-full mb-3">
                 {t("marketing.pricing.proPlan.comingSoon")}
               </div>
-              <h3 className="text-2xl font-semibold mb-2">{t("marketing.pricing.proPlan.title")}</h3>
-              <div className="text-4xl font-bold mb-4">{t("marketing.pricing.proPlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.proPlan.period")}</span></div>
-              <ul className="text-left space-y-2 mb-6 text-muted-foreground">
+              <h3 className="text-2xl font-semibold mb-2 text-gray-900">{t("marketing.pricing.proPlan.title")}</h3>
+              <div className="text-4xl font-bold mb-4 text-gray-900">{t("marketing.pricing.proPlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.proPlan.period")}</span></div>
+              <ul className="text-left space-y-2 mb-6 text-gray-700">
                 <li>✓ {t("marketing.pricing.proPlan.features.invoices")}</li>
                 <li>✓ {t("marketing.pricing.proPlan.features.templates")}</li>
                 <li>✓ {t("marketing.pricing.proPlan.features.reminders")}</li>
@@ -447,7 +447,7 @@ export default function Marketing() {
       {/* Features Section */}
       <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6 scroll-mt-20">
         <div className="flex flex-col items-center gap-5">
-          <h2 className="mt-5 text-4xl font-semibold">
+          <h2 className="mt-5 text-4xl font-semibold text-gray-900">
             {t("marketing.features.title")}
           </h2>
 
@@ -456,8 +456,8 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
                 <div className="text-6xl">⚡</div>
               </div>
-              <h3 className="text-2xl font-semibold">{t("marketing.features.fastCreation.title")}</h3>
-              <div className="text-muted-foreground">
+              <h3 className="text-2xl font-semibold text-gray-900">{t("marketing.features.fastCreation.title")}</h3>
+              <div className="text-gray-700">
                 {t("marketing.features.fastCreation.description")}
               </div>
             </div>
@@ -466,8 +466,8 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
                 <div className="text-6xl">📊</div>
               </div>
-              <h3 className="text-2xl font-semibold">{t("marketing.features.trackManage.title")}</h3>
-              <div className="text-muted-foreground">
+              <h3 className="text-2xl font-semibold text-gray-900">{t("marketing.features.trackManage.title")}</h3>
+              <div className="text-gray-700">
                 {t("marketing.features.trackManage.description")}
               </div>
             </div>
@@ -476,8 +476,8 @@ export default function Marketing() {
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                 <div className="text-6xl">🔒</div>
               </div>
-              <h3 className="text-2xl font-semibold">{t("marketing.features.secure.title")}</h3>
-              <div className="text-muted-foreground">
+              <h3 className="text-2xl font-semibold text-gray-900">{t("marketing.features.secure.title")}</h3>
+              <div className="text-gray-700">
                 {t("marketing.features.secure.description")}
               </div>
             </div>
@@ -487,7 +487,7 @@ export default function Marketing() {
 
       {/* CTA Section */}
       <section className="flex min-h-[30vh] w-full flex-col place-content-center items-center gap-[10%] overflow-hidden p-4 px-[10%] max-md:flex-col">
-        <h2 className="text-3xl max-md:text-2xl">{t("marketing.cta.title")}</h2>
+        <h2 className="text-3xl text-gray-900 max-md:text-2xl">{t("marketing.cta.title")}</h2>
         <Link href="/register">
           <Button className="mt-[2%] duration-300 hover:scale-105 max-md:mt-8" size="lg">
             {t("marketing.cta.button")}
@@ -516,8 +516,8 @@ export default function Marketing() {
                     <div className="h-[50px] w-[50px] overflow-hidden rounded-full border-2 border-solid border-[#1c191a] flex items-center justify-center text-2xl bg-gray-100">
                       {review.avatar}
                     </div>
-                    <p className="mt-4 italic text-muted-foreground">{review.text}</p>
-                    <p className="mt-3 font-semibold">- {review.name}</p>
+                    <p className="mt-4 italic text-gray-700">{review.text}</p>
+                    <p className="mt-3 font-semibold text-gray-900">- {review.name}</p>
                   </div>
                 </CarouselItem>
               ))}
@@ -532,7 +532,7 @@ export default function Marketing() {
           <h2 className="text-2xl text-[#1d1b1b] max-md:text-xl font-medium">
             {t("marketing.newsletter.title")}
           </h2>
-          <h2 className="text-xl max-md:text-lg">
+          <h2 className="text-xl text-gray-700 max-md:text-lg">
             {t("marketing.newsletter.subtitle")}
           </h2>
 
@@ -554,7 +554,7 @@ export default function Marketing() {
             </Button>
           </div>
 
-          <div className="mt-6 text-center text-muted-foreground">
+          <div className="mt-6 text-center text-gray-700">
             <p className="mb-2">{t("marketing.newsletter.contactText")}</p>
             <a href={`mailto:${t("marketing.newsletter.contactEmail")}`} className="text-indigo-600 hover:underline">
               {t("marketing.newsletter.contactEmail")}
@@ -569,12 +569,12 @@ export default function Marketing() {
           <div className="max-w-[120px] h-[50px] flex items-center justify-center bg-indigo-600 rounded-lg">
             <span className="text-white font-bold text-2xl">H</span>
           </div>
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-gray-700">
             {t("marketing.footer.tagline")}
             <br />
             {t("marketing.footer.taglineLine2")}
           </div>
-          <div className="mt-3 text-lg font-semibold">{t("marketing.footer.followUs")}</div>
+          <div className="mt-3 text-lg font-semibold text-gray-900">{t("marketing.footer.followUs")}</div>
           <div className="flex gap-4 text-2xl">
             <a 
               href="https://facebook.com" 
@@ -607,7 +607,7 @@ export default function Marketing() {
         </div>
 
         <div className="flex h-full w-[250px] flex-col gap-4">
-          <h2 className="text-3xl max-md:text-xl">{t("marketing.footer.resources")}</h2>
+          <h2 className="text-3xl text-gray-900 max-md:text-xl">{t("marketing.footer.resources")}</h2>
           <div className="flex flex-col gap-3 max-md:text-sm">
             <a 
               href="#features" 
