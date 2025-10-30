@@ -202,6 +202,14 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 023_add_payments_table.sql"
+if psql "$DATABASE_URL" -f migrations/023_add_payments_table.sql; then
+    echo "✅ Payments table and payment tracking fields added"
+else
+    echo "⚠️  Payments table may already exist - continuing..."
+fi
+echo ""
+
 # Verify tables exist
 echo "🔍 Verifying tables..."
 TABLE_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" 2>/dev/null || echo "0")

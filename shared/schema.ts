@@ -29,7 +29,6 @@ export const industryEnum = pgEnum("industry", [
   "nonprofit",
   "other"
 ]);
-export const inviteStatusEnum = pgEnum("invite_status", ["pending", "used", "expired"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -127,6 +126,10 @@ export const invoices = pgTable("invoices", {
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0"),
   taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  recurringInvoiceId: varchar("recurring_invoice_id").references(() => recurringInvoices.id, { onDelete: 'set null' }),
+  // Payment tracking fields
+  amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).notNull().default("0"),
+  paidDate: timestamp("paid_date"),
 });
 
 export const lineItems = pgTable("line_items", {
@@ -151,6 +154,33 @@ export const services = pgTable("services", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const recurringInvoices = pgTable("recurring_invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  clientId: varchar("client_id").references(() => clients.id, { onDelete: 'restrict' }).notNull(),
+  bankAccountId: varchar("bank_account_id").references(() => bankAccounts.id, { onDelete: 'set null' }),
+  templateName: varchar("template_name", { length: 255 }).notNull(),
+  frequency: varchar("frequency", { length: 20 }).notNull(), // 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  nextGenerationDate: date("next_generation_date").notNull(),
+  isActive: boolean("is_active").default(true),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default("0"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const recurringInvoiceItems = pgTable("recurring_invoice_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recurringInvoiceId: varchar("recurring_invoice_id").references(() => recurringInvoices.id, { onDelete: 'cascade' }).notNull(),
+  description: text("description").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  position: integer("position").notNull().default(0),
+});
+
 export const expenses = pgTable("expenses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }), // Cascade delete expenses when user deleted
@@ -167,22 +197,16 @@ export const expenses = pgTable("expenses", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const inviteTokens = pgTable("invite_tokens", {
+export const payments = pgTable("payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  token: text("token").notNull().unique(),
-  senderUserId: varchar("sender_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  status: inviteStatusEnum("status").default("pending"),
-  recipientEmail: text("recipient_email"),
+  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id, { onDelete: 'cascade' }), // Cascade delete payments when invoice deleted
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentDate: timestamp("payment_date").notNull().defaultNow(),
+  paymentMethod: text("payment_method").notNull(), // "cash", "bank_transfer", "credit_card", "debit_card", "check", "paypal", "stripe", "other"
+  transactionId: text("transaction_id"),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  usedAt: timestamp("used_at"),
-  expiresAt: timestamp("expires_at"),
-});
-
-export const waitlist = pgTable("waitlist", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  source: text("source"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true }).extend({
@@ -324,6 +348,52 @@ export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true 
     .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Amount must have max 2 decimal places"),
 });
 
+export const insertRecurringInvoiceSchema = createInsertSchema(recurringInvoices).omit({ id: true }).extend({
+  startDate: z.string().transform((str) => str),
+  endDate: z.string().transform((str) => str).optional().nullable(),
+  nextGenerationDate: z.string().transform((str) => str),
+  taxRate: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num >= 0 && num <= 100;
+    }, "Tax rate must be between 0 and 100"),
+  frequency: z.enum(['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']),
+});
+
+export const insertRecurringInvoiceItemSchema = createInsertSchema(recurringInvoiceItems).omit({ id: true }).extend({
+  quantity: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0 && num < 100000000;
+    }, "Quantity must be positive and less than 100,000,000")
+    .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Quantity must have max 2 decimal places"),
+  price: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num >= 0 && num < 100000000;
+    }, "Price must be between 0 and 99,999,999.99")
+    .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Price must have max 2 decimal places"),
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  amount: z.union([z.string(), z.number()])
+    .transform(val => String(val))
+    .refine(val => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0 && num < 100000000;
+    }, "Payment amount must be positive and less than 99,999,999.99")
+    .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Amount must have max 2 decimal places"),
+  paymentMethod: z.enum(["cash", "bank_transfer", "credit_card", "debit_card", "check", "paypal", "stripe", "other"]),
+  paymentDate: z.union([z.string(), z.date()]).transform(val =>
+    typeof val === 'string' ? new Date(val) : val
+  ),
+  transactionId: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -342,6 +412,9 @@ export type Service = typeof services.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Expense = typeof expenses.$inferSelect;
 
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;
+
 export type InsertBankAccount = z.infer<typeof bankAccountSchema>;
 export type BankAccount = typeof bankAccounts.$inferSelect;
 
@@ -349,10 +422,8 @@ export const insertProjectSchema = createInsertSchema(projects).omit({ id: true 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 
-export const insertInviteTokenSchema = createInsertSchema(inviteTokens).omit({ id: true });
-export type InsertInviteToken = z.infer<typeof insertInviteTokenSchema>;
-export type InviteToken = typeof inviteTokens.$inferSelect;
+export type InsertRecurringInvoice = z.infer<typeof insertRecurringInvoiceSchema>;
+export type RecurringInvoice = typeof recurringInvoices.$inferSelect;
 
-export const insertWaitlistSchema = createInsertSchema(waitlist).omit({ id: true });
-export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
-export type WaitlistEntry = typeof waitlist.$inferSelect;
+export type InsertRecurringInvoiceItem = z.infer<typeof insertRecurringInvoiceItemSchema>;
+export type RecurringInvoiceItem = typeof recurringInvoiceItems.$inferSelect;

@@ -67,11 +67,11 @@ export default function Login() {
       //   });
       // }
 
-      console.log('[Login] Invalidating queries and redirecting to /');
+      console.log('[Login] Invalidating queries and redirecting to /dashboard');
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      console.log('[Login] Calling setLocation("/")');
-      setLocation("/");
-      console.log('[Login] setLocation called, current location should change');
+      console.log('[Login] Calling setLocation("/dashboard")');
+      setLocation("/dashboard");
+      console.log('[Login] setLocation called, navigating to dashboard');
     },
     onError: (error: any) => {
       console.error("Login failed:", error);

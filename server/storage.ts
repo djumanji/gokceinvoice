@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type InviteToken, type InsertInviteToken, type WaitlistEntry, type InsertWaitlist } from "@shared/schema";
+import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type RecurringInvoice, type InsertRecurringInvoice, type RecurringInvoiceItem, type InsertRecurringInvoiceItem, type Payment, type InsertPayment } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { PgStorage } from './postgres-storage';
 
@@ -68,16 +68,20 @@ export interface IStorage {
   updateProject(id: string, userId: string, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string, userId: string): Promise<boolean>;
 
-  // Invite Tokens
-  createInviteToken(senderId: string, recipientEmail?: string): Promise<InviteToken>;
-  getInviteTokenByToken(token: string): Promise<InviteToken | undefined>;
-  updateInviteTokenStatus(tokenId: string, status: 'used' | 'expired'): Promise<void>;
-  getUserInviteTokens(userId: string): Promise<InviteToken[]>;
-  decrementUserInvites(userId: string): Promise<void>;
+  // Recurring Invoices
+  getRecurringInvoices(userId: string): Promise<RecurringInvoice[]>;
+  getRecurringInvoice(id: string, userId: string): Promise<RecurringInvoice | undefined>;
+  createRecurringInvoice(recurringInvoice: InsertRecurringInvoice, items: InsertRecurringInvoiceItem[]): Promise<RecurringInvoice>;
+  updateRecurringInvoice(id: string, userId: string, recurringInvoice: Partial<InsertRecurringInvoice>): Promise<RecurringInvoice | undefined>;
+  deleteRecurringInvoice(id: string, userId: string): Promise<boolean>;
+  getRecurringInvoiceItems(recurringInvoiceId: string): Promise<RecurringInvoiceItem[]>;
+  getRecurringInvoicesDueForGeneration(): Promise<RecurringInvoice[]>;
 
-  // Waitlist
-  addToWaitlist(email: string, source?: string): Promise<WaitlistEntry>;
-  getWaitlistCount(): Promise<number>;
+  // Payments
+  getPaymentsByInvoice(invoiceId: string): Promise<Payment[]>;
+  getPayment(id: string): Promise<Payment | undefined>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  deletePayment(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {

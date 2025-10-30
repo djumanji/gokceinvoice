@@ -126,7 +126,7 @@ export default function Register() {
       });
       return res;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Track registration success in Mixpanel
       // trackEvent('User Registered', {
       //   email,
@@ -142,9 +142,19 @@ export default function Register() {
       //   });
       // }
 
-      // Invalidate the auth query to refetch user data
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      setLocation("/onboarding");
+      // Invalidate and refetch user data to check if onboarding is needed
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
+
+      // Check if user already has profile data (edge case: existing marketing user)
+      const user = queryClient.getQueryData(["/api/auth/me"]) as any;
+      if (user?.companyName && user?.address) {
+        // User already has onboarding data, go to dashboard
+        setLocation("/dashboard");
+      } else {
+        // Normal flow: redirect to onboarding
+        setLocation("/onboarding");
+      }
     },
     onError: async (error: any) => {
       console.error("Registration failed:", error);

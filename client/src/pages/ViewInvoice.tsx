@@ -2,12 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Edit, Printer, FileDown, Link2 } from "lucide-react";
+import { ArrowLeft, Edit, Printer, FileDown, Link2, DollarSign } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { InvoiceStatusBadge } from "@/components/invoice/InvoiceStatusBadge";
 import { SendLinkModal } from "@/components/invoice/SendLinkModal";
+import RecordPaymentModal from "@/components/RecordPaymentModal";
+import PaymentHistory from "@/components/PaymentHistory";
 import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -21,6 +23,7 @@ export default function ViewInvoice() {
   const invoiceId = params.id;
   const [, setLocation] = useLocation();
   const [showSendModal, setShowSendModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Fetch invoice
   const { data: invoice, isLoading } = useQuery({
@@ -159,6 +162,13 @@ export default function ViewInvoice() {
           {invoice?.status && <InvoiceStatusBadge status={invoice.status as any} />}
         </div>
         <div className="flex gap-2">
+          {/* Show Record Payment button if invoice is not fully paid */}
+          {invoice?.status !== 'paid' && invoice?.status !== 'cancelled' && invoice?.status !== 'refunded' && (
+            <Button onClick={() => setShowPaymentModal(true)} variant="default">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Record Payment
+            </Button>
+          )}
           {canEdit && (
             <Button onClick={() => setLocation(`/invoices/edit/${invoiceId}`)} variant="outline">
               <Edit className="w-4 h-4 mr-2" />
@@ -180,44 +190,53 @@ export default function ViewInvoice() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="invoice-preview-container">
-            <InvoicePreview
-              invoiceNumber={invoice.invoiceNumber}
-              date={invoice.date}
-              orderNumber={invoice.orderNumber}
-              projectNumber={invoice.projectNumber}
-              forProject={invoice.forProject}
-              clientName={client?.name}
-              clientCompany={client?.company}
-              clientAddress={client?.address}
-              clientPhone={client?.phone}
-              lineItems={(lineItems || []).map((item: any) => ({
-                description: item.description || '',
-                quantity: parseFloat(item.quantity) || 0,
-                price: parseFloat(item.price) || 0,
-              }))}
-              taxRate={parseFloat(invoice.taxRate)}
-              notes={invoice.notes}
-              // Company data
-              companyName={user?.companyName}
-              companyAddress={user?.address}
-              companyPhone={user?.phone}
-              companyTaxId={user?.taxOfficeId}
-              // Bank details
-              swiftCode={user?.swiftCode}
-              iban={user?.iban}
-              accountHolderName={user?.accountHolderName}
-              bankAddress={user?.bankAddress}
-              // Footer contact
-              userName={user?.name}
-              userPhone={user?.phone}
-              userEmail={user?.email}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardContent className="p-6">
+              <div className="invoice-preview-container">
+                <InvoicePreview
+                  invoiceNumber={invoice.invoiceNumber}
+                  date={invoice.date}
+                  orderNumber={invoice.orderNumber}
+                  projectNumber={invoice.projectNumber}
+                  forProject={invoice.forProject}
+                  clientName={client?.name}
+                  clientCompany={client?.company}
+                  clientAddress={client?.address}
+                  clientPhone={client?.phone}
+                  lineItems={(lineItems || []).map((item: any) => ({
+                    description: item.description || '',
+                    quantity: parseFloat(item.quantity) || 0,
+                    price: parseFloat(item.price) || 0,
+                  }))}
+                  taxRate={parseFloat(invoice.taxRate)}
+                  notes={invoice.notes}
+                  // Company data
+                  companyName={user?.companyName}
+                  companyAddress={user?.address}
+                  companyPhone={user?.phone}
+                  companyTaxId={user?.taxOfficeId}
+                  // Bank details
+                  swiftCode={user?.swiftCode}
+                  iban={user?.iban}
+                  accountHolderName={user?.accountHolderName}
+                  bankAddress={user?.bankAddress}
+                  // Footer contact
+                  userName={user?.name}
+                  userPhone={user?.phone}
+                  userEmail={user?.email}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          {/* Payment History */}
+          <PaymentHistory invoiceId={invoiceId!} />
+        </div>
+      </div>
 
       {/* Send Link Modal */}
       {client && invoice && (
@@ -229,6 +248,17 @@ export default function ViewInvoice() {
           invoiceNumber={invoice.invoiceNumber}
           total={parseFloat(invoice.total)}
           shareableUrl={`${window.location.origin}/invoices/view/${invoice.id}`}
+        />
+      )}
+
+      {/* Record Payment Modal */}
+      {invoice && (
+        <RecordPaymentModal
+          invoiceId={invoiceId!}
+          invoiceTotal={parseFloat(invoice.total)}
+          amountPaid={parseFloat(invoice.amountPaid || '0')}
+          open={showPaymentModal}
+          onOpenChange={setShowPaymentModal}
         />
       )}
     </div>

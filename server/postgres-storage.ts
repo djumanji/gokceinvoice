@@ -1,7 +1,7 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
-import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, inviteTokens, waitlist, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type InviteToken, type InsertInviteToken, type WaitlistEntry } from '@shared/schema';
-import { eq, desc, and, sql, lte } from 'drizzle-orm';
+import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, recurringInvoices, recurringInvoiceItems, payments, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type RecurringInvoice, type InsertRecurringInvoice, type RecurringInvoiceItem, type InsertRecurringInvoiceItem, type Payment, type InsertPayment } from '@shared/schema';
+import { eq, desc, and, sql, lte, or, isNull, gte } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 // Initialize PostgreSQL connection
@@ -436,59 +436,163 @@ export class PgStorage {
     return result;
   }
 
-  // Invite Tokens
-  async createInviteToken(senderId: string, recipientEmail?: string): Promise<InviteToken> {
-    const token = randomUUID();
-    const result = await this.db.insert(inviteTokens).values({
-      token,
-      senderUserId: senderId,
-      recipientEmail: recipientEmail || null,
-      status: 'pending',
-    }).returning();
-    return result[0];
-  }
-
-  async getInviteTokenByToken(token: string): Promise<InviteToken | undefined> {
-    const result = await this.db.select().from(inviteTokens).where(eq(inviteTokens.token, token));
-    return result[0];
-  }
-
-  async updateInviteTokenStatus(tokenId: string, status: 'used' | 'expired'): Promise<void> {
-    await this.db.update(inviteTokens)
-      .set({
-        status,
-        usedAt: status === 'used' ? new Date() : undefined,
-      })
-      .where(eq(inviteTokens.id, tokenId));
-  }
-
-  async getUserInviteTokens(userId: string): Promise<InviteToken[]> {
+  // Recurring Invoices
+  async getRecurringInvoices(userId: string): Promise<RecurringInvoice[]> {
     return await this.db.select()
-      .from(inviteTokens)
-      .where(eq(inviteTokens.senderUserId, userId))
-      .orderBy(desc(inviteTokens.createdAt));
+      .from(recurringInvoices)
+      .where(eq(recurringInvoices.userId, userId))
+      .orderBy(desc(recurringInvoices.createdAt));
   }
 
-  async decrementUserInvites(userId: string): Promise<void> {
-    await this.db.update(users)
-      .set({
-        availableInvites: sql`${users.availableInvites} - 1`,
-      })
-      .where(eq(users.id, userId));
-  }
-
-  // Waitlist
-  async addToWaitlist(email: string, source?: string): Promise<WaitlistEntry> {
-    const result = await this.db.insert(waitlist).values({
-      email,
-      source: source || null,
-    }).returning();
+  async getRecurringInvoice(id: string, userId: string): Promise<RecurringInvoice | undefined> {
+    const result = await this.db.select()
+      .from(recurringInvoices)
+      .where(and(eq(recurringInvoices.id, id), eq(recurringInvoices.userId, userId)));
     return result[0];
   }
 
-  async getWaitlistCount(): Promise<number> {
-    const result = await this.db.$count(waitlist);
-    return result;
+  async createRecurringInvoice(data: InsertRecurringInvoice, items: InsertRecurringInvoiceItem[]): Promise<RecurringInvoice> {
+    return await this.db.transaction(async (tx) => {
+      // Create recurring invoice
+      const recurringResult = await tx.insert(recurringInvoices).values(data).returning();
+      const recurringInvoice = recurringResult[0];
+
+      // Create recurring invoice items
+      for (const item of items) {
+        await tx.insert(recurringInvoiceItems).values({
+          ...item,
+          recurringInvoiceId: recurringInvoice.id,
+        });
+      }
+
+      return recurringInvoice;
+    });
+  }
+
+  async updateRecurringInvoice(id: string, userId: string, data: Partial<InsertRecurringInvoice>): Promise<RecurringInvoice | undefined> {
+    const result = await this.db.update(recurringInvoices)
+      .set(data)
+      .where(and(eq(recurringInvoices.id, id), eq(recurringInvoices.userId, userId)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteRecurringInvoice(id: string, userId: string): Promise<boolean> {
+    // Delete items first due to foreign key (cascade should handle this, but being explicit)
+    await this.db.delete(recurringInvoiceItems).where(eq(recurringInvoiceItems.recurringInvoiceId, id));
+
+    const result = await this.db.delete(recurringInvoices)
+      .where(and(eq(recurringInvoices.id, id), eq(recurringInvoices.userId, userId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getRecurringInvoiceItems(recurringInvoiceId: string): Promise<RecurringInvoiceItem[]> {
+    return await this.db.select()
+      .from(recurringInvoiceItems)
+      .where(eq(recurringInvoiceItems.recurringInvoiceId, recurringInvoiceId))
+      .orderBy(recurringInvoiceItems.position);
+  }
+
+  async getRecurringInvoicesDueForGeneration(): Promise<RecurringInvoice[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return await this.db.select()
+      .from(recurringInvoices)
+      .where(
+        and(
+          eq(recurringInvoices.isActive, true),
+          lte(recurringInvoices.nextGenerationDate, today),
+          // Check if endDate is null or in the future
+          or(
+            isNull(recurringInvoices.endDate),
+            gte(recurringInvoices.endDate, today)
+          )
+        )
+      );
+  }
+
+  // Payments
+  async getPaymentsByInvoice(invoiceId: string): Promise<Payment[]> {
+    return await this.db.select().from(payments).where(eq(payments.invoiceId, invoiceId)).orderBy(desc(payments.paymentDate));
+  }
+
+  async getPayment(id: string): Promise<Payment | undefined> {
+    const result = await this.db.select().from(payments).where(eq(payments.id, id));
+    return result[0];
+  }
+
+  async createPayment(data: InsertPayment): Promise<Payment> {
+    const [payment] = await this.db.insert(payments).values(data).returning();
+
+    // Update invoice amount_paid and status
+    const invoice = await this.db.select().from(invoices).where(eq(invoices.id, data.invoiceId));
+    if (invoice[0]) {
+      const currentPaid = parseFloat(invoice[0].amountPaid || '0');
+      const paymentAmount = parseFloat(data.amount);
+      const newAmountPaid = currentPaid + paymentAmount;
+      const total = parseFloat(invoice[0].total);
+
+      // Determine new status
+      let newStatus = invoice[0].status;
+      let paidDate = invoice[0].paidDate;
+
+      if (newAmountPaid >= total) {
+        newStatus = 'paid';
+        paidDate = new Date();
+      } else if (newAmountPaid > 0) {
+        newStatus = 'partial';
+      }
+
+      // Update invoice
+      await this.db.update(invoices)
+        .set({
+          amountPaid: newAmountPaid.toString(),
+          status: newStatus,
+          paidDate: paidDate
+        })
+        .where(eq(invoices.id, data.invoiceId));
+    }
+
+    return payment;
+  }
+
+  async deletePayment(id: string): Promise<boolean> {
+    // Get payment details before deleting
+    const payment = await this.getPayment(id);
+    if (!payment) return false;
+
+    // Delete the payment
+    await this.db.delete(payments).where(eq(payments.id, id));
+
+    // Recalculate invoice amount_paid and status
+    const remainingPayments = await this.getPaymentsByInvoice(payment.invoiceId);
+    const invoice = await this.db.select().from(invoices).where(eq(invoices.id, payment.invoiceId));
+
+    if (invoice[0]) {
+      const totalPaid = remainingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+      const total = parseFloat(invoice[0].total);
+
+      let newStatus = 'sent'; // Default to sent if no payments
+      let paidDate = null;
+
+      if (totalPaid >= total) {
+        newStatus = 'paid';
+        paidDate = new Date();
+      } else if (totalPaid > 0) {
+        newStatus = 'partial';
+      }
+
+      await this.db.update(invoices)
+        .set({
+          amountPaid: totalPaid.toString(),
+          status: newStatus,
+          paidDate: paidDate
+        })
+        .where(eq(invoices.id, payment.invoiceId));
+    }
+
+    return true;
   }
 }
 
