@@ -394,6 +394,19 @@ div.flex.min-h-screen.flex-col.bg-white h6 {
   color: #222222;
 }
 
+/* Override for dark backgrounds - ensure white text stays white */
+div.flex.min-h-screen.flex-col.bg-white .bg-gray-900 h3,
+div.flex.min-h-screen.flex-col.bg-white .bg-gray-900 div,
+div.flex.min-h-screen.flex-col.bg-white [style*="color: #ffffff"],
+div.flex.min-h-screen.flex-col.bg-white [style*="color:#ffffff"] {
+  color: #ffffff !important;
+}
+
+div.flex.min-h-screen.flex-col.bg-white .bg-gray-900 div[style*="color: #e5e7eb"],
+div.flex.min-h-screen.flex-col.bg-white .bg-gray-900 div[style*="color:#e5e7eb"] {
+  color: #e5e7eb !important;
+}
+
 /* Only style links that don't have explicit color classes to preserve hover states */
 div.flex.min-h-screen.flex-col.bg-white a:not([class*="text-indigo"]):not([class*="text-[#"]):not(.text-white) {
   color: #444444;
