@@ -128,6 +128,11 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
     taxRate,
   });
 
+  // Sync lineItems from hook to form state whenever they change
+  useEffect(() => {
+    form.setValue("lineItems", lineItems, { shouldValidate: false });
+  }, [lineItems, form]);
+
   // Fetch projects for selected client
   const selectedClientId = form.watch("clientId");
   const { data: clientProjects = [], isLoading: isLoadingProjects } = useQuery<Array<{ id: string; name: string; description?: string | null; projectNumber?: string | null }>>({
@@ -248,6 +253,19 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
       // Get form errors to debug
       const errors = form.formState.errors;
       console.log('[InvoiceForm] Form errors:', errors);
+      console.log('[InvoiceForm] Line items data:', lineItems);
+      console.log('[InvoiceForm] Line items errors:', errors.lineItems);
+      
+      // Log each line item to see what's wrong
+      lineItems.forEach((item, index) => {
+        console.log(`[InvoiceForm] Line item ${index}:`, {
+          description: item.description,
+          quantity: item.quantity,
+          price: item.price,
+          quantityType: typeof item.quantity,
+          priceType: typeof item.price,
+        });
+      });
       
       // Validation errors will be shown inline via FormMessage components
       // Scroll to first error field
