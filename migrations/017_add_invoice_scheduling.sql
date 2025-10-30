@@ -5,8 +5,8 @@
 -- Downtime: None
 -- =========================================================
 
--- Add scheduled_date column to invoices table
-ALTER TABLE invoices ADD COLUMN scheduled_date TIMESTAMP;
+-- Add scheduled_date column to invoices table (if not already exists from base schema)
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS scheduled_date TIMESTAMP;
 
 -- Create index on scheduled_date for efficient querying of upcoming scheduled invoices
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_invoices_scheduled_date

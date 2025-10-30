@@ -1,4 +1,4 @@
-# Quick Migration Check
+# Out_Of_Date Quick Migration Check
 
 ## 🔍 Should You Run Migrations?
 

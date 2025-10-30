@@ -35,6 +35,11 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_line_items_invoice_id
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_services_user_id
   ON services(user_id);
 
+-- Expenses table: user_id foreign key
+-- Impact: 50x improvement for getExpenses(userId)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_expenses_user_id
+  ON expenses(user_id);
+
 -- =========================================================
 -- PHASE 2: COMPOSITE INDEXES (Query Optimization)
 -- =========================================================
@@ -100,6 +105,17 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_invoices_user_status_total
 -- Date-based financial reports
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_invoices_date_status_total
   ON invoices(date, status, total);
+
+-- Expenses date filtering for reports
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_expenses_user_date
+  ON expenses(user_id, date DESC);
+
+-- Expenses category filtering
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_expenses_user_category
+  ON expenses(user_id, category);
+
+-- Note: Bank accounts indexes are created in migration 008_add_bank_accounts_table.sql
+-- after the table is created
 
 -- =========================================================
 -- VERIFICATION QUERIES

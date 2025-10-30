@@ -48,6 +48,7 @@ CREATE TABLE invoices (
   user_id VARCHAR REFERENCES users(id) ON DELETE CASCADE,
   client_id VARCHAR NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
   date TIMESTAMP NOT NULL DEFAULT NOW(),
+  scheduled_date TIMESTAMP,
   order_number TEXT,
   project_number TEXT,
   for_project TEXT,
@@ -100,11 +101,6 @@ CREATE TABLE expenses (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Add basic indexes
-CREATE INDEX idx_clients_user_id ON clients(user_id);
-CREATE INDEX idx_invoices_user_id ON invoices(user_id);
-CREATE INDEX idx_invoices_client_id ON invoices(client_id);
-CREATE INDEX idx_line_items_invoice_id ON line_items(invoice_id);
-CREATE INDEX idx_services_user_id ON services(user_id);
-CREATE INDEX idx_expenses_user_id ON expenses(user_id);
+-- Note: Basic indexes are created in 001_critical_indexes.sql
+-- This avoids duplication and ensures proper CONCURRENTLY creation
 

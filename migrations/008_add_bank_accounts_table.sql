@@ -10,7 +10,6 @@ ALTER TABLE users DROP COLUMN IF EXISTS iban;
 ALTER TABLE users DROP COLUMN IF EXISTS swift_code;
 ALTER TABLE users DROP COLUMN IF EXISTS bank_address;
 ALTER TABLE users DROP COLUMN IF EXISTS bank_branch;
-ALTER TABLE users DROP COLUMN IF EXISTS preferred_currency;
 
 -- Create bank_accounts table
 CREATE TABLE IF NOT EXISTS bank_accounts (

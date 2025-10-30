@@ -56,7 +56,9 @@ echo "📊 Creating database schema..."
 echo ""
 
 # Run base schema migration
-echo "Step 1/18: Creating base tables (users, clients, invoices, etc.)..."
+# NOTE: Use 000_create_schema_safe.sql for production (uses IF NOT EXISTS)
+#       Use 000_create_schema.sql for fresh installs (destructive)
+echo "Step 1/20: Creating base tables (users, clients, invoices, etc.)..."
 if psql "$DATABASE_URL" -f migrations/000_create_schema.sql > /dev/null 2>&1; then
     echo "   ✅ Base tables created"
 else
@@ -64,59 +66,62 @@ else
 fi
 
 # Run all other migrations in order
-echo "Step 2/18: Adding critical indexes..."
+echo "Step 2/20: Adding critical indexes..."
 psql "$DATABASE_URL" -f migrations/001_critical_indexes.sql > /dev/null 2>&1 || true
 
-echo "Step 3/18: Adding data integrity constraints..."
+echo "Step 3/20: Adding data integrity constraints..."
 psql "$DATABASE_URL" -f migrations/002_data_integrity_constraints.sql > /dev/null 2>&1 || true
 
-echo "Step 4/18: Setting up row level security..."
+echo "Step 4/20: Setting up row level security..."
 psql "$DATABASE_URL" -f migrations/003_row_level_security.sql > /dev/null 2>&1 || true
 
-echo "Step 5/18: Setting up invoice number generation..."
+echo "Step 5/20: Setting up invoice number generation..."
 psql "$DATABASE_URL" -f migrations/004_invoice_number_fix.sql > /dev/null 2>&1 || true
 
-echo "Step 6/18: Adding user profile fields..."
+echo "Step 6/20: Adding user profile fields..."
 psql "$DATABASE_URL" -f migrations/005_add_user_profile_fields.sql > /dev/null 2>&1 || true
 
-echo "Step 7/18: Adding email verification fields..."
-psql "$DATABASE_URL" -f migrations/005_email_verification_and_reset.sql > /dev/null 2>&1 || true
+echo "Step 7/20: Adding email verification fields..."
+psql "$DATABASE_URL" -f migrations/006_email_verification_and_reset.sql > /dev/null 2>&1 || true
 
-echo "Step 8/18: Adding name field to users..."
-psql "$DATABASE_URL" -f migrations/006_add_name_field_to_users.sql > /dev/null 2>&1 || true
+echo "Step 8/20: Adding name field to users..."
+psql "$DATABASE_URL" -f migrations/007_add_name_field_to_users.sql > /dev/null 2>&1 || true
 
-echo "Step 9/18: Creating bank accounts table..."
-psql "$DATABASE_URL" -f migrations/007_add_bank_accounts_table.sql > /dev/null 2>&1 || true
+echo "Step 9/20: Creating bank accounts table..."
+psql "$DATABASE_URL" -f migrations/008_add_bank_accounts_table.sql > /dev/null 2>&1 || true
 
-echo "Step 10/18: Adding bank account ID to invoices..."
-psql "$DATABASE_URL" -f migrations/008_add_bank_account_id_to_invoices.sql > /dev/null 2>&1 || true
+echo "Step 10/20: Adding bank account ID to invoices..."
+psql "$DATABASE_URL" -f migrations/009_add_bank_account_id_to_invoices.sql > /dev/null 2>&1 || true
 
-echo "Step 11/18: Adding company logo field..."
-psql "$DATABASE_URL" -f migrations/009_add_company_logo.sql > /dev/null 2>&1 || true
+echo "Step 11/20: Adding company logo field..."
+psql "$DATABASE_URL" -f migrations/010_add_company_logo.sql > /dev/null 2>&1 || true
 
-echo "Step 12/18: Creating projects table..."
-psql "$DATABASE_URL" -f migrations/010_add_projects_table.sql > /dev/null 2>&1 || true
+echo "Step 12/20: Creating projects table..."
+psql "$DATABASE_URL" -f migrations/011_add_projects_table.sql > /dev/null 2>&1 || true
 
-echo "Step 13/18: Adding company size field..."
-psql "$DATABASE_URL" -f migrations/011_add_company_size.sql > /dev/null 2>&1 || true
+echo "Step 13/20: Adding company size field..."
+psql "$DATABASE_URL" -f migrations/012_add_company_size.sql > /dev/null 2>&1 || true
 
-echo "Step 14/18: Adding industry field..."
-psql "$DATABASE_URL" -f migrations/012_add_industry.sql > /dev/null 2>&1 || true
+echo "Step 14/20: Adding industry field..."
+psql "$DATABASE_URL" -f migrations/013_add_industry.sql > /dev/null 2>&1 || true
 
-echo "Step 15/18: Creating leads system..."
-psql "$DATABASE_URL" -f migrations/013_add_leads_system.sql > /dev/null 2>&1 || true
+echo "Step 15/20: Creating leads system..."
+psql "$DATABASE_URL" -f migrations/014_add_leads_system.sql > /dev/null 2>&1 || true
 
-echo "Step 16/18: Creating chatbot tables..."
-psql "$DATABASE_URL" -f migrations/014_add_chatbot_tables.sql > /dev/null 2>&1 || true
+echo "Step 16/20: Creating chatbot tables..."
+psql "$DATABASE_URL" -f migrations/015_add_chatbot_tables.sql > /dev/null 2>&1 || true
 
-echo "Step 17/18: Adding needed_at to leads..."
-psql "$DATABASE_URL" -f migrations/015_add_needed_at_to_leads.sql > /dev/null 2>&1 || true
+echo "Step 17/20: Adding needed_at to leads..."
+psql "$DATABASE_URL" -f migrations/016_add_needed_at_to_leads.sql > /dev/null 2>&1 || true
 
-echo "Step 18/18: Adding invoice scheduling..."
-psql "$DATABASE_URL" -f migrations/016_add_invoice_scheduling.sql > /dev/null 2>&1 || true
+echo "Step 18/20: Adding invoice scheduling..."
+psql "$DATABASE_URL" -f migrations/017_add_invoice_scheduling.sql > /dev/null 2>&1 || true
 
-echo "Step 19/18: Adding prospect system..."
-psql "$DATABASE_URL" -f migrations/017_add_prospect_system.sql > /dev/null 2>&1 || true
+echo "Step 19/20: Adding prospect system..."
+psql "$DATABASE_URL" -f migrations/018_add_prospect_system.sql > /dev/null 2>&1 || true
+
+echo "Step 20/20: Adding user sessions table..."
+psql "$DATABASE_URL" -f migrations/019_add_user_sessions_table.sql > /dev/null 2>&1 || true
 
 echo ""
 echo "🔍 Verifying setup..."
