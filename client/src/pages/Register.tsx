@@ -24,17 +24,31 @@ export default function Register() {
   const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
 
+  // Determine if this should be a prospect registration based on URL params
+  // This should be determined once at mount, not based on form state
+  const [isProspectRegistration, setIsProspectRegistration] = useState(false);
+
   // Pre-fill email from URL params and determine if this is a prospect registration
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search || '');
     const emailParam = urlParams.get('email');
+    const prospectParam = urlParams.get('prospect');
+    
+    // Set prospect mode if explicitly set in URL
+    // If email param exists and prospect is not explicitly false, default to prospect mode
+    if (prospectParam === 'true') {
+      setIsProspectRegistration(true);
+    } else if (prospectParam === 'false') {
+      setIsProspectRegistration(false);
+    } else if (emailParam) {
+      // If email is in URL but no explicit prospect param, default to prospect mode
+      setIsProspectRegistration(true);
+    }
+    
     if (emailParam) {
       setEmail(emailParam);
     }
   }, [location.search]);
-
-  // Check if this should be a prospect registration (email pre-filled but no password)
-  const isProspectRegistration = email && !password && !confirmPassword;
   const [animationSrc, setAnimationSrc] = useState<string>(
     import.meta.env.PROD
       ? "/lottie/hallederik-bg.lottie"

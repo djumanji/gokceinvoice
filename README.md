@@ -260,23 +260,31 @@ See `docs/security/COMPLETE_SECURITY_AUDIT.md` for the full security audit.
 
 **Quick Start:**
 1. Import your repo to Replit
-2. Create PostgreSQL database in Tools
-3. Set `SESSION_SECRET` in Secrets
-4. Run `./setup-replit-db.sh`
+2. **Set up Neon Database** (Replit provides 10GB free):
+   - Go to Tools → Database
+   - Create/connect Neon database (automatically configured)
+   - `DATABASE_URL` will be set automatically
+3. Set `SESSION_SECRET` in Secrets: `openssl rand -base64 32`
+4. Run migrations: `bash migrations/run-all.sh`
 5. Click "Run"!
 
+📖 **Database Setup**: See [`docs/database-external/NEON_DATABASE_SETUP.md`](docs/database-external/NEON_DATABASE_SETUP.md)  
 📖 **Full Guide**: See `REPLIT_QUICK_START.md` or `docs/REPLIT_DEPLOYMENT.md`
+
+**Note:** Replit includes 10GB free Neon database. The connection string (`DATABASE_URL`) is automatically configured when you enable Neon database in Tools → Database. No manual setup needed! 
+
+For alternative setups (personal Neon account with separate dev/prod branches), see [`docs/database-external/NEON_PERSONAL_SETUP.md`](docs/database-external/NEON_PERSONAL_SETUP.md). This is optional and only needed if you want features beyond Replit's integration.
 
 ### Production Checklist
 
-- [ ] Set strong `SESSION_SECRET`
-- [ ] Set `NODE_ENV=production`
-- [ ] Configure `DATABASE_URL` for production PostgreSQL
-- [ ] Enable HTTPS
-- [ ] Configure OAuth credentials
-- [ ] Apply all database migrations
+- [ ] Set strong `SESSION_SECRET` in Replit Secrets
+- [ ] Set `NODE_ENV=production` in Replit Secrets
+- [ ] Database configured (Replit Neon integration - automatic)
+- [ ] Run all database migrations: `bash migrations/run-all.sh`
+- [ ] Enable HTTPS (Replit handles this automatically)
+- [ ] Configure OAuth credentials in Replit Secrets
 - [ ] Run security audit tests
-- [ ] Set up database backups
+- [ ] Set up database backups (Neon provides automatic backups)
 - [ ] Configure monitoring and logging
 
 ### Build for Production

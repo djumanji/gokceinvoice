@@ -69,6 +69,28 @@ Guide for setting up PgAdmin for database management.
 ### [User Table Schema](database/USER_TABLE_SCHEMA.md)
 Detailed schema documentation for user-related tables.
 
+### External Database Options
+
+#### [Neon Database Setup (Replit Integration)](database-external/NEON_DATABASE_SETUP.md) ⭐ **CURRENT SETUP**
+**Status:** ACTIVE - Using Replit's Neon integration
+
+✅ **Free 10GB database included with Replit**  
+✅ **Automatic configuration** - No manual setup needed  
+✅ **Simplified deployment** - Works out of the box
+
+See [`database-external/README.md`](database-external/README.md) for overview.
+
+#### [Personal Neon Account Setup](database-external/NEON_PERSONAL_SETUP.md) 🔄 **ALTERNATIVE**
+Optional setup for personal Neon account with separate dev/prod branches.
+
+**Use when:**
+- Need separate dev/prod databases with independent data
+- Want full control and visibility in Neon console
+- Need features beyond Replit's integration
+- Planning to migrate away from Replit hosting
+
+**Note:** Personal Neon setup is optional. Current setup uses Replit's Neon integration (10GB free).
+
 ---
 
 ## 🎨 Design Documentation

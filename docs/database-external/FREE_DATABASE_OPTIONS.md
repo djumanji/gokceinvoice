@@ -2,13 +2,19 @@
 
 ## Understanding Costs
 
-### Replit Database
+### Replit Neon Integration (Current Setup) ✅
+- **Free tier:** 10GB included with Replit
+- **Cost:** **$0** - Included with Replit
+- **Setup:** Automatic - DATABASE_URL set by Replit
+- **Best for:** Quick setup, included storage
+
+**Current Setup:** You're using Replit's Neon integration - 10GB free! ✅
+
+### Replit PostgreSQL Database
 - **Free tier:** Included with free Replit plans
 - **Limits:** 1 database, reasonable size limits
 - **Cost:** **$0** for development/testing
 - **Paid only if:** You scale to paid Replit plans
-
-**Good news:** Replit's PostgreSQL database is **FREE** for your use case! ✅
 
 ---
 
@@ -41,14 +47,15 @@ postgresql://postgres.xxxxxxxxxx:xxxxxxxx@aws-0-us-west-1.pooler.supabase.com:65
 
 ---
 
-### Option 2: **Neon** (Serverless PostgreSQL)
+### Option 2: **Personal Neon Account** (Serverless PostgreSQL)
 
-**Why:** Generous free tier, serverless
+**Why:** Generous free tier, serverless, branching support
 
 **Free tier includes:**
-- ✅ 3GB storage
+- ✅ 3GB storage (or 10GB via Replit integration)
 - ✅ Branching (git-like for databases)
 - ✅ Automatic backups
+- ✅ Separate dev/prod branches
 
 **Setup:**
 1. Go to [neon.tech](https://neon.tech)
@@ -57,26 +64,27 @@ postgresql://postgres.xxxxxxxxxx:xxxxxxxx@aws-0-us-west-1.pooler.supabase.com:65
 4. Copy connection string
 5. Add to Replit Secrets
 
+**Note:** See [`NEON_PERSONAL_SETUP.md`](./NEON_PERSONAL_SETUP.md) for detailed setup with dev/prod branches.
+
 ---
 
-## 💡 Recommended: **Supabase** (Free & Best)
+## 💡 Recommended Setup
 
-### Why Supabase?
+### Current: **Replit Neon Integration** ✅
 
-1. **Completely free** for your use case
-2. **500MB** is plenty (your invoice data is tiny)
-3. **Better** than Replit's built-in database
-4. **Lifespan:** Free forever (unless you scale massively)
+**Why:**
+1. ✅ **10GB free** included
+2. ✅ **Automatic configuration**
+3. ✅ **No separate account needed**
+4. ✅ **Simpler setup**
 
-### Estimated Costs
+### Alternative: **Personal Neon Account**
 
-Your invoice app data size:
-- **1000 invoices:** ~5MB
-- **1000 clients:** ~2MB
-- **Services & expenses:** ~1MB
-- **Total:** ~10MB (well within 500MB)
-
-**You'll never hit the free limit!** 🎉
+Use if you need:
+- Separate dev/prod databases
+- Full control/manageability
+- Want to manage in Neon console
+- More than 10GB storage
 
 ---
 
@@ -84,20 +92,21 @@ Your invoice app data size:
 
 | Option | Monthly Cost | Setup Time | Best For |
 |--------|-------------|------------|----------|
+| **Replit Neon** | **FREE** ✅ (10GB) | Automatic | Current setup |
+| **Personal Neon** | **FREE** ✅ (3GB) | 5 min | Dev/prod separation |
 | **Supabase** | **FREE** ✅ | 5 min | Production apps |
-| **Neon** | **FREE** ✅ | 5 min | Serverless needs |
-| **Replit DB** | **FREE** ✅ | 2 min | Quick setup |
+| **Replit PostgreSQL** | **FREE** ✅ | 2 min | Quick setup |
 | **In-Memory** | **FREE** ✅ | 0 min | Testing only |
 
 ---
 
 ## 🎯 My Recommendation
 
-**Use Supabase because:**
-1. ✅ Completely free forever
-2. ✅ More features than Replit DB
-3. ✅ Great dashboard to view data
-4. ✅ Auto backups
+**Current Setup (Replit Neon):**
+- ✅ 10GB free included
+- ✅ Automatic configuration
+- ✅ Perfect for your needs
 
 **All options are FREE!** Choose based on your needs. 🎉
+
 

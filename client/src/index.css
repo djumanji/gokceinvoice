@@ -313,3 +313,108 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* === MARKETING PAGE READABILITY FIX === */
+/* These styles improve readability on the marketing root page */
+
+/* Target the marketing page specifically */
+.bg-white:has(> header):has(> section[id="main-content"]) {
+  /* Marketing page root container */
+}
+
+/* 1. Set a readable default text color for the marketing page.
+ * This fixes paragraphs, list items (like in your pricing), 
+ * and other general text.
+ */
+.bg-white:has(> header):has(> section[id="main-content"]) {
+  color: #333333; /* A strong, dark grey */
+}
+
+/* 2. Fix headings that are too light on marketing page.
+ * This ensures your main headlines ("Streamline Your Invoicing...") 
+ * have the visual weight they need.
+ */
+.bg-white:has(> header):has(> section[id="main-content"]) h1,
+.bg-white:has(> header):has(> section[id="main-content"]) h2,
+.bg-white:has(> header):has(> section[id="main-content"]) h3,
+.bg-white:has(> header):has(> section[id="main-content"]) h4,
+.bg-white:has(> header):has(> section[id="main-content"]) h5,
+.bg-white:has(> header):has(> section[id="main-content"]) h6 {
+  color: #222222; /* A very dark grey, almost black */
+}
+
+/* 3. Fix unreadable links on marketing page.
+ * This targets your navigation and footer links.
+ * Only style links that don't have explicit color classes to preserve hover states
+ */
+.bg-white:has(> header):has(> section[id="main-content"]) a:not([class*="text-indigo"]):not([class*="text-[#"]):not(.text-white) {
+  color: #444444; /* A readable dark grey for links */
+}
+
+/* 4. Fix placeholder text (like in the email fields).
+ * This ensures placeholder text is readable.
+ */
+.bg-white:has(> header):has(> section[id="main-content"]) ::placeholder {
+  color: #999999; /* A light grey, but still dark enough to be read */
+}
+
+/* Fix for muted foreground text on marketing page - make it more readable */
+.bg-white:has(> header):has(> section[id="main-content"]) .text-muted-foreground {
+  color: #666666 !important; /* Darker than default muted-foreground */
+}
+
+/* Fix for trusted by section logos/text - ensure they're visible */
+/* Note: Since there are no actual logo images, just text placeholders,
+ * we ensure the text is readable */
+.bg-white:has(> header):has(> section[id="main-content"]) .text-muted-foreground.font-semibold {
+  color: #555555 !important; /* Darker grey for better visibility */
+}
+
+/* Fix for gray text colors that might be too light */
+.bg-white:has(> header):has(> section[id="main-content"]) .text-gray-500 {
+  color: #777777 !important;
+}
+
+.bg-white:has(> header):has(> section[id="main-content"]) .text-gray-700 {
+  color: #555555 !important;
+}
+
+/* Alternative approach: Use a simpler selector that targets marketing page structure */
+/* This is more compatible with older browsers */
+div.flex.min-h-screen.flex-col.bg-white {
+  color: #333333;
+}
+
+div.flex.min-h-screen.flex-col.bg-white h1,
+div.flex.min-h-screen.flex-col.bg-white h2,
+div.flex.min-h-screen.flex-col.bg-white h3,
+div.flex.min-h-screen.flex-col.bg-white h4,
+div.flex.min-h-screen.flex-col.bg-white h5,
+div.flex.min-h-screen.flex-col.bg-white h6 {
+  color: #222222;
+}
+
+/* Only style links that don't have explicit color classes to preserve hover states */
+div.flex.min-h-screen.flex-col.bg-white a:not([class*="text-indigo"]):not([class*="text-[#"]):not(.text-white) {
+  color: #444444;
+}
+
+div.flex.min-h-screen.flex-col.bg-white ::placeholder {
+  color: #999999;
+}
+
+div.flex.min-h-screen.flex-col.bg-white .text-muted-foreground {
+  color: #666666 !important;
+}
+
+div.flex.min-h-screen.flex-col.bg-white .text-muted-foreground.font-semibold {
+  color: #555555 !important;
+}
+
+div.flex.min-h-screen.flex-col.bg-white .text-gray-500 {
+  color: #777777 !important;
+}
+
+div.flex.min-h-screen.flex-col.bg-white .text-gray-700 {
+  color: #555555 !important;
+}
