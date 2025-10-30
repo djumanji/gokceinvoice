@@ -24,7 +24,7 @@ export default function Marketing() {
       headerRef.current.classList.remove("opacity-100");
     }
     
-    // Scroll to element
+    // Scroll to element (respect reduced motion)
     if (href.startsWith("#")) {
       const id = href.slice(1);
       const element = document.getElementById(id);
@@ -33,9 +33,10 @@ export default function Marketing() {
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
         
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         window.scrollTo({
           top: offsetPosition,
-          behavior: "smooth"
+          behavior: prefersReducedMotion ? 'auto' : 'smooth'
         });
       }
     }
@@ -138,22 +139,32 @@ export default function Marketing() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
+      {/* Skip links for keyboard users */}
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <a href="#navigation" className="skip-link">Skip to navigation</a>
       {/* Header */}
-      <header className="absolute top-0 z-20 flex h-[60px] w-full bg-white px-[10%] text-black lg:justify-around max-lg:px-4 max-lg:mr-auto">
-        <a href="/" onClick={handleLogoClick} className="h-[50px] w-[50px] p-1">
+      <header className="absolute top-0 z-20 flex h-[60px] w-full bg-white px-[10%] text-foreground lg:justify-around max-lg:px-4 max-lg:mr-auto">
+        <a href="/" aria-label="Hallederik home" onClick={handleLogoClick} className="h-[50px] w-[50px] p-1">
           <div className="h-full w-full flex items-center justify-center bg-indigo-600 rounded-lg">
               <span className="text-white font-bold text-lg">H</span>
             </div>
         </a>
         
+        <nav id="navigation" aria-label="Main navigation"
+        
+        className
+        =
+        {``}
+        ></nav>
+
         <div
           ref={headerRef}
-          className={`collapsible-header max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:opacity-0 max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-black max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300 ${
+          className={`collapsible-header max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:opacity-0 max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-foreground max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300 ${
             window.innerWidth < RESPONSIVE_WIDTH ? "" : "flex gap-1 w-full bg-inherit place-content-center overflow-hidden"
           }`}
           id="collapsed-header-items"
         >
-          <div className="flex h-full w-max gap-5 text-base text-black max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
+          <nav aria-label="Primary" className="flex h-full w-max gap-5 text-base text-foreground max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
             <a 
               href="#features" 
               onClick={(e) => handleAnchorClick(e, "#features")}
@@ -182,7 +193,7 @@ export default function Marketing() {
             >
               {t("marketing.nav.contactUs")}
             </a>
-          </div>
+          </nav>
           
           <div className="flex items-center gap-5 text-lg max-md:w-full max-md:flex-col max-md:justify-center max-md:content-center">
             <Link href="/login" className="transition-colors duration-300">
@@ -197,33 +208,37 @@ export default function Marketing() {
         </div>
         
         <button
-          className="absolute right-3 top-3 z-50 text-3xl text-black lg:hidden"
+          className="absolute right-3 top-3 z-50 text-3xl text-foreground lg:hidden"
           onClick={toggleHeader}
-          aria-label="menu"
+          aria-label={isHeaderCollapsed ? "Open menu" : "Close menu"}
+          aria-controls="collapsed-header-items"
+          aria-expanded={!isHeaderCollapsed}
         >
           {isHeaderCollapsed ? <Menu className="h-8 w-8" /> : <X className="h-8 w-8" />}
         </button>
       </header>
 
       {/* Hero Section */}
-      <section className="relative flex min-h-screen w-full max-w-screen overflow-hidden max-lg:p-4 max-md:mt-[50px]">
+      <section className="relative flex min-h-screen w-full max-w-screen overflow-hidden max-lg:p-4 max-md:mt-[50px]" id="main-content">
         <div className="flex h-full min-h-screen w-full place-content-center gap-6 p-[5%] max-xl:flex-col max-xl:items-center">
           <div className="flex min-w-[450px] max-w-[800px] flex-col place-content-center max-xl:min-w-[250px]">
-            <div className="flex flex-wrap text-6xl font-semibold uppercase leading-[80px] max-lg:text-4xl max-md:leading-snug">
+            <h1 className="flex flex-wrap text-6xl font-semibold uppercase leading-[80px] max-lg:text-4xl max-md:leading-snug">
               {t("marketing.hero.title")}
               <br />
               {t("marketing.hero.titleLine2")}
               <br />
               {t("marketing.hero.titleLine3")}
-            </div>
+            </h1>
             
-            <div className="mt-10 p-2 text-justify text-lg text-gray-600 max-lg:max-w-full">
+            <div className="mt-10 p-2 text-justify text-lg text-muted-foreground max-lg:max-w-full">
               {t("marketing.hero.description")}
             </div>
 
             <h2 className="mt-6 text-lg font-semibold">{t("marketing.hero.getStarted")}</h2>
             <div className="mt-4 flex h-[50px] w-[350px] max-w-[350px] items-center gap-2 overflow-hidden">
+              <label htmlFor="hero-email" className="sr-only">{t("marketing.newsletter.emailPlaceholder")}</label>
               <input
+                id="hero-email"
                 type="email"
                 className="h-full w-full rounded-md border-2 border-solid border-[#bfbfbf] bg-transparent p-2 px-3 outline-none transition-colors duration-300 focus:border-[#0c0c0c]"
                 placeholder={t("marketing.hero.emailPlaceholder")}
@@ -272,7 +287,7 @@ export default function Marketing() {
                 <div className="h-full w-full bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
                   <div className="text-center p-8">
                     <div className="text-6xl mb-4">📄</div>
-                    <div className="text-2xl font-semibold text-gray-800">{t("marketing.footer.tagline")}</div>
+                    <div className="text-2xl font-semibold text-foreground">{t("marketing.footer.tagline")}</div>
                   </div>
                 </div>
               </div>
@@ -283,13 +298,13 @@ export default function Marketing() {
 
       {/* Trusted By Section */}
       <section className="relative flex w-full max-w-screen flex-col place-content-center items-center overflow-hidden p-6">
-        <h2 className="text-3xl text-[#5d5d5d] max-lg:text-2xl">
+        <h2 className="text-3xl text-muted-foreground max-lg:text-2xl">
           {t("marketing.trustedBy.title")}
         </h2>
         <div className="mt-8 flex w-full place-content-center gap-10 flex-wrap">
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">{t("marketing.trustedBy.smallBusinesses")}</div>
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">{t("marketing.trustedBy.freelancers")}</div>
-          <div className="h-[50px] w-[150px] flex items-center justify-center text-gray-400 font-semibold">{t("marketing.trustedBy.agencies")}</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-muted-foreground font-semibold">{t("marketing.trustedBy.smallBusinesses")}</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-muted-foreground font-semibold">{t("marketing.trustedBy.freelancers")}</div>
+          <div className="h-[50px] w-[150px] flex items-center justify-center text-muted-foreground font-semibold">{t("marketing.trustedBy.agencies")}</div>
         </div>
       </section>
 
@@ -318,7 +333,7 @@ export default function Marketing() {
             <div className="w-full max-w-md p-6 border-2 border-gray-200 rounded-xl">
               <h3 className="text-2xl font-semibold mb-2">{t("marketing.pricing.freePlan.title")}</h3>
               <div className="text-4xl font-bold mb-4">{t("marketing.pricing.freePlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.freePlan.period")}</span></div>
-              <ul className="text-left space-y-2 mb-6 text-gray-600">
+              <ul className="text-left space-y-2 mb-6 text-muted-foreground">
                 <li>✓ {t("marketing.pricing.freePlan.features.invoices")}</li>
                 <li>✓ {t("marketing.pricing.freePlan.features.templates")}</li>
                 <li>✓ {t("marketing.pricing.freePlan.features.clients")}</li>
@@ -334,7 +349,7 @@ export default function Marketing() {
               </div>
               <h3 className="text-2xl font-semibold mb-2">{t("marketing.pricing.proPlan.title")}</h3>
               <div className="text-4xl font-bold mb-4">{t("marketing.pricing.proPlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.proPlan.period")}</span></div>
-              <ul className="text-left space-y-2 mb-6 text-gray-600">
+              <ul className="text-left space-y-2 mb-6 text-muted-foreground">
                 <li>✓ {t("marketing.pricing.proPlan.features.invoices")}</li>
                 <li>✓ {t("marketing.pricing.proPlan.features.templates")}</li>
                 <li>✓ {t("marketing.pricing.proPlan.features.reminders")}</li>
@@ -363,7 +378,7 @@ export default function Marketing() {
                 <div className="text-6xl">⚡</div>
               </div>
               <h3 className="text-2xl font-semibold">{t("marketing.features.fastCreation.title")}</h3>
-              <div className="text-gray-600">
+              <div className="text-muted-foreground">
                 {t("marketing.features.fastCreation.description")}
               </div>
             </div>
@@ -373,7 +388,7 @@ export default function Marketing() {
                 <div className="text-6xl">📊</div>
               </div>
               <h3 className="text-2xl font-semibold">{t("marketing.features.trackManage.title")}</h3>
-              <div className="text-gray-600">
+              <div className="text-muted-foreground">
                 {t("marketing.features.trackManage.description")}
               </div>
             </div>
@@ -383,7 +398,7 @@ export default function Marketing() {
                 <div className="text-6xl">🔒</div>
               </div>
               <h3 className="text-2xl font-semibold">{t("marketing.features.secure.title")}</h3>
-              <div className="text-gray-600">
+              <div className="text-muted-foreground">
                 {t("marketing.features.secure.description")}
               </div>
             </div>
@@ -422,7 +437,7 @@ export default function Marketing() {
                     <div className="h-[50px] w-[50px] overflow-hidden rounded-full border-2 border-solid border-[#1c191a] flex items-center justify-center text-2xl bg-gray-100">
                       {review.avatar}
                     </div>
-                    <p className="mt-4 italic text-gray-600">{review.text}</p>
+                    <p className="mt-4 italic text-muted-foreground">{review.text}</p>
                     <p className="mt-3 font-semibold">- {review.name}</p>
                   </div>
                 </CarouselItem>
@@ -443,7 +458,9 @@ export default function Marketing() {
           </h2>
 
           <div className="flex h-[60px] items-center gap-2 overflow-hidden p-2 max-w-md w-full">
+            <label htmlFor="newsletter-email" className="sr-only">{t("marketing.newsletter.emailPlaceholder")}</label>
             <input
+              id="newsletter-email"
               type="email"
               className="h-full w-full rounded-md border-2 border-solid border-[#818080] bg-transparent p-2 outline-none transition-colors duration-300 focus:border-[#0c0c0c]"
               placeholder={t("marketing.newsletter.emailPlaceholder")}
@@ -455,7 +472,7 @@ export default function Marketing() {
             </Link>
           </div>
 
-          <div className="mt-6 text-center text-gray-600">
+          <div className="mt-6 text-center text-muted-foreground">
             <p className="mb-2">{t("marketing.newsletter.contactText")}</p>
             <a href={`mailto:${t("marketing.newsletter.contactEmail")}`} className="text-indigo-600 hover:underline">
               {t("marketing.newsletter.contactEmail")}
@@ -465,12 +482,12 @@ export default function Marketing() {
       </section>
 
       {/* Footer */}
-      <footer className="mt-auto flex w-full place-content-around gap-3 p-[5%] px-[10%] text-black max-md:flex-col">
+      <footer className="mt-auto flex w-full place-content-around gap-3 p-[5%] px-[10%] text-foreground max-md:flex-col">
         <div className="flex h-full w-[250px] flex-col items-center gap-6 max-md:w-full">
           <div className="max-w-[120px] h-[50px] flex items-center justify-center bg-indigo-600 rounded-lg">
             <span className="text-white font-bold text-2xl">H</span>
           </div>
-          <div className="text-center text-gray-600">
+          <div className="text-center text-muted-foreground">
             {t("marketing.footer.tagline")}
             <br />
             {t("marketing.footer.taglineLine2")}
@@ -542,6 +559,33 @@ export default function Marketing() {
       </footer>
 
       <style>{`
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border-width: 0;
+        }
+
+        .skip-link {
+          position: absolute;
+          left: -10000px;
+          top: auto;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+        }
+
+        .skip-link:focus {
+          position: static;
+          width: auto;
+          height: auto;
+        }
+
         .collapsible-header {
           display: flex;
           gap: 1rem;
