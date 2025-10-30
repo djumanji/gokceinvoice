@@ -75,9 +75,25 @@ class ExpenseController extends BaseCrudController<Expense> {
     const { startDate, endDate, period = 'month', taxRate = '0' } = req.query;
     
     if (startDate || endDate) {
-      const start = startDate ? new Date(startDate as string) : undefined;
-      const end = endDate ? new Date(endDate as string) : undefined;
-      expenses = filterExpensesByDateRange(expenses, start, end);
+      try {
+        const start = startDate ? new Date(startDate as string) : undefined;
+        const end = endDate ? new Date(endDate as string) : undefined;
+        
+        // Validate dates
+        if (start && isNaN(start.getTime())) {
+          throw new AppError(400, 'Invalid startDate format');
+        }
+        if (end && isNaN(end.getTime())) {
+          throw new AppError(400, 'Invalid endDate format');
+        }
+        
+        expenses = filterExpensesByDateRange(expenses, start, end);
+      } catch (error) {
+        if (error instanceof AppError) {
+          throw error;
+        }
+        throw new AppError(400, 'Invalid date format');
+      }
     }
 
     // Parse tax rate

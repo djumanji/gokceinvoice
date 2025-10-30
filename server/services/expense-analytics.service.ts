@@ -3,12 +3,12 @@ import type { Expense } from '@shared/schema';
 /**
  * Safely parse a value to a float, returning 0 if parsing fails
  */
-function safeParseFloat(value: any): number {
+function safeParseFloat(value: any, defaultValue: number = 0): number {
   if (value === null || value === undefined || value === '') {
-    return 0;
+    return defaultValue;
   }
   const parsed = parseFloat(value);
-  return isNaN(parsed) ? 0 : parsed;
+  return isNaN(parsed) ? defaultValue : parsed;
 }
 
 export interface CategoryBreakdown {
@@ -235,10 +235,32 @@ export function filterExpensesByDateRange(
   endDate?: Date
 ): Expense[] {
   return expenses.filter(expense => {
-    const expenseDate = new Date(expense.date);
-    if (startDate && expenseDate < startDate) return false;
-    if (endDate && expenseDate > endDate) return false;
-    return true;
+    try {
+      const expenseDate = new Date(expense.date);
+      if (isNaN(expenseDate.getTime())) return false; // Invalid date
+      
+      if (startDate) {
+        // Compare dates at start of day
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const expenseDay = new Date(expenseDate);
+        expenseDay.setHours(0, 0, 0, 0);
+        if (expenseDay < start) return false;
+      }
+      
+      if (endDate) {
+        // Compare dates at end of day
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        const expenseDay = new Date(expenseDate);
+        expenseDay.setHours(23, 59, 59, 999);
+        if (expenseDay > end) return false;
+      }
+      
+      return true;
+    } catch {
+      return false; // Skip invalid dates
+    }
   });
 }
 

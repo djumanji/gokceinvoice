@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { ExpenseTable } from "@/components/ExpenseTable";
 import { EmptyState } from "@/components/EmptyState";
-import { Plus, Receipt, Search } from "lucide-react";
+import { Plus, Receipt, Search, BarChart3 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { safeParseFloat } from "@/lib/numberUtils";
 import { Input } from "@/components/ui/input";
@@ -95,10 +95,16 @@ export default function Expenses() {
         title={t("expense.expenses")}
         description={t("expense.trackExpenses")}
         action={
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            {t("expense.addExpense")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setLocation("/expenses/reports")}>
+              <BarChart3 className="w-4 h-4 mr-2" />
+              View Reports
+            </Button>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              {t("expense.addExpense")}
+            </Button>
+          </div>
         }
       />
 

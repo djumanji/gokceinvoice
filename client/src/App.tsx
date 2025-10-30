@@ -18,6 +18,7 @@ import ViewInvoice from "@/pages/ViewInvoice";
 import Clients from "@/pages/Clients";
 import Services from "@/pages/Services";
 import Expenses from "@/pages/Expenses";
+import ExpenseReports from "@/pages/ExpenseReports";
 import Onboarding from "@/pages/Onboarding";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -79,6 +80,11 @@ function Router() {
       <Route path="/expenses">
         <ProtectedRoute>
           <Expenses />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/expenses/reports">
+        <ProtectedRoute>
+          <ExpenseReports />
         </ProtectedRoute>
       </Route>
       <Route path="/leads">
