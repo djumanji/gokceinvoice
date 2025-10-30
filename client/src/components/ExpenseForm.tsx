@@ -80,13 +80,19 @@ export function ExpenseForm({ expense, onSubmit, onCancel, isLoading = false }: 
       formData.append('file', file);
 
       const response = await apiRequest('POST', '/api/upload', formData);
-      setUploadedImageUrl(response.url);
-      setFormData(prev => ({ ...prev, receipt: response.url }));
+      if (isMountedRef.current) {
+        setUploadedImageUrl(response.url);
+        setFormData(prev => ({ ...prev, receipt: response.url }));
+      }
     } catch (error) {
       console.error('Failed to upload file:', error);
-      alert('Failed to upload file. Please try again.');
+      if (isMountedRef.current) {
+        alert('Failed to upload file. Please try again.');
+      }
     } finally {
-      setUploading(false);
+      if (isMountedRef.current) {
+        setUploading(false);
+      }
     }
   };
 

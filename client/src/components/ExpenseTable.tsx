@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EXPENSE_CATEGORIES } from "./ExpenseForm";
+import { safeParseFloat } from "@/lib/numberUtils";
 import { format } from "date-fns";
 import type { Expense } from "@shared/schema";
 
@@ -57,8 +58,8 @@ export function ExpenseTable({ expenses, onEdit, onDelete, onViewReceipt }: Expe
       <TableBody>
         {expenses.map((expense) => {
           const category = getCategoryInfo(expense.category);
-          const amount = parseFloat(expense.amount);
-          
+          const amount = safeParseFloat(expense.amount, 0);
+
           return (
             <TableRow key={expense.id}>
               <TableCell className="font-medium">

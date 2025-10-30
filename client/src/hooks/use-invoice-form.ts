@@ -14,12 +14,12 @@ export function useInvoiceForm({ initialData, lineItems, taxRate }: UseInvoiceFo
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: {
-      clientId: initialData?.clientId || "",
-      bankAccountId: initialData?.bankAccountId || "",
+      clientId: initialData?.clientId || undefined,
+      bankAccountId: initialData?.bankAccountId || undefined,
       date: initialData?.date || format(new Date(), "yyyy-MM-dd"),
       orderNumber: initialData?.orderNumber || "",
       projectNumber: initialData?.projectNumber || "",
-      forProject: initialData?.forProject || "",
+      forProject: initialData?.forProject || undefined,
       taxRate: initialData?.taxRate || 0,
       notes: initialData?.notes || "",
       lineItems: lineItems,

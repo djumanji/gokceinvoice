@@ -22,16 +22,16 @@ export default function Invoices() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
+  const { data: invoices = [], isLoading, error: invoicesError } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
   });
 
-  const { data: clients = [] } = useQuery<Client[]>({
+  const { data: clients = [], error: clientsError } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
 
   const invoicesWithClients: InvoiceWithClient[] = invoices.map(invoice => {
-    const client = clients.find(c => c.id === invoice.clientId);
+    const client = clients?.find(c => c.id === invoice.clientId);
     return {
       ...invoice,
       clientName: client?.name || "Unknown Client",
@@ -85,7 +85,22 @@ export default function Invoices() {
   const handleCopyLink = async (id: string) => {
     try {
       const shareableUrl = `${window.location.origin}/invoices/view/${id}`;
-      await navigator.clipboard.writeText(shareableUrl);
+
+      // Check if clipboard API is available
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareableUrl);
+      } else {
+        // Fallback for browsers without clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = shareableUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
       toast({
         title: "Link copied!",
         description: "Invoice link has been copied to clipboard.",
@@ -99,6 +114,25 @@ export default function Invoices() {
       });
     }
   };
+
+  if (invoicesError || clientsError) {
+    return (
+      <div className="p-6 space-y-6">
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <p className="text-destructive">
+                {t("common.error")}: {(invoicesError || clientsError)?.message || "Failed to load data"}
+              </p>
+              <Button onClick={() => window.location.reload()} variant="outline">
+                {t("common.retry")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

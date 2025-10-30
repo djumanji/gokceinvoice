@@ -103,8 +103,24 @@ export default function Onboarding() {
         return apiRequest('POST', '/api/bank-accounts', payload);
       });
 
-      // Wait for all bank accounts to be created in parallel
-      await Promise.all(accountPromises);
+      // Wait for all bank accounts to be created, handle partial failures gracefully
+      const results = await Promise.allSettled(accountPromises);
+      const failures = results.filter(r => r.status === 'rejected');
+
+      if (failures.length > 0) {
+        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        console.error('Some bank accounts failed to create:', failures);
+        toast({
+          title: t("onboarding.partialSuccess"),
+          description: `${successCount} of ${bankAccounts.length} accounts created successfully`,
+          variant: failures.length === bankAccounts.length ? "destructive" : "default",
+        });
+
+        // Continue if at least one succeeded
+        if (successCount === 0) {
+          throw new Error('Failed to create any bank accounts');
+        }
+      }
 
       setData(prev => ({ ...prev, bankAccounts }));
       setStep('client');

@@ -193,10 +193,10 @@ export default function ViewInvoice() {
               clientCompany={client?.company}
               clientAddress={client?.address}
               clientPhone={client?.phone}
-              lineItems={lineItems.map((item: any) => ({
-                description: item.description,
-                quantity: parseFloat(item.quantity),
-                price: parseFloat(item.price),
+              lineItems={(lineItems || []).map((item: any) => ({
+                description: item.description || '',
+                quantity: parseFloat(item.quantity) || 0,
+                price: parseFloat(item.price) || 0,
               }))}
               taxRate={parseFloat(invoice.taxRate)}
               notes={invoice.notes}

@@ -242,7 +242,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isReadOnly || !canEdit}>
+                    <Select onValueChange={field.onChange} value={field.value || undefined} disabled={isReadOnly || !canEdit}>
                       <FormControl>
                         <SelectTrigger data-testid="select-client">
                           <SelectValue placeholder="Select a client" />
@@ -349,7 +349,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {clientProjects.length > 0 ? (
+                        {(clientProjects || []).length > 0 ? (
                           clientProjects.map((project) => (
                             <SelectItem key={project.id} value={project.name}>
                               {project.name}

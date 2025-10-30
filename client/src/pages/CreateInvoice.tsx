@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { safeParseFloat } from "@/lib/numberUtils";
 import type { Client } from "@shared/schema";
 import { OnboardingProgressBanner } from "@/components/OnboardingProgressBanner";
 import { useOnboardingGuard } from "@/hooks/use-onboarding";
@@ -36,6 +37,11 @@ export default function CreateInvoice() {
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       const { lineItems, clientId, bankAccountId, date, orderNumber, projectNumber, forProject, notes, taxRate } = data;
+
+      // Validate lineItems array
+      if (!Array.isArray(lineItems) || lineItems.length === 0) {
+        throw new Error('Invoice must have at least one line item');
+      }
 
       // Calculate totals
       const subtotal = lineItems.reduce((sum: number, item: any) =>
@@ -155,17 +161,17 @@ export default function CreateInvoice() {
 
   const initialData = isEditing && invoice ? {
     clientId: (invoice as any).clientId,
-    bankAccountId: (invoice as any).bankAccountId || "",
+    bankAccountId: (invoice as any).bankAccountId || undefined,
     date: new Date((invoice as any).date).toISOString().split('T')[0],
     orderNumber: (invoice as any).orderNumber || "",
     projectNumber: (invoice as any).projectNumber || "",
-    forProject: (invoice as any).forProject || "",
-    taxRate: parseFloat((invoice as any).taxRate) || 0,
+    forProject: (invoice as any).forProject || undefined,
+    taxRate: safeParseFloat((invoice as any).taxRate, 0),
     notes: (invoice as any).notes || "",
     lineItems: Array.isArray(lineItems) && lineItems.length > 0 ? lineItems.map((item: any) => ({
       description: item.description,
-      quantity: parseFloat(item.quantity),
-      price: parseFloat(item.price),
+      quantity: safeParseFloat(item.quantity, 0),
+      price: safeParseFloat(item.price, 0),
     })) : [{ description: "", quantity: 1, price: 0 }],
   } : undefined;
 

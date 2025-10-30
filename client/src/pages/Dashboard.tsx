@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { useOnboardingGuard } from "@/hooks/use-onboarding";
 import { useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { safeParseFloat } from "@/lib/numberUtils";
 import { useTranslation } from "react-i18next";
 import type { Invoice, Client } from "@shared/schema";
 
@@ -22,12 +23,12 @@ export default function Dashboard() {
   const { isOnboardingComplete, isLoading: onboardingLoading } = useOnboardingGuard();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
-  const { data: invoices = [], isLoading: invoicesLoading } = useQuery<Invoice[]>({
+  const { data: invoices = [], isLoading: invoicesLoading, error: invoicesError } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
     enabled: isOnboardingComplete && !onboardingLoading, // Only fetch when onboarding is complete
   });
 
-  const { data: clients = [] } = useQuery<Client[]>({
+  const { data: clients = [], error: clientsError } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
     enabled: isOnboardingComplete && !onboardingLoading, // Only fetch when onboarding is complete
   });
@@ -65,13 +66,13 @@ export default function Dashboard() {
     paid: invoices.filter(i => i.status === "paid").length,
     paidAmount: invoices
       .filter(i => i.status === "paid")
-      .reduce((sum, i) => sum + parseFloat(i.total), 0),
+      .reduce((sum, i) => sum + safeParseFloat(i.total, 0), 0),
     pending: invoices
       .filter(i => i.status === "sent")
-      .reduce((sum, i) => sum + parseFloat(i.total), 0),
+      .reduce((sum, i) => sum + safeParseFloat(i.total, 0), 0),
     overdue: invoices
       .filter(i => i.status === "overdue")
-      .reduce((sum, i) => sum + parseFloat(i.total), 0),
+      .reduce((sum, i) => sum + safeParseFloat(i.total, 0), 0),
   };
 
   const handleDelete = async (id: string) => {
@@ -84,6 +85,25 @@ export default function Dashboard() {
       }
     }
   };
+
+  if (invoicesError || clientsError) {
+    return (
+      <div className="p-6 space-y-6">
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <p className="text-destructive">
+                {t("common.error")}: {(invoicesError || clientsError)?.message || "Failed to load data"}
+              </p>
+              <Button onClick={() => window.location.reload()} variant="outline">
+                {t("common.retry")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -145,7 +165,7 @@ export default function Dashboard() {
                 ...inv,
                 date: new Date(inv.date),
                 dueDate: new Date(inv.date),
-                total: parseFloat(inv.total),
+                total: safeParseFloat(inv.total, 0),
                 status: inv.status as any,
               }))}
               onView={(id) => setLocation(`/invoices/${id}`)}

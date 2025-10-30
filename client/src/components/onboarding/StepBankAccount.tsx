@@ -139,7 +139,7 @@ export function StepBankAccount({ currency, onBack, onContinue }: StepBankAccoun
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-8">
             {accounts.map((account, index) => (
-              <div key={index} className="p-4 border rounded-lg space-y-4">
+              <div key={account.accountHolderName + index} className="p-4 border rounded-lg space-y-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold">
                     Bank Account {index + 1}
@@ -170,7 +170,7 @@ export function StepBankAccount({ currency, onBack, onContinue }: StepBankAccoun
                     className={errors[index]?.accountHolderName ? "border-destructive" : ""}
                   />
                   {errors[index]?.accountHolderName && (
-                    <p className="text-sm text-destructive">{errors[index].accountHolderName}</p>
+                    <p className="text-sm text-destructive">{errors[index]?.accountHolderName}</p>
                   )}
                 </div>
 

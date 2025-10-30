@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ClientCard } from "@/components/ClientCard";
 import { EmptyState } from "@/components/EmptyState";
 import { OnboardingProgressBanner } from "@/components/OnboardingProgressBanner";
+import { safeParseFloat } from "@/lib/numberUtils";
 import {
   Dialog,
   DialogContent,
@@ -240,7 +241,7 @@ export default function Clients() {
     const clientInvoices = invoices.filter(inv => inv.clientId === clientId);
     const outstanding = clientInvoices
       .filter(inv => inv.status !== "paid")
-      .reduce((sum, inv) => sum + parseFloat(inv.total), 0);
+      .reduce((sum, inv) => sum + safeParseFloat(inv.total, 0), 0);
     return {
       totalInvoices: clientInvoices.length,
       outstandingAmount: outstanding,

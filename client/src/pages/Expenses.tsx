@@ -8,6 +8,7 @@ import { ExpenseTable } from "@/components/ExpenseTable";
 import { EmptyState } from "@/components/EmptyState";
 import { Plus, Receipt, Search } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { safeParseFloat } from "@/lib/numberUtils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EXPENSE_CATEGORIES } from "@/components/ExpenseForm";
@@ -70,10 +71,10 @@ export default function Expenses() {
     setEditingExpense(undefined);
   };
 
-  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + safeParseFloat(e.amount, 0), 0);
   const taxDeductibleTotal = filteredExpenses
     .filter(e => e.isTaxDeductible)
-    .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    .reduce((sum, e) => sum + safeParseFloat(e.amount, 0), 0);
 
   if (showForm) {
     return (
@@ -132,7 +133,7 @@ export default function Expenses() {
                   const now = new Date();
                   return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
                 })
-                .reduce((sum, e) => sum + parseFloat(e.amount), 0)
+                .reduce((sum, e) => sum + safeParseFloat(e.amount, 0), 0)
                 .toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Current month expenses</p>
