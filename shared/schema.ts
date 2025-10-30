@@ -54,6 +54,7 @@ export const users = pgTable("users", {
   phone: text("phone"),
   taxOfficeId: text("tax_office_id"), // Tax Registration Number
   isProspect: boolean("is_prospect").default(false), // Flag to identify prospects (email-only users)
+  marketingOnly: boolean("marketing_only").default(false), // Flag for users who signed up from marketing page but haven't set password yet
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -177,6 +178,13 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true }).ext
 export const insertProspectSchema = createInsertSchema(users).omit({ id: true }).pick({ email: true }).extend({
   password: z.undefined(), // Explicitly exclude password for prospects
   isProspect: z.literal(true), // Flag to identify prospects
+});
+
+// Schema for creating marketing users (email-only, will set password later)
+export const insertMarketingUserSchema = createInsertSchema(users).omit({ id: true }).pick({ email: true }).extend({
+  password: z.undefined(), // No password initially
+  marketingOnly: z.literal(true), // Flag to identify marketing-only users
+  isProspect: z.literal(true), // Also mark as prospect until they set password
 });
 
 export const updateUserProfileSchema = z.object({

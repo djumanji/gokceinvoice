@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto';
 import { storage } from './storage';
 import { hashPassword, comparePassword } from './auth';
 import { validateCsrf } from './index';
-import { insertUserSchema, insertProspectSchema } from '@shared/schema';
+import { insertUserSchema, insertProspectSchema, insertMarketingUserSchema } from '@shared/schema';
 import { z } from 'zod';
 import { sendVerificationEmail, sendPasswordResetEmail } from './services/email-service';
 import { generateToken } from './services/jwt-service';
@@ -40,31 +40,10 @@ export function registerAuthRoutes(app: Express) {
   // Register endpoint
   app.post('/api/auth/register', authLimiter, validateCsrf, async (req, res) => {
     try {
-      const { email, password, username, isProspect } = req.body;
+      const { email, password, username, fromMarketing } = req.body;
 
-      console.log('Registration attempt:', { email, username: username || 'not provided', isProspect });
+      console.log('Registration attempt:', { email, username: username || 'not provided', fromMarketing });
 
-      // Validate input based on whether this is a prospect or full registration
-      let validation;
-      if (isProspect) {
-        // For prospects, only email is required
-        validation = insertProspectSchema.safeParse({ email, isProspect: true });
-      } else {
-        // For full registration, email and password are required
-        if (!password) {
-          return res.status(400).json({ error: 'Password is required for registration' });
-        }
-        validation = insertUserSchema.safeParse({ email, password, username });
-      }
-
-      if (!validation.success) {
-        console.log('Validation failed:', validation.error.errors);
-        return res.status(400).json({
-          error: 'Validation failed',
-          details: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
-        });
-      }
-      
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
@@ -72,88 +51,81 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: 'User already exists' });
       }
 
-      let hashedPassword: string | undefined = undefined;
-      let verificationToken: string | null = null;
-      let verificationExpires: Date | null = null;
-      let emailVerified = false;
-
-      if (isProspect) {
-        // For prospects, no password, no verification needed initially
-        console.log('Creating prospect user with email only');
-      } else {
-        // Hash password for full registration
-        hashedPassword = await hashPassword(password);
-        console.log('Password hashed successfully');
-
-        // Generate verification token for full registration
-        verificationToken = randomBytes(32).toString('hex');
-        verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      // Validate password is required
+      if (!password) {
+        return res.status(400).json({ error: 'Password is required for registration' });
       }
 
-      // Create user
+      // Validate full input
+      const validation = insertUserSchema.safeParse({ email, password, username });
+      if (!validation.success) {
+        console.log('Validation failed:', validation.error.errors);
+        return res.status(400).json({
+          error: 'Validation failed',
+          details: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        });
+      }
+
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+      console.log('Password hashed successfully');
+
+      // Generate verification token
+      const verificationToken = randomBytes(32).toString('hex');
+      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      // Create user - set marketingOnly=true initially if from marketing, will be set to false after verification
       const user = await storage.createUser({
         email,
         password: hashedPassword,
         username,
         provider: 'local',
-        isEmailVerified: emailVerified,
+        isEmailVerified: false,
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,
-        isProspect: isProspect || false,
+        marketingOnly: fromMarketing || false, // Track if user came from marketing
       });
       
-      console.log('User created:', { id: user.id, email: user.email, isProspect });
+      console.log('User created:', { id: user.id, email: user.email, fromMarketing });
 
-      // Send verification email only for full registrations (not prospects)
-      if (!isProspect && verificationToken) {
-        try {
-          await sendVerificationEmail({
-            email,
-            verificationToken,
-            username
-          });
-          console.log('Verification email sent');
-        } catch (emailError) {
-          console.error('Failed to send verification email:', emailError);
-          // Don't fail registration if email fails
-        }
+      // Send verification email
+      try {
+        await sendVerificationEmail({
+          email,
+          verificationToken,
+          username
+        });
+        console.log('Verification email sent');
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Don't fail registration if email fails
       }
 
-      let responseMessage = 'Registration successful! Please check your email to verify your account.';
-      let userResponse = {
-        id: user.id,
-        email: user.email,
-        username: user.username
-      };
-
-      if (isProspect) {
-        // For prospects, don't create session or redirect
-        responseMessage = 'Thank you for your interest! We\'ve saved your email and will be in touch soon.';
-        console.log('Prospect created, no session created');
-      } else {
-        // Regenerate session to prevent session fixation attacks for full registrations
-        await new Promise<void>((resolve, reject) => {
-          req.session.regenerate((err) => {
-            if (err) return reject(err);
-            // Store user ID in new session
-            req.session.userId = user.id;
-            req.session.save((err2) => {
-              if (err2) reject(err2);
-              else resolve();
-            });
+      // Regenerate session to prevent session fixation attacks
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) return reject(err);
+          // Store user ID in new session
+          req.session.userId = user.id;
+          req.session.save((err2) => {
+            if (err2) reject(err2);
+            else resolve();
           });
         });
+      });
 
-        console.log('Session created with userId:', user.id);
-      }
+      console.log('Session created with userId:', user.id);
 
       // Generate JWT token for mobile app compatibility
-      const token = !isProspect ? generateToken(user) : undefined;
+      const token = generateToken(user);
 
       res.status(201).json({
-        user: userResponse,
-        message: responseMessage,
-        isProspect: isProspect || false,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username
+        },
+        message: 'Registration successful! Please check your email to verify your account.',
         ...(token && { token }),
       });
     } catch (error) {
@@ -233,6 +205,16 @@ export function registerAuthRoutes(app: Express) {
       });
 
       console.log('[Login] Login successful for user:', user.id);
+      
+      // Set marketingOnly to false when user logs in with password
+      if (user.marketingOnly) {
+        await storage.updateUser(user.id, {
+          marketingOnly: false,
+          isProspect: false,
+        });
+        console.log('[Login] Updated marketingOnly flag to false for user:', user.id);
+      }
+      
       const token = generateToken(user);
       res.json({
         user: {
@@ -344,8 +326,16 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: 'Email already verified' });
       }
 
-      // Verify email (this clears the token)
+      // Verify email and set marketingOnly to false (this clears the token)
       await storage.verifyUserEmail(user.id);
+      
+      // Set marketingOnly to false after email verification
+      if (user.marketingOnly) {
+        await storage.updateUser(user.id, {
+          marketingOnly: false,
+        });
+        console.log('Set marketingOnly to false after email verification');
+      }
 
       res.status(200).json({ message: 'Email verified successfully' });
     } catch (error) {

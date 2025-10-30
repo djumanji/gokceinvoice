@@ -57,7 +57,7 @@ export class PgStorage {
       'email', 'username', 'password', 'provider', 'providerId',
       'isEmailVerified', 'emailVerificationToken', 'emailVerificationExpires',
       'passwordResetToken', 'passwordResetExpires', 'name', 'companyName',
-      'address', 'phone', 'taxOfficeId', 'isProspect', 'createdAt', 'updatedAt'
+      'address', 'phone', 'taxOfficeId', 'isProspect', 'marketingOnly', 'createdAt', 'updatedAt'
     ];
     
     const insertData: any = {};

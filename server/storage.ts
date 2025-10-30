@@ -117,6 +117,8 @@ export class MemStorage implements IStorage {
       phone: insertUser.phone ?? null,
       taxOfficeId: insertUser.taxOfficeId ?? null,
       preferredCurrency: insertUser.preferredCurrency ?? null,
+      isProspect: insertUser.isProspect ?? false,
+      marketingOnly: insertUser.marketingOnly ?? false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

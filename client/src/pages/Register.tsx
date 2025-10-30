@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,31 +24,24 @@ export default function Register() {
   const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
 
-  // Determine if this should be a prospect registration based on URL params
-  // This should be determined once at mount, not based on form state
-  const [isProspectRegistration, setIsProspectRegistration] = useState(false);
+  // Extract email and marketing flag from URL params
+  const emailParam = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('email');
+  }, [location]);
 
-  // Pre-fill email from URL params and determine if this is a prospect registration
+  const fromMarketing = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('from') === 'marketing';
+  }, [location]);
+
+  // Pre-fill email from URL params
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search || '');
-    const emailParam = urlParams.get('email');
-    const prospectParam = urlParams.get('prospect');
-    
-    // Set prospect mode if explicitly set in URL
-    // If email param exists and prospect is not explicitly false, default to prospect mode
-    if (prospectParam === 'true') {
-      setIsProspectRegistration(true);
-    } else if (prospectParam === 'false') {
-      setIsProspectRegistration(false);
-    } else if (emailParam) {
-      // If email is in URL but no explicit prospect param, default to prospect mode
-      setIsProspectRegistration(true);
-    }
-    
     if (emailParam) {
       setEmail(emailParam);
     }
-  }, [location.search]);
+  }, [emailParam]);
+
   const [animationSrc, setAnimationSrc] = useState<string>(
     import.meta.env.PROD
       ? "/lottie/hallederik-bg.lottie"
@@ -73,45 +66,36 @@ export default function Register() {
 
   const registerMutation = useMutation({
     mutationFn: async () => {
-      if (!isProspectRegistration && password !== confirmPassword) {
+      if (password !== confirmPassword) {
         throw new Error(t("errors.passwordMismatch"));
       }
 
       const res = await apiRequest("POST", "/api/auth/register", {
         email,
-        password: isProspectRegistration ? undefined : password,
-        isProspect: isProspectRegistration
+        password,
+        fromMarketing, // Pass flag to indicate user came from marketing page
       });
       return res;
     },
     onSuccess: (data) => {
-      if (data.isProspect) {
-        // For prospects, show success message and redirect to marketing page
-        toast({
-          title: t("register.prospectSuccess"),
-          description: data.message,
-        });
-        setLocation("/");
-      } else {
-        // Track registration success in Mixpanel
-        // trackEvent('User Registered', {
-        //   email,
-        //   username: username || 'not provided',
-        //   registration_method: 'email',
-        // });
+      // Track registration success in Mixpanel
+      // trackEvent('User Registered', {
+      //   email,
+      //   username: username || 'not provided',
+      //   registration_method: 'email',
+      // });
 
-        // Identify user in Mixpanel
-        // if (data.user) {
-        //   identifyUser(data.user.id, {
-        //     email: data.user.email,
-        //     username: data.user.username,
-        //   });
-        // }
+      // Identify user in Mixpanel
+      // if (data.user) {
+      //   identifyUser(data.user.id, {
+      //     email: data.user.email,
+      //     username: data.user.username,
+      //   });
+      // }
 
-        // Invalidate the auth query to refetch user data
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        setLocation("/onboarding");
-      }
+      // Invalidate the auth query to refetch user data
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setLocation("/onboarding");
     },
     onError: async (error: any) => {
       console.error("Registration failed:", error);
@@ -181,8 +165,13 @@ export default function Register() {
       <Card className="relative z-10 w-full max-w-md backdrop-blur-sm bg-card/95 shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl text-center">
-            {isProspectRegistration ? t("register.expressInterest") : t("register.createAccount")}
+            {fromMarketing ? t("register.completeRegistration", "Complete your registration") : t("register.createAccount")}
           </CardTitle>
+          {fromMarketing && emailParam && (
+            <p className="text-sm text-muted-foreground text-center mt-2">
+              {t("register.setupPasswordFor", "Create a password for")} {emailParam}
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -194,47 +183,45 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                readOnly={fromMarketing} // Make email read-only if from marketing
                 placeholder={t("auth.emailPlaceholder")}
+                className={fromMarketing ? "bg-muted cursor-not-allowed" : ""}
               />
             </div>
-            {!isProspectRegistration && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="password">{t("common.password")}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    placeholder={t("auth.passwordPlaceholder")}
-                    minLength={8}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Min 8 characters with uppercase, lowercase, and number
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">{t("register.confirmPassword")}</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    placeholder={t("auth.passwordPlaceholder")}
-                  />
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="password">{t("common.password")}</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder={t("auth.passwordPlaceholder")}
+                minLength={8}
+              />
+              <p className="text-xs text-muted-foreground">
+                Min 8 characters with uppercase, lowercase, and number
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">{t("register.confirmPassword")}</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder={t("auth.passwordPlaceholder")}
+              />
+            </div>
             <Button
               type="submit"
               className="w-full"
               disabled={registerMutation.isPending}
             >
               {registerMutation.isPending
-                ? (isProspectRegistration ? t("register.savingInterest") : t("register.creatingAccount"))
-                : (isProspectRegistration ? t("register.saveInterest") : t("common.register"))
+                ? t("register.creatingAccount")
+                : t("common.register")
               }
             </Button>
           </form>

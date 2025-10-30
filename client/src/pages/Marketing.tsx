@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Menu, X } from "lucide-react";
@@ -13,57 +13,14 @@ const RESPONSIVE_WIDTH = 1024;
 
 export default function Marketing() {
   const { t } = useTranslation();
+  const [, setLocation] = useLocation();
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const [heroEmail, setHeroEmail] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const { toast } = useToast();
 
-  // Prospect creation mutation
-  const createProspectMutation = useMutation({
-    mutationFn: async (email: string) => {
-      const res = await apiRequest("POST", "/api/auth/register", {
-        email,
-        isProspect: true
-      });
-      return res;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: t("marketing.prospectSuccess", "Thank you for your interest!"),
-        description: data.message,
-      });
-      // Clear the email fields
-      setHeroEmail("");
-      setNewsletterEmail("");
-    },
-    onError: (error: any) => {
-      console.error("Prospect creation failed:", error);
-      let errorMessage = t("marketing.prospectFailed", "Failed to save your interest. Please try again.");
-
-      try {
-        const match = error.message?.match(/\d+:\s*(.+)/);
-        if (match) {
-          const errorBody = match[1];
-          try {
-            const errorData = JSON.parse(errorBody);
-            errorMessage = errorData.error || errorMessage;
-          } catch {
-            errorMessage = errorBody;
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing error message:", e);
-      }
-
-      toast({
-        title: t("marketing.prospectFailed", "Error"),
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
-
+  // Handle marketing signup - just validate and redirect (no DB entry yet)
   const handleProspectSignup = (email: string) => {
     if (!email.trim()) {
       toast({
@@ -73,7 +30,20 @@ export default function Marketing() {
       });
       return;
     }
-    createProspectMutation.mutate(email);
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: t("marketing.invalidEmail", "Invalid Email"),
+        description: t("marketing.invalidEmailDesc", "Please enter a valid email address."),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Redirect to registration with email pre-filled and marketing flag
+    setLocation(`/register?email=${encodeURIComponent(email)}&from=marketing`);
   };
 
   // Handle smooth scrolling to anchor links
@@ -319,9 +289,8 @@ export default function Marketing() {
             <Button
               className="h-full rounded-md bg-[#101010] text-[#fdfdfd] px-4 transition-colors duration-300 hover:bg-[#1a1a1a]"
               onClick={() => handleProspectSignup(heroEmail)}
-              disabled={createProspectMutation.isPending}
             >
-              {createProspectMutation.isPending ? t("marketing.signingUp", "Signing up...") : t("marketing.nav.signup")}
+              {t("marketing.nav.signup")}
             </Button>
           </div>
 
@@ -545,9 +514,8 @@ export default function Marketing() {
             <Button
               className="rounded-md bg-[#101010] text-[#fdfdfd] transition-colors duration-300 hover:bg-[#1a1a1a]"
               onClick={() => handleProspectSignup(newsletterEmail)}
-              disabled={createProspectMutation.isPending}
             >
-              {createProspectMutation.isPending ? t("marketing.signingUp", "Signing up...") : t("marketing.newsletter.button")}
+              {t("marketing.newsletter.button")}
             </Button>
           </div>
 
