@@ -27,6 +27,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 
 const bankAccountSchema = z.object({
   accountHolderName: z.string().min(1, "Account holder name is required"),
@@ -166,21 +167,18 @@ export default function BankSettings() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">{t("settings.bankDetails")}</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your bank accounts for invoice payments
-        </p>
-      </div>
-
-      {!isAdding && (
-        <div className="mb-4">
-          <Button onClick={() => setIsAdding(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Bank Account
-          </Button>
-        </div>
-      )}
+      <PageHeader
+        title={t("settings.bankDetails")}
+        description={t("settings.bankDetailsDescription")}
+        action={
+          !isAdding ? (
+            <Button onClick={() => setIsAdding(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Bank Account
+            </Button>
+          ) : null
+        }
+      />
 
       {isAdding && (
         <Card className="mb-6">

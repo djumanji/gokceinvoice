@@ -27,6 +27,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Edit, Upload, X } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 
 const profileSchema = z.object({
   name: z.string().optional(),
@@ -361,12 +362,10 @@ export default function Settings() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">{t("nav.settings")}</h1>
-        <p className="text-muted-foreground mt-2">
-          {t("settings.description")}
-        </p>
-      </div>
+      <PageHeader
+        title={t("nav.settings")}
+        description={t("settings.description")}
+      />
 
       <Tabs defaultValue="personal" className="space-y-4">
         <TabsList>

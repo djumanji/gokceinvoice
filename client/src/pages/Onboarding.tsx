@@ -7,6 +7,7 @@ import { StepReviewConfirm } from "@/components/onboarding/StepReviewConfirm";
 import { StepComplete } from "@/components/onboarding/StepComplete";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 type Step = 'company' | 'bank' | 'client' | 'review' | 'complete';
 
@@ -40,6 +41,7 @@ interface OnboardingData {
 export default function Onboarding() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>('company');
   const [data, setData] = useState<OnboardingData>({
     company: {

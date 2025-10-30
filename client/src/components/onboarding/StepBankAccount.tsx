@@ -110,19 +110,21 @@ export function StepBankAccount({ currency, onBack, onContinue }: StepBankAccoun
 
   return (
     <div className="min-h-screen px-4 py-12 relative" style={{ overflow: 'visible' }}>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={handleBack}
         onMouseDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
         }}
-        className="absolute top-8 left-8 z-[9999] cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium px-3 py-2 min-h-8 hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1"
-        style={{ pointerEvents: 'auto', position: 'fixed' }}
+        className="absolute top-8 left-8 z-50 cursor-pointer"
+        aria-label="Go back"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-4 w-4 mr-2" />
         Back
-      </button>
+      </Button>
 
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-2xl relative">

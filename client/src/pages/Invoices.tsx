@@ -8,6 +8,7 @@ import { FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/ui/page-header";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import type { Invoice, Client } from "@shared/schema";
@@ -136,16 +137,16 @@ export default function Invoices() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("invoices.title")}</h1>
-          <p className="text-muted-foreground">{t("invoices.subtitle")}</p>
-        </div>
-        <Button onClick={() => setLocation("/invoices/new")} data-testid="button-create-invoice">
-          <Plus className="w-4 h-4" />
-          {t("invoices.createInvoice")}
-        </Button>
-      </div>
+      <PageHeader
+        title={t("invoices.title")}
+        description={t("invoices.subtitle")}
+        action={
+          <Button onClick={() => setLocation("/invoices/new")} data-testid="button-create-invoice">
+            <Plus className="w-4 h-4" />
+            {t("invoices.createInvoice")}
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <Card>

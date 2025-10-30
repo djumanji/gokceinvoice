@@ -215,7 +215,7 @@
     "preferredCurrency": "Preferred Currency",
     "selectCurrency": "Select a currency",
     "profileUpdated": "Your profile has been saved successfully.",
-    "profileUpdateFailed": "Failed to update profile. كثير try again.",
+    "profileUpdateFailed": "Failed to update profile. Please try again.",
     "bankDetails": "Bank Details",
     "bankDetailsDescription": "Banking information for invoice payments",
     "accountHolderName": "Account Holder Name",
@@ -395,7 +395,7 @@
       "title": "Stay in touch",
       "subtitle": "Keep yourself updated",
       "emailPlaceholder": "your@email.com",
-      "button": "Signup",
+      "button": "Sign up",
       "contactText": "Or contact us directly:",
       "contactEmail": "support@hallederik.com"
     },
