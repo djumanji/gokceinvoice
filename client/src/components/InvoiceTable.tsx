@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -89,7 +83,7 @@ export function InvoiceTable({ invoices, onView, onEdit, onDelete, onDownloadPDF
         </Select>
       </div>
 
-      <div className="border rounded-lg">
+      <DataTable>
         <Table>
           <TableHeader>
             <TableRow>
@@ -177,7 +171,7 @@ export function InvoiceTable({ invoices, onView, onEdit, onDelete, onDownloadPDF
             )}
           </TableBody>
         </Table>
-      </div>
+      </DataTable>
     </div>
   );
 }

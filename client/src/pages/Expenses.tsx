@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EXPENSE_CATEGORIES } from "@/components/ExpenseForm";
 import type { Expense } from "@shared/schema";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function Expenses() {
   const { t } = useTranslation();
@@ -90,16 +91,16 @@ export default function Expenses() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("expense.expenses")}</h1>
-          <p className="text-muted-foreground">{t("expense.trackExpenses")}</p>
-        </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          {t("expense.addExpense")}
-        </Button>
-      </div>
+      <PageHeader
+        title={t("expense.expenses")}
+        description={t("expense.trackExpenses")}
+        action={
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            {t("expense.addExpense")}
+          </Button>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

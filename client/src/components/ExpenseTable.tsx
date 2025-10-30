@@ -1,4 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreVertical, Pencil, Trash2, Receipt, Image as ImageIcon } from "lucide-react";
@@ -42,6 +43,7 @@ export function ExpenseTable({ expenses, onEdit, onDelete, onViewReceipt }: Expe
 
   return (
     <>
+      <DataTable>
       <Table>
         <TableHeader>
           <TableRow>
@@ -135,6 +137,7 @@ export function ExpenseTable({ expenses, onEdit, onDelete, onViewReceipt }: Expe
         })}
       </TableBody>
     </Table>
+    </DataTable>
 
     {/* Image Preview Dialog */}
     <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
