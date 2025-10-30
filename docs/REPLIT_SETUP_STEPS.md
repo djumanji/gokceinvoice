@@ -6,12 +6,13 @@
 The most important step! Run this to add all the new tables and columns:
 
 ```bash
-export DATABASE_URL="your_neon_database_url" && bash migrations/run-all.sh
+# For Replit PostgreSQL (DATABASE_URL is auto-set by Replit)
+bash migrations/run-all.sh
 ```
 
-Or manually run the migrations in the Neon console:
-- Go to https://console.neon.tech
-- Open SQL Editor
+Or manually run the migrations in the Replit PostgreSQL console:
+- In your Replit, go to Tools → Database → PostgreSQL
+- Click "Open PostgreSQL shell" or use the SQL Editor
 - Copy and paste the content of each migration file (in order):
   1. `migrations/001_critical_indexes.sql`
   2. `migrations/002_data_integrity_constraints.sql`
@@ -25,7 +26,7 @@ Or manually run the migrations in the Neon console:
 ### 2. Verify Environment Variables
 Make sure you have all required environment variables in Replit Secrets:
 
-- `DATABASE_URL` - Your Neon database connection string
+- `DATABASE_URL` - Your Replit PostgreSQL connection string (auto-set)
 - `SESSION_SECRET` - Random secret string for sessions
 - `GITHUB_CLIENT_ID` - GitHub OAuth client ID
 - `GITHUB_CLIENT_SECRET` - GitHub OAuth client secret

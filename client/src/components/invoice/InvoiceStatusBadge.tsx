@@ -1,11 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 
 interface InvoiceStatusBadgeProps {
-  status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
+  status: "draft" | "scheduled" | "sent" | "paid" | "overdue" | "cancelled";
 }
 
 const statusConfig = {
   draft: { variant: "secondary" as const, label: "Draft" },
+  scheduled: { variant: "outline" as const, label: "Scheduled" },
   sent: { variant: "default" as const, label: "Sent" },
   paid: { variant: "default" as const, label: "Paid" },
   overdue: { variant: "destructive" as const, label: "Overdue" },

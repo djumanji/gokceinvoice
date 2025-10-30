@@ -11,6 +11,8 @@ import { registerAuthRoutes } from "./auth-routes";
 import { registerOAuthRoutes } from "./oauth";
 import { setupVite, serveStatic, log } from "./vite";
 import { errorHandler } from "./middleware/error.middleware";
+import * as cron from "node-cron";
+import { processScheduledInvoices } from "./services/invoice-scheduler.service";
 
 const PgStore = connectPgSimple(session);
 
@@ -201,6 +203,21 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+
+  // Set up cron job for processing scheduled invoices every hour
+  cron.schedule('0 * * * *', async () => {
+    console.log('[Cron] Running scheduled invoice processing...');
+    try {
+      const results = await processScheduledInvoices();
+      if (results.processed > 0) {
+        console.log(`[Cron] Processed ${results.processed} scheduled invoices: ${results.sent} sent, ${results.errors} errors`);
+      }
+    } catch (error) {
+      console.error('[Cron] Error processing scheduled invoices:', error);
+    }
+  });
+
+  console.log('[Cron] Scheduled invoice processing job started (runs every hour)');
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.

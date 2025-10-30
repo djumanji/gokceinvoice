@@ -16,6 +16,7 @@ export interface IStorage {
   // Clients
   getClients(userId: string): Promise<Client[]>;
   getClient(id: string, userId: string): Promise<Client | undefined>;
+  getClient(id: string): Promise<Client | undefined>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, userId: string, client: Partial<InsertClient>): Promise<Client | undefined>;
   deleteClient(id: string, userId: string): Promise<boolean>;
@@ -24,6 +25,8 @@ export interface IStorage {
   getInvoices(userId: string): Promise<Invoice[]>;
   getInvoice(id: string, userId: string): Promise<Invoice | undefined>;
   getNextInvoiceNumber(userId: string): Promise<string>;
+  getScheduledInvoicesDue(): Promise<Invoice[]>;
+  getScheduledInvoicesCount(): Promise<number>;
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
   createInvoiceWithLineItems(invoice: InsertInvoice, lineItems: any[]): Promise<Invoice>;
   updateInvoice(id: string, userId: string, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
@@ -510,6 +513,24 @@ export class MemStorage implements IStorage {
     if (!existing) return false;
     this.projects.delete(id);
     return true;
+  }
+
+  // Scheduler-specific methods (no user ID checks for background processing)
+  async getClient(id: string): Promise<Client | undefined> {
+    return this.clients.get(id);
+  }
+
+  async getScheduledInvoicesDue(): Promise<Invoice[]> {
+    const now = new Date();
+    return Array.from(this.invoices.values()).filter(invoice =>
+      invoice.status === 'scheduled' &&
+      invoice.scheduledDate &&
+      new Date(invoice.scheduledDate) <= now
+    );
+  }
+
+  async getScheduledInvoicesCount(): Promise<number> {
+    return (await this.getScheduledInvoicesDue()).length;
   }
 }
 

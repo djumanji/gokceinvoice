@@ -10,6 +10,12 @@ export const invoiceFormSchema = z.object({
   clientId: z.string().min(1, "Client is required"),
   bankAccountId: z.string().optional(),
   date: z.string(),
+  scheduledDate: z.string().optional().refine((val) => {
+    if (!val) return true; // Optional field
+    const scheduled = new Date(val);
+    const now = new Date();
+    return scheduled > now;
+  }, "Scheduled date must be in the future"),
   orderNumber: z.string().optional(),
   projectNumber: z.string().optional(),
   forProject: z.string().optional(),

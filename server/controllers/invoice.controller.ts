@@ -3,11 +3,12 @@ import { storage } from '../storage';
 import { insertInvoiceSchema, insertLineItemSchema } from '@shared/schema';
 import { asyncHandler, AppError } from '../middleware/error.middleware';
 import { getUserId } from '../middleware/auth.middleware';
-import { 
-  calculateInvoiceTotals, 
-  validateTotalMatch, 
-  prepareLineItems 
+import {
+  calculateInvoiceTotals,
+  validateTotalMatch,
+  prepareLineItems
 } from '../services/invoice-calculation.service';
+import { processScheduledInvoices } from '../services/invoice-scheduler.service';
 
 /**
  * Invoice Controller
@@ -60,11 +61,22 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
   // Generate invoice number server-side
   const invoiceNumber = await storage.getNextInvoiceNumber(userId);
 
+  // Determine status based on scheduledDate
+  let status = "draft";
+  if (invoiceData.scheduledDate) {
+    const scheduledDate = new Date(invoiceData.scheduledDate);
+    const now = new Date();
+    if (scheduledDate > now) {
+      status = "scheduled";
+    }
+  }
+
   // Prepare invoice data with calculated values
   const validatedInvoice = insertInvoiceSchema.parse({
     ...invoiceData,
     userId,
     invoiceNumber,
+    status,
     subtotal: calculations.subtotal,
     tax: calculations.tax,
     taxRate: taxRate.toString(),
@@ -108,9 +120,26 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
   if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
     const calculations = calculateInvoiceTotals(lineItems, taxRate);
 
+    // Determine status based on scheduledDate
+    let status = invoiceData.status;
+    if (invoiceData.scheduledDate !== undefined) {
+      if (invoiceData.scheduledDate) {
+        const scheduledDate = new Date(invoiceData.scheduledDate);
+        const now = new Date();
+        if (scheduledDate > now) {
+          status = "scheduled";
+        } else {
+          status = "draft"; // Past scheduled date, revert to draft
+        }
+      } else {
+        status = "draft"; // No scheduled date, revert to draft
+      }
+    }
+
     // Update invoice with recalculated values
     const data = insertInvoiceSchema.partial().parse({
       ...invoiceData,
+      status,
       subtotal: calculations.subtotal,
       tax: calculations.tax,
       taxRate: taxRate.toString(),
@@ -137,7 +166,26 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
     res.json(invoice);
   } else {
     // Update invoice without line items (e.g., status change)
-    const data = insertInvoiceSchema.partial().parse(invoiceData);
+    // Determine status based on scheduledDate
+    let status = invoiceData.status;
+    if (invoiceData.scheduledDate !== undefined) {
+      if (invoiceData.scheduledDate) {
+        const scheduledDate = new Date(invoiceData.scheduledDate);
+        const now = new Date();
+        if (scheduledDate > now) {
+          status = "scheduled";
+        } else {
+          status = "draft"; // Past scheduled date, revert to draft
+        }
+      } else {
+        status = "draft"; // No scheduled date, revert to draft
+      }
+    }
+
+    const data = insertInvoiceSchema.partial().parse({
+      ...invoiceData,
+      status
+    });
     const invoice = await storage.updateInvoice(id, userId, data);
 
     if (!invoice) {
@@ -180,5 +228,26 @@ export const listLineItems = asyncHandler(async (req: Request, res: Response) =>
 
   const lineItems = await storage.getLineItemsByInvoice(invoiceId);
   res.json(lineItems);
+});
+
+/**
+ * POST /api/invoices/process-scheduled
+ * Manually trigger processing of scheduled invoices (admin/testing endpoint)
+ */
+export const processScheduled = asyncHandler(async (req: Request, res: Response) => {
+  console.log('[Manual Trigger] Processing scheduled invoices...');
+
+  const results = await processScheduledInvoices();
+
+  res.json({
+    success: true,
+    message: `Processed ${results.processed} scheduled invoices`,
+    results: {
+      processed: results.processed,
+      sent: results.sent,
+      errors: results.errors,
+      errorMessages: results.errorMessages
+    }
+  });
 });
 

@@ -200,3 +200,94 @@ export async function sendLeadConfirmationEmail(params: {
   if (error) throw new Error('Failed to send lead confirmation email');
 }
 
+/**
+ * Send invoice email to client
+ */
+export async function sendInvoiceEmail(params: {
+  clientEmail: string;
+  clientName?: string;
+  invoiceNumber: string;
+  total: number;
+  viewUrl: string;
+  companyName?: string;
+  userName?: string;
+}): Promise<void> {
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+  const subject = `Invoice ${params.invoiceNumber} from ${params.companyName || 'Your Vendor'}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Invoice ${params.invoiceNumber}</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0;">Invoice Received</h1>
+        </div>
+
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #667eea;">Hi${params.clientName ? ` ${params.clientName}` : ''},</h2>
+          <p>You have received a new invoice from ${params.companyName || 'your vendor'}. Please find the details below:</p>
+
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+            <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${params.invoiceNumber}</p>
+            <p style="margin: 5px 0;"><strong>Total Amount:</strong> €${params.total.toFixed(2)}</p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${params.viewUrl}"
+               style="background: #667eea; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+              View Invoice
+            </a>
+          </div>
+
+          <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+          <p style="color: #667eea; font-size: 12px; word-break: break-all;">${params.viewUrl}</p>
+
+          <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
+            If you have any questions about this invoice, please contact ${params.userName || 'your vendor'}.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const text = `
+    Invoice ${params.invoiceNumber} from ${params.companyName || 'Your Vendor'}
+
+    Hi${params.clientName ? ` ${params.clientName}` : ''},
+
+    You have received a new invoice. Here are the details:
+
+    Invoice Number: ${params.invoiceNumber}
+    Total Amount: €${params.total.toFixed(2)}
+
+    View your invoice here: ${params.viewUrl}
+
+    If you have any questions, please contact ${params.userName || 'your vendor'}.
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: fromEmail,
+      to: params.clientEmail,
+      subject,
+      html,
+      text,
+    });
+
+    if (error) {
+      console.error('Error sending invoice email:', error);
+      throw new Error('Failed to send invoice email');
+    }
+
+    console.log('Invoice email sent successfully:', data?.id);
+  } catch (error) {
+    console.error('Failed to send invoice email:', error);
+    throw error;
+  }
+}
+

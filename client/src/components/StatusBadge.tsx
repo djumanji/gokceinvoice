@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
+type InvoiceStatus = "draft" | "scheduled" | "sent" | "paid" | "overdue";
 
 interface StatusBadgeProps {
   status: InvoiceStatus;
@@ -10,6 +10,10 @@ const statusConfig = {
   draft: {
     label: "Draft",
     className: "bg-muted text-muted-foreground border-muted-border",
+  },
+  scheduled: {
+    label: "Scheduled",
+    className: "bg-chart-4/10 text-chart-4 border-chart-4/20",
   },
   sent: {
     label: "Sent",

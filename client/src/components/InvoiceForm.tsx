@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -63,6 +64,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
   const [taxRate, setTaxRate] = useState<number>(initialData?.taxRate || 0);
   const [showServiceDialog, setShowServiceDialog] = useState(false);
   const [pendingLineItemIndex, setPendingLineItemIndex] = useState<number | null>(null);
+  const [isScheduled, setIsScheduled] = useState<boolean>(!!initialData?.scheduledDate);
 
   // Permission checks
   const canEdit = !invoiceStatus || invoiceStatus === "draft" || invoiceStatus === "sent";
@@ -302,6 +304,49 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                 )}
               />
 
+              {/* Schedule for Future Sending */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="schedule-invoice"
+                  checked={isScheduled}
+                  onCheckedChange={(checked) => {
+                    setIsScheduled(checked as boolean);
+                    if (!checked) {
+                      form.setValue("scheduledDate", undefined);
+                    }
+                  }}
+                  disabled={isReadOnly || !canEdit}
+                />
+                <label
+                  htmlFor="schedule-invoice"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Schedule for future sending
+                </label>
+              </div>
+
+              {isScheduled && (
+                <FormField
+                  control={form.control}
+                  name="scheduledDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Send Date *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="datetime-local"
+                          {...field}
+                          data-testid="input-scheduled-date"
+                          disabled={isReadOnly || !canEdit}
+                          min={new Date(Date.now() + 1000 * 60 * 60).toISOString().slice(0, 16)} // At least 1 hour from now
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -497,6 +542,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
         <InvoicePreview
             invoiceNumber={savedInvoice?.invoiceNumber}
           date={form.watch("date")}
+          scheduledDate={form.watch("scheduledDate")}
           orderNumber={form.watch("orderNumber")}
           projectNumber={form.watch("projectNumber")}
           forProject={form.watch("forProject")}

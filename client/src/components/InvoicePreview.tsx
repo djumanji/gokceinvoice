@@ -13,6 +13,7 @@ interface InvoicePreviewProps {
   orderNumber?: string;
   projectNumber?: string;
   date?: string;
+  scheduledDate?: string;
   clientName?: string;
   clientCompany?: string;
   clientAddress?: string;
@@ -43,6 +44,7 @@ export function InvoicePreview({
   orderNumber,
   projectNumber,
   date,
+  scheduledDate,
   clientName,
   clientCompany,
   clientAddress,

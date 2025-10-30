@@ -127,6 +127,54 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 011_add_company_size.sql"
+if psql "$DATABASE_URL" -f migrations/011_add_company_size.sql; then
+    echo "✅ Company size column added"
+else
+    echo "⚠️  Company size column may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 012_add_industry.sql"
+if psql "$DATABASE_URL" -f migrations/012_add_industry.sql; then
+    echo "✅ Industry column added"
+else
+    echo "⚠️  Industry column may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 013_add_leads_system.sql"
+if psql "$DATABASE_URL" -f migrations/013_add_leads_system.sql; then
+    echo "✅ Leads system created"
+else
+    echo "⚠️  Leads system may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 014_add_chatbot_tables.sql"
+if psql "$DATABASE_URL" -f migrations/014_add_chatbot_tables.sql; then
+    echo "✅ Chatbot tables created"
+else
+    echo "⚠️  Chatbot tables may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 015_add_needed_at_to_leads.sql"
+if psql "$DATABASE_URL" -f migrations/015_add_needed_at_to_leads.sql; then
+    echo "✅ Needed at column added to leads"
+else
+    echo "⚠️  Needed at column may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 016_add_invoice_scheduling.sql"
+if psql "$DATABASE_URL" -f migrations/016_add_invoice_scheduling.sql; then
+    echo "✅ Invoice scheduling added"
+else
+    echo "⚠️  Invoice scheduling may already exist - continuing..."
+fi
+echo ""
+
 # Verify tables exist
 echo "🔍 Verifying tables..."
 TABLE_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" 2>/dev/null || echo "0")

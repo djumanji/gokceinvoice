@@ -27,7 +27,7 @@ interface Invoice {
   date: Date;
   dueDate: Date;
   total: number;
-  status: "draft" | "sent" | "paid" | "overdue";
+  status: "draft" | "scheduled" | "sent" | "paid" | "overdue";
 }
 
 interface InvoiceTableProps {

@@ -341,6 +341,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Line item routes
   app.get("/api/invoices/:invoiceId/line-items", invoiceController.listLineItems);
 
+  // Manual trigger for processing scheduled invoices (admin/testing)
+  app.post("/api/invoices/process-scheduled", invoiceController.processScheduled);
+
   // ============================================================================
   // SERVICE ROUTES
   // ============================================================================
