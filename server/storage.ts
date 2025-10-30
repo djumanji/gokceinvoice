@@ -139,6 +139,7 @@ export class MemStorage implements IStorage {
       preferredCurrency: insertUser.preferredCurrency ?? null,
       isProspect: insertUser.isProspect ?? false,
       marketingOnly: insertUser.marketingOnly ?? false,
+      isAdmin: insertUser.isAdmin ?? false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
