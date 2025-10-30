@@ -115,6 +115,7 @@ export const projects = pgTable("projects", {
   clientId: varchar("client_id").references(() => clients.id, { onDelete: 'cascade' }).notNull(), // Cascade delete projects when client deleted
   name: text("name").notNull(),
   description: text("description"),
+  projectNumber: text("project_number"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
