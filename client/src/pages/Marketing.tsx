@@ -84,6 +84,7 @@ export default function Marketing() {
     if (window.innerWidth < RESPONSIVE_WIDTH && !isHeaderCollapsed && headerRef.current) {
       setIsHeaderCollapsed(true);
       headerRef.current.style.width = "0vw";
+      headerRef.current.style.opacity = "0";
       headerRef.current.classList.remove("opacity-100");
     }
     
@@ -121,19 +122,32 @@ export default function Marketing() {
       setIsHeaderCollapsed(true);
       if (headerRef.current) {
         headerRef.current.style.width = "0vw";
+        headerRef.current.style.opacity = "0";
+      }
+    } else {
+      // Desktop: ensure header is visible
+      setIsHeaderCollapsed(false);
+      if (headerRef.current) {
+        headerRef.current.style.width = "";
+        headerRef.current.style.opacity = "";
       }
     }
 
     const handleResize = () => {
-      if (window.innerWidth > RESPONSIVE_WIDTH) {
+      if (window.innerWidth >= RESPONSIVE_WIDTH) {
+        // Desktop: ensure header is visible
         setIsHeaderCollapsed(false);
         if (headerRef.current) {
           headerRef.current.style.width = "";
+          headerRef.current.style.opacity = "";
           headerRef.current.classList.remove("opacity-100");
         }
-      } else if (!isHeaderCollapsed && headerRef.current) {
-        headerRef.current.style.width = "0vw";
-        headerRef.current.classList.remove("opacity-100");
+      } else {
+        // Mobile: ensure it's collapsed if not already open
+        if (isHeaderCollapsed && headerRef.current) {
+          headerRef.current.style.width = "0vw";
+          headerRef.current.style.opacity = "0";
+        }
       }
     };
 
@@ -149,10 +163,12 @@ export default function Marketing() {
       if (willBeOpen) {
         // Opening - was collapsed, now opening
         headerRef.current.style.width = "60vw";
+        headerRef.current.style.opacity = "1";
         headerRef.current.classList.add("opacity-100");
       } else {
         // Closing - was open, now closing
         headerRef.current.style.width = "0vw";
+        headerRef.current.style.opacity = "0";
         headerRef.current.classList.remove("opacity-100");
       }
     }
@@ -170,6 +186,7 @@ export default function Marketing() {
       if (window.innerWidth < RESPONSIVE_WIDTH && !isHeaderCollapsed && headerRef.current) {
         setIsHeaderCollapsed(true);
         headerRef.current.style.width = "0vw";
+        headerRef.current.style.opacity = "0";
         headerRef.current.classList.remove("opacity-100");
       }
     }
@@ -215,7 +232,7 @@ export default function Marketing() {
 
         <div
           ref={headerRef}
-          className="collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:opacity-0 max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-foreground max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300"
+          className="collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-foreground max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300"
           id="collapsed-header-items"
         >
           <nav id="navigation" aria-label="Primary navigation" className="flex h-full w-max gap-5 text-base text-foreground max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
@@ -655,7 +672,18 @@ export default function Marketing() {
           background-color: inherit;
           place-content: center;
           overflow: hidden;
-          transition: width 0.3s ease;
+          transition: width 0.3s ease, opacity 0.3s ease;
+        }
+
+        @media (min-width: 1024px) {
+          .collapsible-header {
+            display: flex !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            position: relative !important;
+            height: auto !important;
+            flex-direction: row !important;
+          }
         }
 
         .header-link {

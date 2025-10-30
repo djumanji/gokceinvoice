@@ -144,14 +144,15 @@ test.describe('Marketing Page', () => {
   test('mobile menu should toggle on small screens', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 360, height: 640 });
+    await page.waitForTimeout(300); // Wait for resize
     
-    // Check menu button is visible
-    const menuButton = page.locator('[aria-label="menu"]');
+    // Check menu button is visible (using aria-controls instead of aria-label)
+    const menuButton = page.locator('[aria-controls="collapsed-header-items"]');
     await expect(menuButton).toBeVisible();
     
     // Click menu button
     await menuButton.click();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500); // Wait for animation
     
     // Check that navigation items are visible (menu should be open)
     const aboutUsLink = page.locator('a[href="#features"]');

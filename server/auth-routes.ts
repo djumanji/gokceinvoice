@@ -198,16 +198,23 @@ export function registerAuthRoutes(app: Express) {
       const user = await storage.getUserByEmail(email);
 
       // Always perform bcrypt comparison to prevent timing attacks
-      // Use a dummy hash if user doesn't exist
+      // Use a dummy hash if user doesn't exist OR if user doesn't have a password (OAuth)
       // This is intentional for security - generates a constant-time comparison
       // even when user doesn't exist to prevent user enumeration attacks
-      const passwordHash = user?.password || DUMMY_PASSWORD_HASH;
+      const passwordHash = (user?.password) || DUMMY_PASSWORD_HASH;
       console.log('[Login] Comparing password');
       const isValid = await comparePassword(password, passwordHash);
 
       // Check both conditions after timing-constant operation
-      if (!user || !user.password || !isValid) {
+      // For OAuth users (no password), the dummy hash comparison will fail
+      if (!user || !isValid) {
         console.log('[Login] Authentication failed');
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
+
+      // Additional check: OAuth users must use OAuth login, not password login
+      if (!user.password) {
+        console.log('[Login] OAuth user attempted password login');
         return res.status(401).json({ error: 'Invalid email or password' });
       }
 

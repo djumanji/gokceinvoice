@@ -38,7 +38,7 @@ app.use(helmet({
         "'self'",
         "https://api-eu.mixpanel.com",
         "https://app.posthog.com",
-        "https://us.i.posthog.com"
+        "https://eu.i.posthog.com"
       ],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://r2cdn.perplexity.ai"],
       objectSrc: ["'none'"],
@@ -79,8 +79,20 @@ const sessionStore = process.env.DATABASE_URL
     })
   : undefined; // Will use MemoryStore fallback if no DATABASE_URL
 
-if (!process.env.DATABASE_URL) {
-  console.warn('WARNING: No DATABASE_URL configured. Sessions will be stored in memory and lost on restart.');
+// Health check for session store
+if (sessionStore) {
+  sessionStore.pruneSessions((err) => {
+    if (err) {
+      console.error('❌ Session store health check failed:', err.message);
+      console.error('⚠️  Sessions may not persist correctly. Check DATABASE_URL and user_sessions table.');
+      console.error('   Run migration: psql $DATABASE_URL -f migrations/018_add_user_sessions_table.sql');
+    } else {
+      console.log('✅ Session store connected successfully (PostgreSQL)');
+    }
+  });
+} else {
+  console.warn('⚠️  WARNING: Using in-memory session store. Sessions will be lost on server restart.');
+  console.warn('   Set DATABASE_URL environment variable to enable persistent sessions.');
 }
 
 app.use(session({
@@ -123,12 +135,17 @@ export function validateCsrf(req: Request | any, res: Response, next: NextFuncti
     return next();
   }
 
-  // Skip CSRF for JWT token-based requests (mobile app)
+  // Skip CSRF for valid JWT token-based requests (mobile app)
+  // Note: JWT validation will happen in the auth middleware
+  // We just check if it's a JWT request here, but don't bypass security completely
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
+    // For JWT requests, we rely on the JWT validation in auth middleware
+    // CSRF is not applicable for stateless JWT auth
     return next();
   }
 
+  // For session-based requests, require CSRF token
   const token = req.headers['x-csrf-token'] || req.headers['csrf-token'];
   const secret = req.session.csrfSecret;
 
@@ -137,6 +154,8 @@ export function validateCsrf(req: Request | any, res: Response, next: NextFuncti
       path: req.path,
       method: req.method,
       hasToken: Boolean(token),
+      hasSession: Boolean(req.session),
+      sessionId: req.sessionID,
     });
     return res.status(403).json({ error: 'CSRF secret not found. Please refresh.' });
   }

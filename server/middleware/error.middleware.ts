@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import { z } from 'zod';
 
 /**
@@ -38,12 +38,12 @@ export function asyncHandler(
  * Should be registered last in the middleware chain
  * Provides consistent error responses across the application
  */
-export function errorHandler(
+export const errorHandler: ErrorRequestHandler = (
   err: Error | AppError,
-  req: Request,
+  req: Request | any,
   res: Response,
   next: NextFunction
-) {
+) => {
   // Log error for debugging
   console.error('Error:', {
     message: err.message,
@@ -76,7 +76,7 @@ export function errorHandler(
     error: message,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
-}
+};
 
 /**
  * 404 handler for unmatched routes

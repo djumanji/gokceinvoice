@@ -1,27 +1,57 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// CSRF token management
+// CSRF token management with proper race condition handling
 let csrfToken: string | null = null;
+let csrfTokenPromise: Promise<string> | null = null;
 
 async function getCsrfToken(): Promise<string> {
-  if (!csrfToken) {
+  // If token already exists, return it
+  if (csrfToken) {
+    return csrfToken;
+  }
+
+  // If fetch is already in progress, wait for it
+  if (csrfTokenPromise) {
+    return csrfTokenPromise;
+  }
+
+  // Start new fetch and store the promise
+  csrfTokenPromise = (async () => {
     try {
       const res = await fetch('/api/csrf-token', {
         credentials: 'include',
       });
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch CSRF token: ${res.status} ${res.statusText}`);
+      }
+
       const data = await res.json();
       csrfToken = data.csrfToken;
+
+      if (!csrfToken) {
+        throw new Error('CSRF token not found in response');
+      }
+
+      return csrfToken;
     } catch (error) {
       console.error('Failed to fetch CSRF token:', error);
+      // Clear the promise so next call will retry
+      csrfTokenPromise = null;
       throw error;
+    } finally {
+      // Clear the promise once complete (success or error)
+      csrfTokenPromise = null;
     }
-  }
-  return csrfToken;
+  })();
+
+  return csrfTokenPromise;
 }
 
 // Reset CSRF token on auth changes
 export function resetCsrfToken() {
   csrfToken = null;
+  csrfTokenPromise = null;
 }
 
 // Global API loading tracker
