@@ -180,9 +180,20 @@ export class PgStorage {
 
   async createInvoiceWithLineItems(invoiceData: InsertInvoice, lineItems: any[]): Promise<Invoice> {
     return await this.db.transaction(async (tx) => {
+      console.log('[PgStorage] Creating invoice with data:', JSON.stringify(invoiceData, null, 2));
+      console.log('[PgStorage] Line items:', JSON.stringify(lineItems, null, 2));
+      
       // Create invoice
       const invoiceResult = await tx.insert(invoices).values(invoiceData).returning();
+      console.log('[PgStorage] Invoice insert result:', JSON.stringify(invoiceResult, null, 2));
+      
       const invoice = invoiceResult[0];
+
+      if (!invoice || !invoice.id) {
+        throw new Error(`Failed to create invoice. Result: ${JSON.stringify(invoiceResult)}`);
+      }
+
+      console.log('[PgStorage] Created invoice with ID:', invoice.id);
 
       // Create line items
       for (const item of lineItems) {
@@ -198,6 +209,7 @@ export class PgStorage {
           amount: amount.toFixed(2),
         };
 
+        console.log('[PgStorage] Inserting line item:', JSON.stringify(lineItemData, null, 2));
         await tx.insert(lineItems).values(lineItemData);
       }
 
@@ -608,6 +620,11 @@ export class PgStorage {
 
   async getInviteTokenByToken(token: string): Promise<InviteToken | undefined> {
     const result = await this.db.select().from(inviteTokens).where(eq(inviteTokens.token, token));
+    return result[0];
+  }
+
+  async getInviteTokenByCode(code: string): Promise<InviteToken | undefined> {
+    const result = await this.db.select().from(inviteTokens).where(eq(inviteTokens.code, code));
     return result[0];
   }
 
