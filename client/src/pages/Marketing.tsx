@@ -5,9 +5,10 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Menu, X } from "lucide-react";
 import { BiLogoLinkedin, BiLogoTwitter, BiLogoInstagram, BiLogoFacebook } from "react-icons/bi";
 import { useTranslation } from "react-i18next";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useOnboardingGuard } from "@/hooks/use-onboarding";
 
 const RESPONSIVE_WIDTH = 1024;
 
@@ -20,9 +21,32 @@ export default function Marketing() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const { toast } = useToast();
 
+  // Check authentication status and redirect if logged in
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ["/api/auth/me"],
+    retry: false,
+  });
+  const { isOnboardingComplete, isLoading: onboardingLoading } = useOnboardingGuard();
+
+  // Redirect authenticated users to the appropriate page
+  useEffect(() => {
+    if (userLoading || onboardingLoading) return;
+
+    if (user) {
+      // User is authenticated, redirect based on onboarding status
+      if (!isOnboardingComplete) {
+        setLocation("/onboarding");
+      } else {
+        setLocation("/dashboard");
+      }
+    }
+  }, [user, userLoading, isOnboardingComplete, onboardingLoading, setLocation]);
+
   // Handle marketing signup - just validate and redirect (no DB entry yet)
   const handleProspectSignup = (email: string) => {
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
       toast({
         title: t("marketing.emailRequired", "Email Required"),
         description: t("marketing.emailRequiredDesc", "Please enter your email address."),
@@ -33,7 +57,7 @@ export default function Marketing() {
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(trimmedEmail)) {
       toast({
         title: t("marketing.invalidEmail", "Invalid Email"),
         description: t("marketing.invalidEmailDesc", "Please enter a valid email address."),
@@ -43,7 +67,7 @@ export default function Marketing() {
     }
 
     // Redirect to registration with email pre-filled and marketing flag
-    setLocation(`/register?email=${encodeURIComponent(email)}&from=marketing`);
+    setLocation(`/register?email=${encodeURIComponent(trimmedEmail)}&from=marketing`);
   };
 
   // Handle smooth scrolling to anchor links
