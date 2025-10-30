@@ -858,7 +858,16 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
           {!isSaved && canEdit ? (
           <Button
               type="button"
-              onClick={handleSubmit}
+              onClick={(e) => {
+                console.log('[InvoiceForm] Save button clicked');
+                console.log('[InvoiceForm] isSaved:', isSaved);
+                console.log('[InvoiceForm] canEdit:', canEdit);
+                console.log('[InvoiceForm] isLoading:', isLoading);
+                console.log('[InvoiceForm] isReadOnly:', isReadOnly);
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit();
+              }}
               data-testid="button-save-invoice"
             disabled={isLoading}
           >
@@ -877,7 +886,11 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
             <div className="text-sm text-muted-foreground">
               This invoice cannot be edited due to its status.
             </div>
-          ) : null}
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              Debug: isSaved={String(isSaved)}, canEdit={String(canEdit)}, isLoading={String(isLoading)}
+            </div>
+          )}
         </div>
       </div>
 
