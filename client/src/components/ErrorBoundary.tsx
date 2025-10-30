@@ -22,7 +22,19 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught error:', error, errorInfo);
-    // You could send this to an error tracking service like Sentry
+    
+    // Send error to PostHog if enabled
+    try {
+      import('../lib/posthog').then(({ captureEvent }) => {
+        captureEvent('error_boundary_caught', {
+          error: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+        });
+      });
+    } catch (e) {
+      console.warn('Failed to send error to PostHog:', e);
+    }
   }
 
   render() {

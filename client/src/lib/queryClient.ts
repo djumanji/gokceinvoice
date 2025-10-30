@@ -95,7 +95,22 @@ function endRequestTracking() {
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const error = new Error(`${res.status}: ${text}`);
+    
+    // Track API errors in PostHog
+    try {
+      import('./posthog').then(({ captureEvent }) => {
+        captureEvent('api_error', {
+          status: res.status,
+          url: res.url,
+          error: text,
+        });
+      });
+    } catch (e) {
+      // Silently fail if PostHog not available
+    }
+    
+    throw error;
   }
 }
 
