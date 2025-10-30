@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,22 @@ import { ArrowLeft } from "lucide-react";
 
 export default function Waitlist() {
   const { t } = useTranslation();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const { toast } = useToast();
+
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = () => {
+      // Browser back button was pressed - let wouter handle it naturally
+      // Wouter already listens to popstate events, so this ensures proper navigation
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
 
   const waitlistMutation = useMutation({
     mutationFn: async () => {
@@ -61,14 +74,26 @@ export default function Waitlist() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
     waitlistMutation.mutate();
   };
 
   const handleBack = () => {
-    // Check if there's history to go back to, otherwise go to marketing page
-    if (window.history.length > 1) {
+    // Use wouter's navigation for proper history management
+    // Check if we came from marketing page or another page
+    const referrer = document.referrer;
+    if (referrer && (referrer.includes(window.location.origin))) {
+      // Try to go back in history
       window.history.back();
     } else {
+      // Default to marketing page
       setLocation("/");
     }
   };
