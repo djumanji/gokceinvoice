@@ -172,3 +172,31 @@ export async function sendPasswordResetEmail({
   }
 }
 
+export async function sendLeadConfirmationEmail(params: {
+  email: string;
+  customerName?: string;
+  summaryHtml: string;
+  confirmationUrl: string;
+}): Promise<void> {
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+  const subject = 'Confirm your account to publish your project';
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height:1.6; max-width:600px; margin:0 auto;">
+      <h2>Hello${params.customerName ? ` ${params.customerName}` : ''},</h2>
+      <p>Thanks for sharing your project details. Please confirm your account to publish your project and receive contractor bids.</p>
+      <div style="background:#f6f7f9; border-radius:8px; padding:16px; margin:16px 0;">
+        ${params.summaryHtml}
+      </div>
+      <p style="text-align:center; margin:24px 0;">
+        <a href="${params.confirmationUrl}" style="background:#111827; color:#fff; padding:12px 20px; text-decoration:none; border-radius:6px; display:inline-block;">Confirm account</a>
+      </p>
+      <p style="color:#6b7280; font-size:12px;">If you didn’t request this, you can ignore this email.</p>
+    </div>
+  `;
+  const text = `Confirm your account to publish your project: ${params.confirmationUrl}`;
+
+  const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_local_dev');
+  const { error } = await resend.emails.send({ from: fromEmail, to: params.email, subject, html, text });
+  if (error) throw new Error('Failed to send lead confirmation email');
+}
+

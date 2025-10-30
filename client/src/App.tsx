@@ -29,6 +29,7 @@ import BankSettings from "@/pages/BankSettings";
 import Marketing from "@/pages/Marketing";
 import Leads from "@/pages/Leads";
 import NotFound from "@/pages/not-found";
+import LeadCapture from "@/pages/LeadCapture";
 
 function Router() {
   return (
@@ -85,6 +86,7 @@ function Router() {
           <Leads />
         </ProtectedRoute>
       </Route>
+      <Route path="/lead-capture" component={LeadCapture} />
       <Route path="/settings">
         <ProtectedRoute>
           <Settings />
