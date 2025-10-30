@@ -155,6 +155,11 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
       // Update the form field with the new project name
       form.setValue("forProject", newProject.name);
       
+      // Update project number if available
+      if (newProject.projectNumber) {
+        form.setValue("projectNumber", newProject.projectNumber);
+      }
+      
       // Close modal and reset form
       setShowCustomProjectModal(false);
       setCustomProjectData({ name: "", description: "" });
