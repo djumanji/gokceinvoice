@@ -149,34 +149,31 @@ export default function Marketing() {
     return () => window.removeEventListener("resize", handleResize);
   }, [isHeaderCollapsed]);
 
-  const toggleHeader = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+  const toggleHeader = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    if (window.innerWidth < RESPONSIVE_WIDTH && headerRef.current) {
-      const willBeOpen = isHeaderCollapsed;
-      setIsHeaderCollapsed(!isHeaderCollapsed);
-      
-      // Use requestAnimationFrame to ensure state update happens before DOM manipulation
-      requestAnimationFrame(() => {
-        if (headerRef.current) {
-          if (willBeOpen) {
-            // Opening - was collapsed, now opening
-            headerRef.current.style.width = "60vw";
-            headerRef.current.style.opacity = "1";
-            headerRef.current.classList.add("opacity-100");
-          } else {
-            // Closing - was open, now closing
-            headerRef.current.style.width = "0vw";
-            headerRef.current.style.opacity = "0";
-            headerRef.current.classList.remove("opacity-100");
-          }
-        }
-      });
+    if (window.innerWidth < RESPONSIVE_WIDTH) {
+      setIsHeaderCollapsed((prev) => !prev);
     }
   };
+
+  // Sync DOM with state changes
+  useEffect(() => {
+    if (window.innerWidth < RESPONSIVE_WIDTH && headerRef.current) {
+      if (isHeaderCollapsed) {
+        // Menu is closed
+        headerRef.current.style.width = "0vw";
+        headerRef.current.style.opacity = "0";
+        headerRef.current.classList.remove("opacity-100");
+      } else {
+        // Menu is open
+        headerRef.current.style.width = "60vw";
+        headerRef.current.style.opacity = "1";
+        headerRef.current.classList.add("opacity-100");
+      }
+    }
+  }, [isHeaderCollapsed]);
 
   const handleClickOutside = (e: MouseEvent) => {
     const target = e.target as Node;
@@ -236,7 +233,7 @@ export default function Marketing() {
 
         <div
           ref={headerRef}
-          className="collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-gray-900 max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300"
+          className="collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-gray-900 max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300 max-lg:z-40"
           id="collapsed-header-items"
         >
           <nav id="navigation" aria-label="Primary navigation" className="flex h-full w-max gap-5 text-base text-gray-900 max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
@@ -283,8 +280,11 @@ export default function Marketing() {
         </div>
         
         <button
-          className="absolute right-3 top-3 z-50 text-3xl text-gray-900 lg:hidden"
-          onClick={toggleHeader}
+          className="absolute right-3 top-3 z-[100] text-3xl text-gray-900 lg:hidden cursor-pointer"
+          onClick={(e) => {
+            console.log('Hamburger button clicked', { isHeaderCollapsed, width: window.innerWidth });
+            toggleHeader(e);
+          }}
           type="button"
           aria-label={isHeaderCollapsed ? "Open menu" : "Close menu"}
           aria-controls="collapsed-header-items"
@@ -754,6 +754,12 @@ export default function Marketing() {
             color: #000000;
             overflow-y: auto;
             box-shadow: 2px 0px 3px #000;
+            z-index: 40;
+          }
+          
+          .collapsible-header.opacity-100 {
+            opacity: 1 !important;
+            width: 60vw !important;
           }
         }
       `}</style>

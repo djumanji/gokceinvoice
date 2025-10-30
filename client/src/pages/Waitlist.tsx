@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,9 +142,15 @@ export default function Waitlist() {
           </form>
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Already have an invite?{" "}
-            <Link href="/register" className="text-primary hover:underline">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setLocation("/register");
+              }}
+              className="text-primary hover:underline cursor-pointer"
+            >
               Register here
-            </Link>
+            </button>
           </div>
         </CardContent>
       </Card>
