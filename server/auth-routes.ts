@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto';
 import { storage } from './storage';
 import { hashPassword, comparePassword } from './auth';
 import { validateCsrf } from './index';
-import { insertUserSchema } from '@shared/schema';
+import { insertUserSchema, insertProspectSchema } from '@shared/schema';
 import { z } from 'zod';
 import { sendVerificationEmail, sendPasswordResetEmail } from './services/email-service';
 
@@ -38,12 +38,23 @@ export function registerAuthRoutes(app: Express) {
   // Register endpoint
   app.post('/api/auth/register', authLimiter, validateCsrf, async (req, res) => {
     try {
-      const { email, password, username } = req.body;
+      const { email, password, username, isProspect } = req.body;
 
-      console.log('Registration attempt:', { email, username: username || 'not provided' });
+      console.log('Registration attempt:', { email, username: username || 'not provided', isProspect });
 
-      // Validate input with Zod schema
-      const validation = insertUserSchema.safeParse({ email, password, username });
+      // Validate input based on whether this is a prospect or full registration
+      let validation;
+      if (isProspect) {
+        // For prospects, only email is required
+        validation = insertProspectSchema.safeParse({ email, isProspect: true });
+      } else {
+        // For full registration, email and password are required
+        if (!password) {
+          return res.status(400).json({ error: 'Password is required for registration' });
+        }
+        validation = insertUserSchema.safeParse({ email, password, username });
+      }
+
       if (!validation.success) {
         console.log('Validation failed:', validation.error.errors);
         return res.status(400).json({
@@ -58,63 +69,86 @@ export function registerAuthRoutes(app: Express) {
         console.log('User already exists:', email);
         return res.status(400).json({ error: 'User already exists' });
       }
-      
-      // Hash password
-      const hashedPassword = await hashPassword(password);
-      console.log('Password hashed successfully');
-      
-      // Generate verification token
-      const verificationToken = randomBytes(32).toString('hex');
-      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      
+
+      let hashedPassword: string | null = null;
+      let verificationToken: string | null = null;
+      let verificationExpires: Date | null = null;
+      let emailVerified = false;
+
+      if (isProspect) {
+        // For prospects, no password, no verification needed initially
+        console.log('Creating prospect user with email only');
+      } else {
+        // Hash password for full registration
+        hashedPassword = await hashPassword(password);
+        console.log('Password hashed successfully');
+
+        // Generate verification token for full registration
+        verificationToken = randomBytes(32).toString('hex');
+        verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      }
+
       // Create user
       const user = await storage.createUser({
         email,
         password: hashedPassword,
         username,
         provider: 'local',
-        isEmailVerified: false,
+        isEmailVerified: emailVerified,
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,
+        isProspect: isProspect || false,
       });
       
-      console.log('User created:', { id: user.id, email: user.email });
-      
-      // Send verification email
-      try {
-        await sendVerificationEmail({
-          email,
-          verificationToken,
-          username
-        });
-        console.log('Verification email sent');
-      } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
-        // Don't fail registration if email fails
+      console.log('User created:', { id: user.id, email: user.email, isProspect });
+
+      // Send verification email only for full registrations (not prospects)
+      if (!isProspect && verificationToken) {
+        try {
+          await sendVerificationEmail({
+            email,
+            verificationToken,
+            username
+          });
+          console.log('Verification email sent');
+        } catch (emailError) {
+          console.error('Failed to send verification email:', emailError);
+          // Don't fail registration if email fails
+        }
       }
-      
-      // Regenerate session to prevent session fixation attacks
-      await new Promise<void>((resolve, reject) => {
-        req.session.regenerate((err) => {
-          if (err) return reject(err);
-          // Store user ID in new session
-          req.session.userId = user.id;
-          req.session.save((err2) => {
-            if (err2) reject(err2);
-            else resolve();
+
+      let responseMessage = 'Registration successful! Please check your email to verify your account.';
+      let userResponse = {
+        id: user.id,
+        email: user.email,
+        username: user.username
+      };
+
+      if (isProspect) {
+        // For prospects, don't create session or redirect
+        responseMessage = 'Thank you for your interest! We\'ve saved your email and will be in touch soon.';
+        console.log('Prospect created, no session created');
+      } else {
+        // Regenerate session to prevent session fixation attacks for full registrations
+        await new Promise<void>((resolve, reject) => {
+          req.session.regenerate((err) => {
+            if (err) return reject(err);
+            // Store user ID in new session
+            req.session.userId = user.id;
+            req.session.save((err2) => {
+              if (err2) reject(err2);
+              else resolve();
+            });
           });
         });
-      });
 
-      console.log('Session created with userId:', user.id);
+        console.log('Session created with userId:', user.id);
+      }
 
       res.status(201).json({
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username
-        },
-        message: 'Registration successful! Please check your email to verify your account.'
+        user: userResponse,
+        message: responseMessage,
+        isProspect: isProspect || false
       });
     } catch (error) {
       console.error('Registration error:', error);

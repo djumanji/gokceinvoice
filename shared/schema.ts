@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums
-export const invoiceStatusEnum = pgEnum("invoice_status", ["draft", "sent", "viewed", "partial", "paid", "overdue", "cancelled", "refunded"]);
+export const invoiceStatusEnum = pgEnum("invoice_status", ["draft", "scheduled", "sent", "viewed", "partial", "paid", "overdue", "cancelled", "refunded"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["bank_transfer", "credit_card", "paypal", "cash", "check", "other"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
 export const recurrenceFrequencyEnum = pgEnum("recurrence_frequency", ["weekly", "biweekly", "monthly", "quarterly", "yearly"]);
@@ -53,6 +53,7 @@ export const users = pgTable("users", {
   address: text("address"),
   phone: text("phone"),
   taxOfficeId: text("tax_office_id"), // Tax Registration Number
+  isProspect: boolean("is_prospect").default(false), // Flag to identify prospects (email-only users)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -112,6 +113,7 @@ export const invoices = pgTable("invoices", {
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: 'restrict' }), // Prevent deleting client with invoices
   bankAccountId: varchar("bank_account_id").references(() => bankAccounts.id, { onDelete: 'set null' }), // Reference to selected bank account
   date: timestamp("date").notNull().defaultNow(),
+  scheduledDate: timestamp("scheduled_date"),
   orderNumber: text("order_number"),
   projectNumber: text("project_number"),
   forProject: text("for_project"),
@@ -169,6 +171,12 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true }).ext
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number")
     .optional(),
+});
+
+// Schema for creating prospects (email-only users)
+export const insertProspectSchema = createInsertSchema(users).omit({ id: true }).pick({ email: true }).extend({
+  password: z.undefined(), // Explicitly exclude password for prospects
+  isProspect: z.literal(true), // Flag to identify prospects
 });
 
 export const updateUserProfileSchema = z.object({

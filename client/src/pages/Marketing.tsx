@@ -5,6 +5,9 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Menu, X } from "lucide-react";
 import { BiLogoLinkedin, BiLogoTwitter, BiLogoInstagram, BiLogoFacebook } from "react-icons/bi";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const RESPONSIVE_WIDTH = 1024;
 
@@ -12,6 +15,66 @@ export default function Marketing() {
   const { t } = useTranslation();
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
+  const [heroEmail, setHeroEmail] = useState("");
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const { toast } = useToast();
+
+  // Prospect creation mutation
+  const createProspectMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await apiRequest("POST", "/api/auth/register", {
+        email,
+        isProspect: true
+      });
+      return res;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: t("marketing.prospectSuccess", "Thank you for your interest!"),
+        description: data.message,
+      });
+      // Clear the email fields
+      setHeroEmail("");
+      setNewsletterEmail("");
+    },
+    onError: (error: any) => {
+      console.error("Prospect creation failed:", error);
+      let errorMessage = t("marketing.prospectFailed", "Failed to save your interest. Please try again.");
+
+      try {
+        const match = error.message?.match(/\d+:\s*(.+)/);
+        if (match) {
+          const errorBody = match[1];
+          try {
+            const errorData = JSON.parse(errorBody);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            errorMessage = errorBody;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing error message:", e);
+      }
+
+      toast({
+        title: t("marketing.prospectFailed", "Error"),
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleProspectSignup = (email: string) => {
+    if (!email.trim()) {
+      toast({
+        title: t("marketing.emailRequired", "Email Required"),
+        description: t("marketing.emailRequiredDesc", "Please enter your email address."),
+        variant: "destructive",
+      });
+      return;
+    }
+    createProspectMutation.mutate(email);
+  };
 
   // Handle smooth scrolling to anchor links
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -240,14 +303,18 @@ export default function Marketing() {
               <input
                 id="hero-email"
                 type="email"
+                value={heroEmail}
+                onChange={(e) => setHeroEmail(e.target.value)}
                 className="h-full w-full rounded-md border-2 border-solid border-[#bfbfbf] bg-transparent p-2 px-3 outline-none transition-colors duration-300 focus:border-[#0c0c0c]"
                 placeholder={t("marketing.hero.emailPlaceholder")}
               />
-            <Link href="/register">
-                <Button className="h-full rounded-md bg-[#101010] text-[#fdfdfd] px-4 transition-colors duration-300 hover:bg-[#1a1a1a]">
-                  {t("marketing.nav.signup")}
-              </Button>
-            </Link>
+            <Button
+              className="h-full rounded-md bg-[#101010] text-[#fdfdfd] px-4 transition-colors duration-300 hover:bg-[#1a1a1a]"
+              onClick={() => handleProspectSignup(heroEmail)}
+              disabled={createProspectMutation.isPending}
+            >
+              {createProspectMutation.isPending ? t("marketing.signingUp", "Signing up...") : t("marketing.nav.signup")}
+            </Button>
           </div>
 
             <div className="mt-6 flex gap-4 text-2xl">
@@ -462,14 +529,18 @@ export default function Marketing() {
             <input
               id="newsletter-email"
               type="email"
+              value={newsletterEmail}
+              onChange={(e) => setNewsletterEmail(e.target.value)}
               className="h-full w-full rounded-md border-2 border-solid border-[#818080] bg-transparent p-2 outline-none transition-colors duration-300 focus:border-[#0c0c0c]"
               placeholder={t("marketing.newsletter.emailPlaceholder")}
             />
-            <Link href="/register">
-              <Button className="rounded-md bg-[#101010] text-[#fdfdfd] transition-colors duration-300 hover:bg-[#1a1a1a]">
-                {t("marketing.newsletter.button")}
-              </Button>
-            </Link>
+            <Button
+              className="rounded-md bg-[#101010] text-[#fdfdfd] transition-colors duration-300 hover:bg-[#1a1a1a]"
+              onClick={() => handleProspectSignup(newsletterEmail)}
+              disabled={createProspectMutation.isPending}
+            >
+              {createProspectMutation.isPending ? t("marketing.signingUp", "Signing up...") : t("marketing.newsletter.button")}
+            </Button>
           </div>
 
           <div className="mt-6 text-center text-muted-foreground">

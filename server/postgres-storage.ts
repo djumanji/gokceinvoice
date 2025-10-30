@@ -1,7 +1,7 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
 import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject } from '@shared/schema';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, sql, lte } from 'drizzle-orm';
 
 // Initialize PostgreSQL connection
 let connectionString: string | undefined;
@@ -57,7 +57,7 @@ export class PgStorage {
       'email', 'username', 'password', 'provider', 'providerId',
       'isEmailVerified', 'emailVerificationToken', 'emailVerificationExpires',
       'passwordResetToken', 'passwordResetExpires', 'name', 'companyName',
-      'address', 'phone', 'taxOfficeId', 'createdAt', 'updatedAt'
+      'address', 'phone', 'taxOfficeId', 'isProspect', 'createdAt', 'updatedAt'
     ];
     
     const insertData: any = {};
@@ -406,6 +406,32 @@ export class PgStorage {
     const result = await this.db.delete(projects)
       .where(eq(projects.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Scheduler-specific methods (no user ID checks for background processing)
+  async getClient(id: string): Promise<Client | undefined> {
+    const result = await this.db.select().from(clients).where(eq(clients.id, id));
+    return result[0];
+  }
+
+  async getScheduledInvoicesDue(): Promise<Invoice[]> {
+    return await this.db.select()
+      .from(invoices)
+      .where(and(
+        eq(invoices.status, 'scheduled'),
+        lte(invoices.scheduledDate, new Date())
+      ));
+  }
+
+  async getScheduledInvoicesCount(): Promise<number> {
+    const result = await this.db.$count(
+      invoices,
+      and(
+        eq(invoices.status, 'scheduled'),
+        lte(invoices.scheduledDate, new Date())
+      )
+    );
+    return result;
   }
 }
 

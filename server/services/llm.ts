@@ -70,7 +70,7 @@ export async function extractLeadFieldsViaLLM(userMessage: string, opts?: { hist
         date.setMonth(date.getMonth() + 1);
       } else if (match[1] === 'this weekend') {
         date = new Date();
-        const daysUntilWeekend = (6 - date.getDay()) % 7; // Saturday
+        let daysUntilWeekend = (6 - date.getDay()) % 7; // Saturday
         if (daysUntilWeekend === 0) daysUntilWeekend = 7; // Next Saturday if today is Saturday
         date.setDate(date.getDate() + daysUntilWeekend);
       } else if (match[1] && match[2]) {
