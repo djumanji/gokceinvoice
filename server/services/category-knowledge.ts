@@ -26,7 +26,9 @@ function loadAll(): Record<string, CategoryKnowledge> {
       result[slug] = json;
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.warn(`[category-knowledge] Failed to load ${file}:`, err);
+      // Use safe logging to prevent format string attacks
+      const safeFile = String(file || 'unknown');
+      console.warn('[category-knowledge] Failed to load file:', safeFile, err);
     }
   }
   return result;

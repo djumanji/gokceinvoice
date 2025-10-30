@@ -70,12 +70,19 @@ export const uploadLogo = asyncHandler(async (req: Request, res: Response) => {
  */
 export const serveFile = asyncHandler(async (req: Request, res: Response) => {
   const filename = req.params.filename;
+  
+  // Security: Validate filename to prevent path traversal
+  if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    throw new AppError(403, 'Invalid filename');
+  }
+  
   const uploadsDir = path.join(process.cwd(), 'attached_assets');
   const filePath = path.join(uploadsDir, filename);
 
-  // Security: prevent path traversal
+  // Security: prevent path traversal - ensure normalized path is within uploads directory
   const normalizedPath = path.normalize(filePath);
-  if (!normalizedPath.startsWith(path.normalize(uploadsDir))) {
+  const normalizedDir = path.normalize(uploadsDir);
+  if (!normalizedPath.startsWith(normalizedDir)) {
     throw new AppError(403, 'Forbidden');
   }
 

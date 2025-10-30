@@ -8,6 +8,16 @@ import { insertUserSchema } from '@shared/schema';
 import { z } from 'zod';
 import { sendVerificationEmail, sendPasswordResetEmail } from './services/email-service';
 
+/**
+ * Dummy bcrypt hash used for timing attack prevention.
+ * This is intentionally NOT a real password hash - it's used when a user doesn't exist
+ * to ensure constant-time comparison and prevent user enumeration attacks.
+ * 
+ * Semgrep will flag this as a hard-coded secret, but it's intentional for security.
+ */
+// nosemgrep: generic.secrets.security.detected-bcrypt-hash.detected-bcrypt-hash
+const DUMMY_PASSWORD_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+
 // Rate limiter for authentication endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -134,7 +144,9 @@ export function registerAuthRoutes(app: Express) {
 
       // Always perform bcrypt comparison to prevent timing attacks
       // Use a dummy hash if user doesn't exist
-      const passwordHash = user?.password || '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'; // invalid hash
+      // This is intentional for security - generates a constant-time comparison
+      // even when user doesn't exist to prevent user enumeration attacks
+      const passwordHash = user?.password || DUMMY_PASSWORD_HASH;
       console.log('[Login] Comparing password');
       const isValid = await comparePassword(password, passwordHash);
 

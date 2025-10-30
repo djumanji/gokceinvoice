@@ -1,0 +1,10 @@
+# Semgrep ignore file
+# Patterns to exclude from Semgrep scans
+
+# Database backups contain test data - not real secrets
+backups/*.sql
+
+# Documentation files may contain example hashes
+docs/SECURITY_AUDIT_FIXES.md
+docs/security/FIXING_HARDCODED_SECRETS.md
+

@@ -11,6 +11,9 @@ test-results/
 playwright-report/
 playwright/.cache/
 
+# Database backups (may contain sensitive data)
+backups/*.sql
+
 # Documentation files with sensitive info
 *_SETUP.md
 *_READY_TO_USE.md

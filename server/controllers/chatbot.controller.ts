@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { asyncHandler, AppError } from '../middleware/error.middleware';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
+import { escapeHtml } from '../sanitize';
 
 // Rate limiters
 export const sessionLimiter = rateLimit({
@@ -184,11 +185,16 @@ class ChatbotController {
 
     // 4) Send confirmation email (best-effort)
     try {
+      // Sanitize user input to prevent XSS attacks
+      const safeTitle = escapeHtml(body.title);
+      const safeDescription = escapeHtml(body.description);
+      const safeZip = escapeHtml(body.customer_zip_code);
+      
       const summaryHtml = `
         <ul style="margin:0; padding-left:16px;">
-          <li><strong>Title:</strong> ${body.title}</li>
-          <li><strong>Description:</strong> ${body.description}</li>
-          <li><strong>ZIP:</strong> ${body.customer_zip_code}</li>
+          <li><strong>Title:</strong> ${safeTitle}</li>
+          <li><strong>Description:</strong> ${safeDescription}</li>
+          <li><strong>ZIP:</strong> ${safeZip}</li>
         </ul>`;
       const url = `${process.env.APP_DOMAIN || 'http://localhost:3000'}/verify-email`;
       await sendLeadConfirmationEmail({ 

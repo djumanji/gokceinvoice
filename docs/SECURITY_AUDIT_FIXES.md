@@ -86,7 +86,11 @@ This allowed attackers to enumerate valid email addresses.
 **Fix Applied**:
 ```typescript
 // Always perform bcrypt comparison to prevent timing attacks
-const passwordHash = user?.password || '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+// NOTE: This is a DUMMY hash intentionally used for security purposes
+// to prevent timing attacks. It is NOT a real password hash.
+// nosemgrep: generic.secrets.security.detected-bcrypt-hash.detected-bcrypt-hash
+const DUMMY_PASSWORD_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+const passwordHash = user?.password || DUMMY_PASSWORD_HASH;
 const isValid = await comparePassword(password, passwordHash);
 
 // Check both conditions after timing-constant operation

@@ -17,6 +17,38 @@ export function sanitize(input: string | null | undefined): string | null {
 }
 
 /**
+ * Sanitize HTML content for email templates (allows safe HTML tags)
+ * @param input - The HTML string to sanitize
+ * @returns Sanitized HTML safe for email templates
+ */
+export function sanitizeHtml(input: string | null | undefined): string {
+  if (!input) return '';
+  if (typeof input !== 'string') return '';
+
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: ['ul', 'li', 'strong', 'em', 'p', 'br', 'span'],
+    ALLOWED_ATTR: ['style'],
+    USE_PROFILES: { html: true },
+  });
+}
+
+/**
+ * Escape HTML entities for safe text insertion
+ * @param input - The string to escape
+ * @returns Escaped string safe for HTML insertion
+ */
+export function escapeHtml(input: string | null | undefined): string {
+  if (!input) return '';
+  if (typeof input !== 'string') return '';
+
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true,
+  });
+}
+
+/**
  * Sanitize an object's string properties
  * @param obj - Object with properties to sanitize
  * @param fields - Array of field names to sanitize

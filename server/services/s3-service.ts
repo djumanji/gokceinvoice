@@ -163,8 +163,22 @@ export async function deleteFromS3(key: string): Promise<void> {
     const parts = key.split('/');
     const fileName = parts[parts.length - 1];
     
+    // Security: Validate filename to prevent path traversal
+    if (!fileName || fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+      console.error('Invalid filename detected:', fileName);
+      return;
+    }
+    
     if (fileName) {
       const filePath = path.join(DEV_UPLOADS_DIR, fileName);
+      
+      // Additional security: Ensure resolved path is within the uploads directory
+      const normalizedPath = path.normalize(filePath);
+      const normalizedDir = path.normalize(DEV_UPLOADS_DIR);
+      if (!normalizedPath.startsWith(normalizedDir)) {
+        console.error('Path traversal attempt detected:', fileName);
+        return;
+      }
       try {
         await fs.unlink(filePath);
         return;
@@ -192,8 +206,23 @@ export async function deleteFromS3(key: string): Promise<void> {
     // If S3 deletion fails, try local as fallback (in case file was uploaded locally but key was stored)
     const parts = key.split('/');
     const fileName = parts[parts.length - 1];
+    
+    // Security: Validate filename to prevent path traversal
+    if (!fileName || fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+      console.error('Invalid filename detected:', fileName);
+      return;
+    }
+    
     if (fileName) {
       const filePath = path.join(DEV_UPLOADS_DIR, fileName);
+      
+      // Additional security: Ensure resolved path is within the uploads directory
+      const normalizedPath = path.normalize(filePath);
+      const normalizedDir = path.normalize(DEV_UPLOADS_DIR);
+      if (!normalizedPath.startsWith(normalizedDir)) {
+        console.error('Path traversal attempt detected:', fileName);
+        return;
+      }
       try {
         await fs.unlink(filePath);
         console.log('Deleted from local storage as fallback');

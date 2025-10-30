@@ -6,6 +6,7 @@ import { validateCsrf } from "./index";
 import multer from "multer";
 import { requireAuth } from "./middleware/auth.middleware";
 import { sanitizeBody, SanitizationFields } from "./middleware/sanitization.middleware";
+import { escapeHtml } from "./sanitize";
 import {
   clientController,
   invoiceController,
@@ -242,11 +243,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 4) Send confirmation email (best-effort)
       try {
+        // Sanitize user input to prevent XSS attacks
+        const safeTitle = escapeHtml(body.title);
+        const safeDescription = escapeHtml(body.description);
+        const safeZip = escapeHtml(body.customer_zip_code);
+        
         const summaryHtml = `
           <ul style="margin:0; padding-left:16px;">
-            <li><strong>Title:</strong> ${body.title}</li>
-            <li><strong>Description:</strong> ${body.description}</li>
-            <li><strong>ZIP:</strong> ${body.customer_zip_code}</li>
+            <li><strong>Title:</strong> ${safeTitle}</li>
+            <li><strong>Description:</strong> ${safeDescription}</li>
+            <li><strong>ZIP:</strong> ${safeZip}</li>
           </ul>`;
         const url = `${process.env.APP_DOMAIN || 'http://localhost:3000'}/verify-email`;
         await sendLeadConfirmationEmail({ email: body.customer_email, customerName: body.customer_name, summaryHtml, confirmationUrl: url });
