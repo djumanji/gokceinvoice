@@ -28,3 +28,20 @@ GET_*.md
 NEXT_STEPS_*.md
 S3_*.md
 WHY_*.md
+
+# Mobile/React Native specific
+mobile/.expo/
+mobile/.expo-shared/
+mobile/dist/
+mobile/web-build/
+mobile/.env.local
+mobile/.env.*.local
+mobile/ios/
+mobile/android/
+mobile/*.jks
+mobile/*.p8
+mobile/*.p12
+mobile/*.key
+mobile/*.mobileprovision
+mobile/*.orig.*
+mobile/coverage/

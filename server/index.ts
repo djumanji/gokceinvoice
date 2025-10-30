@@ -123,6 +123,12 @@ export function validateCsrf(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
+  // Skip CSRF for JWT token-based requests (mobile app)
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
   const token = req.headers['x-csrf-token'] || req.headers['csrf-token'];
   const secret = req.session.csrfSecret;
 

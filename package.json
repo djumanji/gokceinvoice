@@ -16,7 +16,11 @@
     "test:bug-report": "tsx scripts/generate-bug-report.ts",
     "test:sync-linear": "tsx scripts/sync-bugs-to-linear.ts",
     "test:full": "npm run test:bug-report && npm run test:sync-linear",
-    "test:watch": "tsx scripts/watch-tests.ts"
+    "test:watch": "tsx scripts/watch-tests.ts",
+    "mobile:install": "cd mobile && npm install",
+    "mobile:start": "cd mobile && npm start",
+    "mobile:ios": "cd mobile && npm run ios",
+    "mobile:android": "cd mobile && npm run android"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.918.0",
