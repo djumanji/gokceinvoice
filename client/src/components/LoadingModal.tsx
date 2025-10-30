@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { DOTLOTTIE_WASM_URL } from "@/lib/lottie";
 
 interface LoadingModalProps {
   isVisible: boolean;
@@ -24,6 +25,7 @@ export function LoadingModal({ isVisible }: LoadingModalProps) {
                 loop
                 autoplay
                 className="w-full h-full"
+                wasmUrl={DOTLOTTIE_WASM_URL}
               />
             </div>
 

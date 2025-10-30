@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { DOTLOTTIE_WASM_URL } from "@/lib/lottie";
 import { useTheme } from "@/components/ThemeProvider";
 import { Moon, Sun } from "lucide-react";
 // import { trackEvent, identifyUser } from "@/lib/mixpanel";
@@ -132,6 +133,7 @@ export default function Register() {
           loop
           autoplay
           className="w-full h-full object-cover"
+          wasmUrl={DOTLOTTIE_WASM_URL}
         />
       </div>
 

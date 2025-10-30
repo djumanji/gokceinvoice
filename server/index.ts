@@ -28,7 +28,8 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      // Allow WebAssembly evaluation needed by dotlottie player
+      scriptSrc: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: [
         "'self'",
