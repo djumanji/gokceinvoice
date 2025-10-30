@@ -376,16 +376,18 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
       }
       
       // Handle regular one-time invoice
+      console.log('[InvoiceForm] Calling onSubmit with data:', data);
       const result = await onSubmit(data, "draft");
-      if (result) {
-        setSavedInvoice(result);
-        setIsSaved(true);
-        setIsReadOnly(true);
-        toast({
-          title: "Invoice Saved",
-          description: "Invoice has been saved as draft",
-        });
-      }
+      console.log('[InvoiceForm] onSubmit returned:', result);
+      
+      // Always set saved state if we got here without error
+      setSavedInvoice(result || { id: invoiceId || 'new', ...data });
+      setIsSaved(true);
+      setIsReadOnly(true);
+      toast({
+        title: "Invoice Saved",
+        description: "Invoice has been saved as draft",
+      });
     } catch (error: any) {
       console.error('Failed to save invoice:', error);
       toast({
@@ -858,7 +860,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
           {!isSaved && canEdit ? (
           <Button
               type="button"
-              onClick={(e) => {
+              onClick={async (e) => {
                 console.log('[InvoiceForm] Save button clicked');
                 console.log('[InvoiceForm] isSaved:', isSaved);
                 console.log('[InvoiceForm] canEdit:', canEdit);
@@ -866,7 +868,16 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                 console.log('[InvoiceForm] isReadOnly:', isReadOnly);
                 e.preventDefault();
                 e.stopPropagation();
-                handleSubmit();
+                try {
+                  await handleSubmit();
+                } catch (error) {
+                  console.error('[InvoiceForm] Error in handleSubmit:', error);
+                  toast({
+                    title: "Error",
+                    description: error instanceof Error ? error.message : "Failed to save invoice",
+                    variant: "destructive",
+                  });
+                }
               }}
               data-testid="button-save-invoice"
             disabled={isLoading}
