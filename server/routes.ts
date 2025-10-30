@@ -365,6 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // EXPENSE ROUTES
   // ============================================================================
   app.get("/api/expenses", expenseController.list);
+  app.get("/api/expenses/analytics", expenseController.getAnalytics);
   app.get("/api/expenses/:id", expenseController.getOne);
   app.post(
     "/api/expenses",
