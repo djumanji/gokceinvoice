@@ -233,13 +233,20 @@ export function registerAuthRoutes(app: Express) {
       }
 
       // Find user by email or username
-      console.log('[Login] Looking up user by email or username');
+      console.log('[Login] Looking up user by email or username:', email);
       let user = await storage.getUserByEmail(email);
+      console.log('[Login] User found by email:', user ? 'YES' : 'NO');
       
       // If not found by email, try finding by username
       if (!user && !email.includes('@')) {
+        console.log('[Login] Trying username lookup for:', email);
         // If input doesn't look like an email, try username lookup
-        user = await (storage as any).getUserByUsername?.(email);
+        if (storage.getUserByUsername) {
+          user = await storage.getUserByUsername(email);
+          console.log('[Login] User found by username:', user ? 'YES' : 'NO');
+        } else {
+          console.log('[Login] getUserByUsername method not available');
+        }
       }
 
       // Always perform bcrypt comparison to prevent timing attacks

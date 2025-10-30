@@ -5,6 +5,7 @@ import { PgStorage } from './postgres-storage';
 export interface IStorage {
   // Users
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByUsername?(username: string): Promise<User | undefined>;
   getUserById(id: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getUserByProvider(provider: string, providerId: string): Promise<User | undefined>;
