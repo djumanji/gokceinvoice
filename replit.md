@@ -113,7 +113,7 @@ Preferred communication style: Simple, everyday language.
 - Automatic file cleanup when records are deleted
 
 **Database Hosting:**
-- Replit's built-in PostgreSQL database (recommended for Replit deployments)
+- Supabase PostgreSQL (recommended for Replit deployments - free tier available)
 - Compatible with standard PostgreSQL connection strings
 - Can use local PostgreSQL via Docker (docker-compose.yml provided)
 

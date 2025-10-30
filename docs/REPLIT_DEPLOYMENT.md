@@ -26,24 +26,22 @@ This guide will walk you through deploying your Invoice Management System to Rep
 2. Upload your entire project folder
 3. Wait for Replit to set up the environment
 
-### Step 2: Set Up PostgreSQL Database
+### Step 2: Set Up Supabase PostgreSQL Database
 
-Replit provides a built-in PostgreSQL database:
+Use Supabase's free PostgreSQL database (Replit no longer provides built-in PostgreSQL):
 
-1. In your Repl, click **"Tools"** (left sidebar)
-2. Select **"Database"** → **"PostgreSQL"**
-3. Click **"Create Database"**
-4. Replit will automatically set the `DATABASE_URL` environment variable
+1. Go to [supabase.com](https://supabase.com) and create a free account
+2. Click **"New Project"** and fill in your project details
+3. Wait for the database to be created (takes a few minutes)
+4. Go to **Settings** → **Database** and copy the connection string
+5. In your Replit, go to **Tools** → **Secrets** and add:
+   - `DATABASE_URL` = your Supabase connection string
 
-**Manual Database Setup (if needed):**
-```bash
-# In the Replit Shell
-psql $DATABASE_URL
-
-# Then run migrations
-\i migrations/001_critical_indexes.sql
-\i migrations/004_invoice_number_fix.sql
-```
+**Alternative: Use Replit DB (key-value only)**
+If you prefer to use Replit's built-in database:
+1. In your Replit, click **"Tools"** (left sidebar)
+2. Select **"Database"** → **"Replit DB"**
+3. Note: This is a key-value store, not PostgreSQL - requires code changes
 
 ### Step 3: Configure Environment Variables
 

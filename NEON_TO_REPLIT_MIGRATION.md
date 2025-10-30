@@ -12,58 +12,71 @@ This guide will help you migrate your Invoice Management System from Neon Postgr
 
 ## 🚀 Choose Your Migration Path
 
-### Option 1: Fresh Setup (Recommended if no production data)
-If you have no important data in your current database, use the fresh setup script.
+Since Replit no longer provides built-in PostgreSQL, you'll need to use an external PostgreSQL provider.
+
+### Option 1: Fresh Setup with Supabase (Recommended if no production data)
+Use Supabase's free PostgreSQL database.
 
 **Steps:**
-1. Set up Replit PostgreSQL (Tools → Database → PostgreSQL → Create Database)
-2. Run: `./scripts/setup-fresh-replit-db.sh`
-3. Set `SESSION_SECRET` in Replit Secrets
-4. Run your application
+1. Create free Supabase account at [supabase.com](https://supabase.com)
+2. Create new project and get connection string
+3. Set `DATABASE_URL` in Replit Secrets to Supabase connection string
+4. Run: `./scripts/setup-fresh-replit-db.sh`
+5. Set `SESSION_SECRET` in Replit Secrets
+6. Run your application
 
-### Option 2: Data Migration (If you have existing data)
-If you need to migrate existing data from Neon, use the full migration script.
+### Option 2: Data Migration with Supabase (If you have existing data)
+Migrate existing data from Neon to Supabase.
 
 **Steps:**
-1. Set `NEON_DATABASE_URL` in Replit Secrets (temporarily)
-2. Set up Replit PostgreSQL (Tools → Database → PostgreSQL → Create Database)
-3. Run: `./scripts/migrate-to-replit-postgres.sh`
-4. Remove `NEON_DATABASE_URL` from secrets after migration
+1. Create free Supabase account at [supabase.com](https://supabase.com)
+2. Create new project and get connection string
+3. Set `DATABASE_URL` in Replit Secrets to Supabase connection string
+4. Set `NEON_DATABASE_URL` in Replit Secrets (temporarily)
+5. Run: `./scripts/migrate-to-replit-postgres.sh`
+6. Remove `NEON_DATABASE_URL` from secrets after migration
 
-## 🚀 Fresh Setup (No Existing Data)
+## 🚀 Fresh Setup with Supabase (No Existing Data)
 
 ### Prerequisites
 
 1. **Replit environment ready** - Your code should be deployed to Replit
-2. **Replit PostgreSQL enabled** - Go to Tools → Database → PostgreSQL → Create Database
+2. **Supabase account** - Free at [supabase.com](https://supabase.com)
 
 ### Step-by-Step Setup
 
-1. **Enable Replit PostgreSQL:**
-   - In your Replit, go to Tools → Database → PostgreSQL
-   - Click "Create Database"
-   - Replit will automatically set the `DATABASE_URL` environment variable
+1. **Create Supabase Project:**
+   - Go to [supabase.com](https://supabase.com) and sign up (free)
+   - Click "New Project"
+   - Choose your organization and project name
+   - Select a database password (save this!)
+   - Choose your region (pick one close to your users)
+   - Click "Create new project"
 
-2. **Run the fresh setup script:**
+2. **Get Your Connection String:**
+   - In your Supabase dashboard, go to Settings → Database
+   - Copy the "Connection string" (it looks like: `postgresql://postgres.xxxx:password@aws-0-xxx-1.pooler.supabase.com:6543/postgres`)
+   - Note: Use the "Connection pooling" version for better performance
+
+3. **Set Environment Variables in Replit Secrets:**
+   - Go to your Replit → Tools → Secrets
+   - Add: `DATABASE_URL` = your Supabase connection string
+   - Add: `SESSION_SECRET` = `openssl rand -base64 32` (run this in shell)
+   - Add: `NODE_ENV` = `production`
+
+4. **Run the fresh setup script:**
    ```bash
    # In your Replit shell
    chmod +x scripts/setup-fresh-replit-db.sh
    ./scripts/setup-fresh-replit-db.sh
    ```
 
-3. **Set required environment variables in Replit Secrets:**
-   ```bash
-   SESSION_SECRET=<generate-with-openssl rand -base64 32>
-   NODE_ENV=production
-   ```
-   (Optional: Add OAuth credentials if you want social login)
-
-4. **Test your application:**
+5. **Test your application:**
    - Click the "Run" button in Replit
    - Register a new user to test the system
    - Create an invoice to verify everything works
 
-That's it! Your application is now running on Replit PostgreSQL.
+That's it! Your application is now running on Supabase PostgreSQL.
 
 ## 🔧 Manual Migration (Alternative)
 
