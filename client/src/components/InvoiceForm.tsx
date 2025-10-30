@@ -217,6 +217,28 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
 
   const handleSubmit = async () => {
     console.log('[InvoiceForm] handleSubmit called');
+    console.log('[InvoiceForm] Line items:', lineItems);
+    console.log('[InvoiceForm] Selected client:', form.watch("clientId"));
+    
+    // Check if line items exist
+    if (!lineItems || lineItems.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one line item",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if client is selected
+    if (!form.watch("clientId")) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a client",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Trigger validation which will show inline errors automatically
     const formIsValid = await form.trigger();
@@ -835,6 +857,7 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
         <div className="flex gap-2 flex-wrap">
           {!isSaved && canEdit ? (
           <Button
+              type="button"
               onClick={handleSubmit}
               data-testid="button-save-invoice"
             disabled={isLoading}
