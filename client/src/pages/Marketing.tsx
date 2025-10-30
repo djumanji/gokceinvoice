@@ -162,7 +162,7 @@ export default function Marketing() {
     const target = e.target as Node;
     if (headerRef.current && !headerRef.current.contains(target)) {
       // Check if click is on the menu button
-      const menuButton = document.querySelector('[aria-label="menu"]');
+      const menuButton = document.querySelector('[aria-controls="collapsed-header-items"]');
       if (menuButton && menuButton.contains(target)) {
         return;
       }
@@ -212,22 +212,13 @@ export default function Marketing() {
               <span className="text-white font-bold text-lg">H</span>
             </div>
         </a>
-        
-        <nav id="navigation" aria-label="Main navigation"
-        
-        className
-        =
-        {``}
-        ></nav>
 
         <div
           ref={headerRef}
-          className={`collapsible-header max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:opacity-0 max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-foreground max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300 ${
-            window.innerWidth < RESPONSIVE_WIDTH ? "" : "flex gap-1 w-full bg-inherit place-content-center overflow-hidden"
-          }`}
+          className="collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:opacity-0 max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-foreground max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300"
           id="collapsed-header-items"
         >
-          <nav aria-label="Primary" className="flex h-full w-max gap-5 text-base text-foreground max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
+          <nav id="navigation" aria-label="Primary navigation" className="flex h-full w-max gap-5 text-base text-foreground max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
             <a 
               href="#features" 
               onClick={(e) => handleAnchorClick(e, "#features")}

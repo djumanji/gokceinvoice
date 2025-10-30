@@ -159,6 +159,21 @@ export function registerAuthRoutes(app: Express) {
     } catch (error) {
       console.error('Registration error:', error);
       console.error('Error details:', error instanceof Error ? error.message : String(error));
+      
+      // Check for database schema errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isDatabaseError = errorMessage.includes('does not exist') || 
+                              errorMessage.includes('relation') ||
+                              errorMessage.includes('table');
+      
+      if (isDatabaseError) {
+        return res.status(500).json({
+          error: 'Database tables not initialized. Please run database migrations.',
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+          hint: 'Run: npm run db:setup or bash migrations/run-all.sh'
+        });
+      }
+      
       res.status(500).json({
         error: 'An error occurred during registration. Please try again.',
         details: process.env.NODE_ENV === 'development' ? String(error) : undefined

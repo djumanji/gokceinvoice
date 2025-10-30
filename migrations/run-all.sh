@@ -39,6 +39,15 @@ echo "✅ Connection successful"
 echo ""
 
 # Run migrations
+# Start with the base schema that creates all tables
+echo "📊 Running migration: 000_create_schema.sql (BASE SCHEMA)"
+if psql "$DATABASE_URL" -f migrations/000_create_schema.sql; then
+    echo "✅ Base schema created - all tables created"
+else
+    echo "⚠️  Base schema may already exist - continuing..."
+fi
+echo ""
+
 echo "📊 Running migration: 001_critical_indexes.sql"
 if psql "$DATABASE_URL" -f migrations/001_critical_indexes.sql; then
     echo "✅ Critical indexes created"
@@ -172,6 +181,14 @@ if psql "$DATABASE_URL" -f migrations/016_add_invoice_scheduling.sql; then
     echo "✅ Invoice scheduling added"
 else
     echo "⚠️  Invoice scheduling may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 017_add_prospect_system.sql"
+if psql "$DATABASE_URL" -f migrations/017_add_prospect_system.sql; then
+    echo "✅ Prospect system added"
+else
+    echo "⚠️  Prospect system may already exist - continuing..."
 fi
 echo ""
 
