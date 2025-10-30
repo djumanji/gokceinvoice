@@ -237,16 +237,9 @@ export function registerAuthRoutes(app: Express) {
       let user = await storage.getUserByEmail(email);
       
       // If not found by email, try finding by username
-      if (!user) {
-        // Try to find by username - we'll need to query all users and filter
-        // For now, handle special case: if email looks like a username (no @), check username field
-        if (!email.includes('@')) {
-          // This is a simplified approach - in production you might want a getUserByUsername method
-          const allUsers = await storage.getAllUsers?.(); // This might not exist
-          if (allUsers) {
-            user = allUsers.find((u: any) => u.username === email || u.email === email);
-          }
-        }
+      if (!user && !email.includes('@')) {
+        // If input doesn't look like an email, try username lookup
+        user = await (storage as any).getUserByUsername?.(email);
       }
 
       // Always perform bcrypt comparison to prevent timing attacks
