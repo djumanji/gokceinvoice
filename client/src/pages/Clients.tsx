@@ -75,7 +75,7 @@ export default function Clients() {
         prevProjectIdsRef.current = "";
       }
     }
-  }, [editingClient?.id, projectIdsString, clientProjects]); // Use stable projectIdsString instead of clientProjects array
+  }, [editingClient?.id, projectIdsString]); // Only depend on stable values
 
   const { data: invoices = [] } = useQuery<any[]>({
     queryKey: ["/api/invoices"],
