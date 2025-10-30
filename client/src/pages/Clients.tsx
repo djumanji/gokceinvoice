@@ -46,6 +46,7 @@ export default function Clients() {
   });
   const [projects, setProjects] = useState<Project[]>([]);
   const prevProjectIdsRef = useRef<string>("");
+  const [newProject, setNewProject] = useState({ name: "", description: "" });
 
   // Fetch projects for editing client
   const { data: clientProjects = [] } = useQuery<Project[]>({
