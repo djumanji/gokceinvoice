@@ -12,6 +12,7 @@ import * as projectController from './project.controller';
 import * as userController from './user.controller';
 import * as uploadController from './upload.controller';
 import * as chatbotController from './chatbot.controller';
+import * as recurringInvoiceController from './recurring-invoice.controller';
 
 export {
   clientController,
@@ -23,5 +24,6 @@ export {
   userController,
   uploadController,
   chatbotController,
+  recurringInvoiceController,
 };
 

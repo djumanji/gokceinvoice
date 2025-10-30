@@ -13,6 +13,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { errorHandler } from "./middleware/error.middleware";
 import * as cron from "node-cron";
 import { processScheduledInvoices } from "./services/invoice-scheduler.service";
+import { processRecurringInvoices } from "./services/recurring-invoice.service";
 
 const PgStore = connectPgSimple(session);
 
@@ -218,6 +219,21 @@ app.use((req, res, next) => {
   });
 
   console.log('[Cron] Scheduled invoice processing job started (runs every hour)');
+
+  // Set up cron job for processing recurring invoices daily at midnight
+  cron.schedule('0 0 * * *', async () => {
+    console.log('[Cron] Running recurring invoice processing...');
+    try {
+      const results = await processRecurringInvoices();
+      if (results.processed > 0) {
+        console.log(`[Cron] Processed ${results.processed} recurring invoices: ${results.generated} generated, ${results.errors} errors`);
+      }
+    } catch (error) {
+      console.error('[Cron] Error processing recurring invoices:', error);
+    }
+  });
+
+  console.log('[Cron] Recurring invoice processing job started (runs daily at midnight)');
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
