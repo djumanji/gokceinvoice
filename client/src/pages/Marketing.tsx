@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
@@ -149,18 +149,9 @@ export default function Marketing() {
     return () => window.removeEventListener("resize", handleResize);
   }, [isHeaderCollapsed]);
 
-  const toggleHeader = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    
-    const width = window.innerWidth;
-    console.log('Toggle clicked:', { width, RESPONSIVE_WIDTH, isMobile: width < RESPONSIVE_WIDTH, currentState: isHeaderCollapsed });
-    
-    if (width < RESPONSIVE_WIDTH) {
-      const newState = !isHeaderCollapsed;
-      console.log('Setting state to:', newState);
-      setIsHeaderCollapsed(newState);
+  const toggleHeader = () => {
+    if (window.innerWidth < RESPONSIVE_WIDTH) {
+      setIsHeaderCollapsed(prev => !prev);
     }
   };
 
@@ -181,36 +172,35 @@ export default function Marketing() {
     }
   }, [isHeaderCollapsed]);
 
-  const handleClickOutside = useCallback((e: MouseEvent) => {
-    const target = e.target as Node;
-    const menuButton = document.querySelector('button[aria-controls="collapsed-header-items"]');
-    
-    // Don't close if clicking on the menu button or its children
-    if (menuButton && (menuButton === target || menuButton.contains(target))) {
-      return;
-    }
-    
-    if (headerRef.current && !headerRef.current.contains(target)) {
-      if (window.innerWidth < RESPONSIVE_WIDTH) {
-        setIsHeaderCollapsed(true);
-      }
-    }
-  }, []);
-
+  // Close menu when clicking outside (only on mobile)
   useEffect(() => {
-    // Only add click outside listener when menu is open
     if (!isHeaderCollapsed && window.innerWidth < RESPONSIVE_WIDTH) {
-      // Use a longer delay to avoid immediate closure on toggle
+      const handleClickOutside = (e: MouseEvent) => {
+        const target = e.target as Node;
+        const menuButton = document.querySelector('button[aria-controls="collapsed-header-items"]');
+        
+        // Don't close if clicking on the menu button itself
+        if (menuButton && (menuButton === target || menuButton.contains(target))) {
+          return;
+        }
+        
+        // Close if clicking outside the menu
+        if (headerRef.current && !headerRef.current.contains(target)) {
+          setIsHeaderCollapsed(true);
+        }
+      };
+      
+      // Use setTimeout to avoid immediate closure when opening
       const timeoutId = setTimeout(() => {
-        document.addEventListener("click", handleClickOutside, true);
-      }, 300);
+        document.addEventListener("mousedown", handleClickOutside);
+      }, 100);
       
       return () => {
         clearTimeout(timeoutId);
-        document.removeEventListener("click", handleClickOutside, true);
+        document.removeEventListener("mousedown", handleClickOutside);
       };
     }
-  }, [isHeaderCollapsed, handleClickOutside]);
+  }, [isHeaderCollapsed]);
 
   const reviews = [
     {
@@ -293,19 +283,11 @@ export default function Marketing() {
         
         <button
           className="absolute right-3 top-3 z-[100] text-3xl text-gray-900 lg:hidden cursor-pointer hover:bg-gray-100 rounded p-1 transition-colors"
-          onClick={(e) => {
-            console.log('Button onClick triggered');
-            toggleHeader(e);
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            console.log('Button onMouseDown triggered');
-          }}
+          onClick={toggleHeader}
           type="button"
           aria-label={isHeaderCollapsed ? "Open menu" : "Close menu"}
           aria-controls="collapsed-header-items"
           aria-expanded={!isHeaderCollapsed}
-          style={{ zIndex: 1000 }}
         >
           {isHeaderCollapsed ? <Menu className="h-8 w-8" /> : <X className="h-8 w-8" />}
         </button>
