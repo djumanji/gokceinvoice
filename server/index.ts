@@ -117,7 +117,7 @@ app.get('/api/csrf-token', (req, res) => {
 });
 
 // CSRF validation middleware
-export function validateCsrf(req: Request, res: Response, next: NextFunction) {
+export function validateCsrf(req: Request | any, res: Response, next: NextFunction) {
   // Skip CSRF for GET, HEAD, OPTIONS
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();

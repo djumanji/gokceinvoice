@@ -40,7 +40,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
  * Extract userId from session or JWT token without requiring authentication
  * Useful for optional auth scenarios
  */
-export function extractUserId(req: Request): string | null {
+export function extractUserId(req: Request | any): string | null {
   // Check for JWT token first
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {

@@ -72,7 +72,7 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: 'User already exists' });
       }
 
-      let hashedPassword: string | null = null;
+      let hashedPassword: string | undefined = undefined;
       let verificationToken: string | null = null;
       let verificationExpires: Date | null = null;
       let emailVerified = false;
