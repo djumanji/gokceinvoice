@@ -216,20 +216,35 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
   };
 
   const handleSubmit = async () => {
+    console.log('[InvoiceForm] handleSubmit called');
+    
     // Trigger validation which will show inline errors automatically
     const formIsValid = await form.trigger();
+    console.log('[InvoiceForm] Form validation result:', formIsValid);
+    
     if (!formIsValid) {
+      // Get form errors to debug
+      const errors = form.formState.errors;
+      console.log('[InvoiceForm] Form errors:', errors);
+      
       // Validation errors will be shown inline via FormMessage components
       // Scroll to first error field
       const firstErrorField = document.querySelector('[data-invalid="true"], .text-destructive');
       if (firstErrorField) {
         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // Try to find error message elements
+        const errorMessages = document.querySelectorAll('.text-destructive');
+        if (errorMessages.length > 0) {
+          errorMessages[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
       return;
     }
 
     try {
       const data = getFormData();
+      console.log('[InvoiceForm] Form data:', data);
       
       // Handle recurring invoices
       if (invoiceType === "recurring" && !invoiceId) {
