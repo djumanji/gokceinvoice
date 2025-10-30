@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarReveal } from "@/components/SidebarReveal";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 import { LoadingModal } from "@/components/LoadingModal";
 import Dashboard from "@/pages/Dashboard";
 import Invoices from "@/pages/Invoices";
@@ -21,6 +22,7 @@ import Expenses from "@/pages/Expenses";
 import ExpenseReports from "@/pages/ExpenseReports";
 import Onboarding from "@/pages/Onboarding";
 import Login from "@/pages/Login";
+import AdminLogin from "@/pages/AdminLogin";
 import Register from "@/pages/Register";
 import VerifyEmail from "@/pages/VerifyEmail";
 import ResetPassword from "@/pages/ResetPassword";
@@ -32,12 +34,14 @@ import Leads from "@/pages/Leads";
 import NotFound from "@/pages/not-found";
 import LeadCapture from "@/pages/LeadCapture";
 import Waitlist from "@/pages/Waitlist";
+import Admin from "@/pages/Admin";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Marketing} />
       <Route path="/login" component={Login} />
+      <Route path="/admin-login" component={AdminLogin} />
       <Route path="/register" component={Register} />
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/verify-email" component={VerifyEmail} />
@@ -104,6 +108,11 @@ function Router() {
         <ProtectedRoute>
           <BankSettings />
         </ProtectedRoute>
+      </Route>
+      <Route path="/admin">
+        <AdminRoute>
+          <Admin />
+        </AdminRoute>
       </Route>
       <Route component={NotFound} />
     </Switch>

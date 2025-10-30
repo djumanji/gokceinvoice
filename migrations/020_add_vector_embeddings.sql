@@ -110,3 +110,4 @@ $$ LANGUAGE plpgsql;
 --   - 0.5-0.8 = somewhat similar
 --   - <0.5 = not similar
 
+

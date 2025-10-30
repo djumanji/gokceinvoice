@@ -98,6 +98,9 @@ In Replit Secrets (🔒 icon), ensure these are set:
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` - OAuth
 - `AWS_REGION` / `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_S3_BUCKET_NAME` - File uploads
 - `RESEND_API_KEY` - Email sending
+- `VITE_ENABLE_POSTHOG` - Set to `true` to enable PostHog analytics
+- `VITE_POSTHOG_KEY` - PostHog Project API Key (starts with `phc_`)
+- `VITE_POSTHOG_HOST` - PostHog host (default: `https://us.i.posthog.com`)
 
 ### Step 5: Build and Deploy
 

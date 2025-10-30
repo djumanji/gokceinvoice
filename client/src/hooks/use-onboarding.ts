@@ -43,9 +43,12 @@ export function useOnboardingGuard() {
   });
 
   const hasCompanyName = user?.companyName;
+  // Admin users bypass onboarding checks
+  const isAdmin = user?.isAdmin || false;
   // Onboarding is complete if user has company name and at least one client
   // This matches what the onboarding wizard actually creates
-  const isOnboardingComplete = hasCompanyName && clients.length > 0;
+  // Admin users always have onboarding complete
+  const isOnboardingComplete = isAdmin || (hasCompanyName && clients.length > 0);
   const isLoading = userLoading || (!!user && clientsLoading);
 
   return { 

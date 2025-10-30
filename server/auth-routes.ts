@@ -95,6 +95,26 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: 'Password is required for registration' });
       }
 
+      // Validate invite token if provided
+      let validatedInviteToken = null;
+      if (invite_token) {
+        const inviteToken = await storage.getInviteTokenByToken(invite_token);
+
+        if (!inviteToken) {
+          return res.status(400).json({ error: 'Invalid invite code' });
+        }
+
+        if (inviteToken.status === 'used') {
+          return res.status(400).json({ error: 'This invite code has already been used' });
+        }
+
+        if (inviteToken.expiresAt && new Date() > inviteToken.expiresAt) {
+          return res.status(400).json({ error: 'This invite code has expired' });
+        }
+
+        validatedInviteToken = inviteToken;
+      }
+
       // Validate full input
       const validation = insertUserSchema.safeParse({ email, password, username });
       if (!validation.success) {
@@ -124,7 +144,14 @@ export function registerAuthRoutes(app: Express) {
         emailVerificationExpires: verificationExpires,
         marketingOnly: fromMarketing ? false : undefined, // Set to false if from marketing
         isProspect: fromMarketing ? false : undefined,
+        invitedByUserId: validatedInviteToken?.senderUserId,
       });
+
+      // Mark invite token as used if provided
+      if (validatedInviteToken) {
+        await storage.markInviteTokenAsUsed(validatedInviteToken.token);
+        console.log('Invite token marked as used');
+      }
       
       console.log('User created:', { id: user.id, email: user.email });
 
@@ -303,6 +330,7 @@ export function registerAuthRoutes(app: Express) {
           email: user.email,
           username: user.username,
           name: user.name,
+          isAdmin: user.isAdmin || false,
         });
       }
 
@@ -333,7 +361,8 @@ export function registerAuthRoutes(app: Express) {
         companyName: user.companyName,
         address: user.address,
         phone: user.phone,
-        taxOfficeId: user.taxOfficeId
+        taxOfficeId: user.taxOfficeId,
+        isAdmin: user.isAdmin || false,
       });
     } catch (error) {
       console.error('Get user error:', error);

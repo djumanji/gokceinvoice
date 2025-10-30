@@ -15,7 +15,7 @@ const RESPONSIVE_WIDTH = 1024;
 export default function Marketing() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true);
   const headerRef = useRef<HTMLDivElement>(null);
   const [heroEmail, setHeroEmail] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
@@ -66,8 +66,8 @@ export default function Marketing() {
       return;
     }
 
-    // Redirect to registration with email pre-filled and marketing flag
-    setLocation(`/register?email=${encodeURIComponent(trimmedEmail)}&from=marketing`);
+    // Redirect to waitlist with email pre-filled
+    setLocation(`/waitlist?email=${encodeURIComponent(trimmedEmail)}`);
   };
 
   // Handle smooth scrolling to anchor links
@@ -109,97 +109,32 @@ export default function Marketing() {
     });
   };
 
+  // Handle menu state on resize and outside clicks
   useEffect(() => {
-    // Initialize header state based on screen size
-    const initialWidth = window.innerWidth;
-    if (initialWidth < RESPONSIVE_WIDTH) {
-      setIsHeaderCollapsed(true);
-      if (headerRef.current) {
-        headerRef.current.style.width = "0vw";
-        headerRef.current.style.opacity = "0";
-      }
-    } else {
-      // Desktop: ensure header is visible
-      setIsHeaderCollapsed(false);
-      if (headerRef.current) {
-        headerRef.current.style.width = "";
-        headerRef.current.style.opacity = "";
-      }
-    }
+    const isMobile = () => window.innerWidth < RESPONSIVE_WIDTH;
 
     const handleResize = () => {
-      if (window.innerWidth >= RESPONSIVE_WIDTH) {
-        // Desktop: ensure header is visible
-        setIsHeaderCollapsed(false);
-        if (headerRef.current) {
-          headerRef.current.style.width = "";
-          headerRef.current.style.opacity = "";
-          headerRef.current.classList.remove("opacity-100");
-        }
-      } else {
-        // Mobile: ensure it's collapsed if not already open
-        if (isHeaderCollapsed && headerRef.current) {
-          headerRef.current.style.width = "0vw";
-          headerRef.current.style.opacity = "0";
-        }
+      if (!isMobile()) setIsHeaderCollapsed(false);
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!isMobile() || isHeaderCollapsed || !headerRef.current) return;
+      if (!headerRef.current.contains(e.target as Node)) {
+        setIsHeaderCollapsed(true);
       }
     };
 
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [isHeaderCollapsed]);
 
-  const toggleHeader = () => {
-    if (window.innerWidth < RESPONSIVE_WIDTH) {
-      setIsHeaderCollapsed(prev => !prev);
-    }
-  };
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handleClickOutside);
+    }, 100);
 
-  // Sync DOM with state changes
-  useEffect(() => {
-    if (window.innerWidth < RESPONSIVE_WIDTH && headerRef.current) {
-      if (isHeaderCollapsed) {
-        // Menu is closed
-        headerRef.current.style.width = "0vw";
-        headerRef.current.style.opacity = "0";
-        headerRef.current.classList.remove("opacity-100");
-      } else {
-        // Menu is open
-        headerRef.current.style.width = "60vw";
-        headerRef.current.style.opacity = "1";
-        headerRef.current.classList.add("opacity-100");
-      }
-    }
-  }, [isHeaderCollapsed]);
-
-  // Close menu when clicking outside (only on mobile)
-  useEffect(() => {
-    if (!isHeaderCollapsed && window.innerWidth < RESPONSIVE_WIDTH) {
-      const handleClickOutside = (e: MouseEvent) => {
-        const target = e.target as Node;
-        const menuButton = document.querySelector('button[aria-controls="collapsed-header-items"]');
-        
-        // Don't close if clicking on the menu button itself
-        if (menuButton && (menuButton === target || menuButton.contains(target))) {
-          return;
-        }
-        
-        // Close if clicking outside the menu
-        if (headerRef.current && !headerRef.current.contains(target)) {
-          setIsHeaderCollapsed(true);
-        }
-      };
-      
-      // Use setTimeout to avoid immediate closure when opening
-      const timeoutId = setTimeout(() => {
-        document.addEventListener("mousedown", handleClickOutside);
-      }, 100);
-      
-      return () => {
-        clearTimeout(timeoutId);
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(timer);
+      document.removeEventListener("click", handleClickOutside);
+    };
   }, [isHeaderCollapsed]);
 
   const reviews = [
@@ -235,7 +170,7 @@ export default function Marketing() {
 
         <div
           ref={headerRef}
-          className="collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-gray-900 max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300 max-lg:z-50"
+          className={`collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-gray-900 max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300 max-lg:z-50 ${isHeaderCollapsed ? 'max-lg:w-0 max-lg:opacity-0' : 'max-lg:w-[60vw] max-lg:opacity-100'}`}
           id="collapsed-header-items"
         >
           <nav id="navigation" aria-label="Primary navigation" className="flex h-full w-max gap-5 text-base text-gray-900 max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
@@ -283,7 +218,7 @@ export default function Marketing() {
         
         <button
           className="absolute right-3 top-3 z-[100] text-3xl text-gray-900 lg:hidden cursor-pointer hover:bg-gray-100 rounded p-1 transition-colors"
-          onClick={toggleHeader}
+          onClick={() => setIsHeaderCollapsed(prev => !prev)}
           type="button"
           aria-label={isHeaderCollapsed ? "Open menu" : "Close menu"}
           aria-controls="collapsed-header-items"
@@ -697,69 +632,11 @@ export default function Marketing() {
           height: auto;
         }
 
-        .collapsible-header {
-          display: flex;
-          gap: 1rem;
-          width: 100%;
-          background-color: inherit;
-          place-content: center;
-          overflow: hidden;
-          transition: width 0.3s ease, opacity 0.3s ease;
-        }
-
-        @media (min-width: 1024px) {
-          .collapsible-header {
-            display: flex !important;
-            opacity: 1 !important;
-            width: 100% !important;
-            position: relative !important;
-            height: auto !important;
-            flex-direction: row !important;
-          }
-        }
-
-        .header-link {
-          display: flex;
-          align-items: center;
-          min-width: fit-content;
-          border-radius: 10px;
-          padding: 5px 10px;
-        }
-
         .review-card {
           box-shadow: 0px 2px 4px rgba(117, 116, 116, 0.6);
           border-radius: 15px;
           padding: 20px;
           background: white;
-        }
-
-
-        @media not all and (min-width: 1024px) {
-          .collapsible-header {
-            position: fixed;
-            right: 0px;
-            flex-direction: column;
-            opacity: 0;
-            height: 100vh;
-            min-height: 100vh;
-            height: 100dvh;
-            width: 0vw;
-            justify-content: space-between;
-            padding: 5px;
-            padding-top: 5%;
-            padding-bottom: 5%;
-            place-items: end;
-            background-color: #ffffff;
-            color: #000000;
-            overflow-y: auto;
-            box-shadow: 2px 0px 3px #000;
-            z-index: 40;
-          }
-          
-          .collapsible-header.opacity-100 {
-            opacity: 1 !important;
-            width: 60vw !important;
-          }
         }
       `}</style>
     </div>

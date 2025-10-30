@@ -23,25 +23,34 @@ export default function Dashboard() {
   const { isOnboardingComplete, isLoading: onboardingLoading } = useOnboardingGuard();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      return await apiRequest("GET", "/api/auth/me");
+    },
+  });
+
+  const isAdmin = user?.isAdmin || false;
+
   const { data: invoices = [], isLoading: invoicesLoading, error: invoicesError } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
-    enabled: isOnboardingComplete && !onboardingLoading, // Only fetch when onboarding is complete
+    enabled: (isOnboardingComplete || isAdmin) && !onboardingLoading, // Admin users can always fetch
   });
 
   const { data: clients = [], error: clientsError } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
-    enabled: isOnboardingComplete && !onboardingLoading, // Only fetch when onboarding is complete
+    enabled: (isOnboardingComplete || isAdmin) && !onboardingLoading, // Admin users can always fetch
   });
 
-  // Redirect to onboarding if not complete
+  // Redirect to onboarding if not complete (but not for admin users)
   useEffect(() => {
-    if (!onboardingLoading && !isOnboardingComplete) {
+    if (!isAdmin && !onboardingLoading && !isOnboardingComplete) {
       setLocation("/onboarding");
     }
-  }, [isOnboardingComplete, onboardingLoading, setLocation]);
+  }, [isOnboardingComplete, onboardingLoading, isAdmin, setLocation]);
 
-  // Show loading or empty state while checking
-  if (onboardingLoading || !isOnboardingComplete) {
+  // Show loading or empty state while checking (but not for admin users)
+  if (!isAdmin && (onboardingLoading || !isOnboardingComplete)) {
     return (
       <div className="p-6">
         <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>

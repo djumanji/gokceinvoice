@@ -50,25 +50,22 @@ export default function Login() {
       const response = await apiRequest("POST", "/api/auth/login", { email: loginEmail, password: loginPassword });
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('[Login] Login successful, data:', data);
 
-      // Track login success in Mixpanel
-      // trackEvent('User Logged In', {
-      //   email,
-      //   login_method: 'email',
-      // });
+      // Invalidate and refetch user data
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
 
-      // Identify user in Mixpanel
-      // if (data.user) {
-      //   identifyUser(data.user.id, {
-      //     email: data.user.email,
-      //     username: data.user.username,
-      //   });
-      // }
+      // Check if user is admin - admin users go directly to dashboard
+      const user = await queryClient.fetchQuery({
+        queryKey: ["/api/auth/me"],
+        queryFn: async () => {
+          return await apiRequest("GET", "/api/auth/me");
+        },
+      });
 
       console.log('[Login] Invalidating queries and redirecting to /dashboard');
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       console.log('[Login] Calling setLocation("/dashboard")');
       setLocation("/dashboard");
       console.log('[Login] setLocation called, navigating to dashboard');

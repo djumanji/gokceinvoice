@@ -4,6 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums
+export const inviteStatusEnum = pgEnum("invite_status", ["pending", "used", "expired"]);
 export const invoiceStatusEnum = pgEnum("invoice_status", ["draft", "scheduled", "sent", "viewed", "partial", "paid", "overdue", "cancelled", "refunded"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["bank_transfer", "credit_card", "paypal", "cash", "check", "other"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
@@ -55,10 +56,20 @@ export const users = pgTable("users", {
   taxOfficeId: text("tax_office_id"), // Tax Registration Number
   isProspect: boolean("is_prospect").default(false), // Flag to identify prospects (email-only users)
   marketingOnly: boolean("marketing_only").default(false), // Flag for users who signed up from marketing page but haven't set password yet
-  availableInvites: integer("available_invites").default(5),
-  invitedByUserId: varchar("invited_by_user_id").references(() => users.id),
+  isAdmin: boolean("is_admin").default(false), // Flag to identify admin users
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const inviteTokens = pgTable("invite_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  token: text("token").notNull().unique(),
+  senderUserId: varchar("sender_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  status: inviteStatusEnum("status").default("pending"),
+  recipientEmail: text("recipient_email"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  usedAt: timestamp("used_at"),
+  expiresAt: timestamp("expires_at"),
 });
 
 export const bankAccounts = pgTable("bank_accounts", {
@@ -427,3 +438,7 @@ export type RecurringInvoice = typeof recurringInvoices.$inferSelect;
 
 export type InsertRecurringInvoiceItem = z.infer<typeof insertRecurringInvoiceItemSchema>;
 export type RecurringInvoiceItem = typeof recurringInvoiceItems.$inferSelect;
+
+export const insertInviteTokenSchema = createInsertSchema(inviteTokens).omit({ id: true, createdAt: true, usedAt: true });
+export type InsertInviteToken = z.infer<typeof insertInviteTokenSchema>;
+export type InviteToken = typeof inviteTokens.$inferSelect;

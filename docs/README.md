@@ -187,6 +187,8 @@ When making changes to the project:
 - [Production Fix Summary](setup/PRODUCTION_FIX_SUMMARY.md)
 - [Quick Migration Guide](setup/QUICK_MIGRATION_GUIDE.md)
 - [Run Migrations in Replit](setup/RUN_MIGRATIONS_IN_REPLIT.md)
+- [HuggingFace MCP Setup](setup/HUGGINGFACE_MCP_SETUP.md)
+- [PostHog MCP Setup](setup/POSTHOG_MCP_SETUP.md)
 
 ## 🔑 Authentication & Email
 
@@ -210,6 +212,8 @@ When making changes to the project:
 - [PostHog Setup](analytics/POSTHOG_SETUP.md)
 - [PostHog Configuration Complete](analytics/POSTHOG_CONFIGURATION_COMPLETE.md)
 - [PostHog Ready To Use](analytics/POSTHOG_READY_TO_USE.md)
+- [PostHog MCP Setup](setup/POSTHOG_MCP_SETUP.md) ⭐ **NEW** - Connect PostHog to Cursor via MCP
+- [PostHog Production Readiness](setup/POSTHOG_PRODUCTION_READINESS.md) ⚠️ **IMPORTANT** - Production deployment checklist
 - [Mixpanel Setup](analytics/MIXPANEL_SETUP.md)
 
 ## 🧪 Testing & QA

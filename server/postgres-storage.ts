@@ -1,6 +1,6 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
-import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, recurringInvoices, recurringInvoiceItems, payments, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type RecurringInvoice, type InsertRecurringInvoice, type RecurringInvoiceItem, type InsertRecurringInvoiceItem, type Payment, type InsertPayment } from '@shared/schema';
+import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, recurringInvoices, recurringInvoiceItems, payments, inviteTokens, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type RecurringInvoice, type InsertRecurringInvoice, type RecurringInvoiceItem, type InsertRecurringInvoiceItem, type Payment, type InsertPayment, type InviteToken, type InsertInviteToken } from '@shared/schema';
 import { eq, desc, and, sql, lte, or, isNull, gte } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
@@ -592,6 +592,37 @@ export class PgStorage {
         .where(eq(invoices.id, payment.invoiceId));
     }
 
+    return true;
+  }
+
+  // Invite Tokens
+  async createInviteToken(data: InsertInviteToken): Promise<InviteToken> {
+    const result = await this.db.insert(inviteTokens).values(data).returning();
+    return result[0];
+  }
+
+  async getInviteTokenByToken(token: string): Promise<InviteToken | undefined> {
+    const result = await this.db.select().from(inviteTokens).where(eq(inviteTokens.token, token));
+    return result[0];
+  }
+
+  async getInviteTokensBySender(senderUserId: string): Promise<InviteToken[]> {
+    const result = await this.db.select().from(inviteTokens)
+      .where(eq(inviteTokens.senderUserId, senderUserId))
+      .orderBy(desc(inviteTokens.createdAt));
+    return result;
+  }
+
+  async markInviteTokenAsUsed(token: string): Promise<InviteToken | undefined> {
+    const result = await this.db.update(inviteTokens)
+      .set({ status: 'used', usedAt: new Date() })
+      .where(eq(inviteTokens.token, token))
+      .returning();
+    return result[0];
+  }
+
+  async deleteInviteToken(token: string): Promise<boolean> {
+    await this.db.delete(inviteTokens).where(eq(inviteTokens.token, token));
     return true;
   }
 }

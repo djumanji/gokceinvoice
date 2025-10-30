@@ -39,6 +39,7 @@ app.use(helmet({
         "'self'",
         "https://api-eu.mixpanel.com",
         "https://app.posthog.com",
+        "https://us.i.posthog.com",
         "https://eu.i.posthog.com"
       ],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://r2cdn.perplexity.ai"],

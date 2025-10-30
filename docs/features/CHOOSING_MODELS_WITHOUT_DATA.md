@@ -291,3 +291,4 @@ console.log('Similarity:', similarity1, similarity2);
 
 **The models are already configured in your code!** Just start using them and collect data naturally. 🚀
 
+
