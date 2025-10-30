@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -172,6 +172,23 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
       });
     },
   });
+
+  // Auto-populate project number when project is selected
+  const selectedProjectName = form.watch("forProject");
+  useEffect(() => {
+    if (selectedProjectName && clientProjects.length > 0) {
+      const selectedProject = clientProjects.find(p => p.name === selectedProjectName);
+      if (selectedProject && selectedProject.projectNumber) {
+        form.setValue("projectNumber", selectedProject.projectNumber);
+      } else if (!selectedProject) {
+        // Clear project number if project not found (e.g., custom project name)
+        form.setValue("projectNumber", "");
+      }
+    } else if (!selectedProjectName) {
+      // Clear project number if no project is selected
+      form.setValue("projectNumber", "");
+    }
+  }, [selectedProjectName, clientProjects, form]);
 
   // Handlers
   const handleServiceSelect = (index: number, value: string) => {
@@ -567,15 +584,29 @@ export function InvoiceForm({ clients, onSubmit, initialData, isLoading = false,
                 <FormField
                   control={form.control}
                   name="projectNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project #</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., 0299505" {...field} data-testid="input-project-number" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    // Get project number from selected project
+                    const selectedProjectName = form.watch("forProject");
+                    const selectedProject = clientProjects.find(p => p.name === selectedProjectName);
+                    const projectNumberValue = selectedProject?.projectNumber || field.value || "";
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Project #</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g., PRJ-000001" 
+                            value={projectNumberValue}
+                            disabled={true}
+                            readOnly
+                            className="bg-muted cursor-not-allowed"
+                            data-testid="input-project-number" 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
               </div>
 
