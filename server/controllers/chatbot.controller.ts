@@ -170,7 +170,7 @@ class ChatbotController {
         NULL,
         NULL,
         TRUE,
-        ${sql.raw(`(SELECT id FROM chatbot_sessions WHERE session_id = '${session.session_id}' LIMIT 1)`)},
+        ${session.id}::uuid,
         NULL,
         0.5,
         ${body.needed_at ?? null}

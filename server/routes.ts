@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           NULL,
           NULL,
           TRUE,
-          ${sql.raw(`(SELECT id FROM chatbot_sessions WHERE session_id = '${session.session_id}' LIMIT 1)`)},
+          ${session.id}::uuid,
           NULL,
           0.5
         )
@@ -352,6 +352,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sanitizeBody([...SanitizationFields.invoice, ...SanitizationFields.lineItem]),
     invoiceController.createBulk
   );
+
+  // Payment routes for invoices
+  app.get("/api/invoices/:invoiceId/payments", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { invoiceId } = req.params;
+
+      // Verify invoice belongs to user
+      const invoice = await storage.getInvoice(invoiceId, req.session.userId);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      const payments = await storage.getPaymentsByInvoice(invoiceId);
+      res.json(payments);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/invoices/:invoiceId/payments", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { invoiceId } = req.params;
+
+      // Verify invoice belongs to user
+      const invoice = await storage.getInvoice(invoiceId, req.session.userId);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      // Validate payment data
+      const { insertPaymentSchema } = await import("@shared/schema");
+      const paymentData = insertPaymentSchema.parse({
+        ...req.body,
+        invoiceId,
+      });
+
+      const payment = await storage.createPayment(paymentData);
+      res.json(payment);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid payment data", details: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/invoices/:invoiceId/payments/:paymentId", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { invoiceId, paymentId } = req.params;
+
+      // Verify invoice belongs to user
+      const invoice = await storage.getInvoice(invoiceId, req.session.userId);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      // Verify payment exists and belongs to this invoice
+      const payment = await storage.getPayment(paymentId);
+      if (!payment || payment.invoiceId !== invoiceId) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+
+      const success = await storage.deletePayment(paymentId);
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ error: "Failed to delete payment" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // ============================================================================
   // RECURRING INVOICE ROUTES

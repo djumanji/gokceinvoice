@@ -1,6 +1,6 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
-import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, recurringInvoices, recurringInvoiceItems, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type RecurringInvoice, type InsertRecurringInvoice, type RecurringInvoiceItem, type InsertRecurringInvoiceItem } from '@shared/schema';
+import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, recurringInvoices, recurringInvoiceItems, payments, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type RecurringInvoice, type InsertRecurringInvoice, type RecurringInvoiceItem, type InsertRecurringInvoiceItem, type Payment, type InsertPayment } from '@shared/schema';
 import { eq, desc, and, sql, lte, or, isNull, gte } from 'drizzle-orm';
 
 // Initialize PostgreSQL connection
@@ -478,7 +478,7 @@ export class PgStorage {
   async deleteRecurringInvoice(id: string, userId: string): Promise<boolean> {
     // Delete items first due to foreign key (cascade should handle this, but being explicit)
     await this.db.delete(recurringInvoiceItems).where(eq(recurringInvoiceItems.recurringInvoiceId, id));
-    
+
     const result = await this.db.delete(recurringInvoices)
       .where(and(eq(recurringInvoices.id, id), eq(recurringInvoices.userId, userId)));
     return result.rowCount ? result.rowCount > 0 : false;
@@ -494,7 +494,7 @@ export class PgStorage {
   async getRecurringInvoicesDueForGeneration(): Promise<RecurringInvoice[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     return await this.db.select()
       .from(recurringInvoices)
       .where(
@@ -508,6 +508,89 @@ export class PgStorage {
           )
         )
       );
+  }
+
+  // Payments
+  async getPaymentsByInvoice(invoiceId: string): Promise<Payment[]> {
+    return await this.db.select().from(payments).where(eq(payments.invoiceId, invoiceId)).orderBy(desc(payments.paymentDate));
+  }
+
+  async getPayment(id: string): Promise<Payment | undefined> {
+    const result = await this.db.select().from(payments).where(eq(payments.id, id));
+    return result[0];
+  }
+
+  async createPayment(data: InsertPayment): Promise<Payment> {
+    const [payment] = await this.db.insert(payments).values(data).returning();
+
+    // Update invoice amount_paid and status
+    const invoice = await this.db.select().from(invoices).where(eq(invoices.id, data.invoiceId));
+    if (invoice[0]) {
+      const currentPaid = parseFloat(invoice[0].amountPaid || '0');
+      const paymentAmount = parseFloat(data.amount);
+      const newAmountPaid = currentPaid + paymentAmount;
+      const total = parseFloat(invoice[0].total);
+
+      // Determine new status
+      let newStatus = invoice[0].status;
+      let paidDate = invoice[0].paidDate;
+
+      if (newAmountPaid >= total) {
+        newStatus = 'paid';
+        paidDate = new Date();
+      } else if (newAmountPaid > 0) {
+        newStatus = 'partial';
+      }
+
+      // Update invoice
+      await this.db.update(invoices)
+        .set({
+          amountPaid: newAmountPaid.toString(),
+          status: newStatus,
+          paidDate: paidDate
+        })
+        .where(eq(invoices.id, data.invoiceId));
+    }
+
+    return payment;
+  }
+
+  async deletePayment(id: string): Promise<boolean> {
+    // Get payment details before deleting
+    const payment = await this.getPayment(id);
+    if (!payment) return false;
+
+    // Delete the payment
+    await this.db.delete(payments).where(eq(payments.id, id));
+
+    // Recalculate invoice amount_paid and status
+    const remainingPayments = await this.getPaymentsByInvoice(payment.invoiceId);
+    const invoice = await this.db.select().from(invoices).where(eq(invoices.id, payment.invoiceId));
+
+    if (invoice[0]) {
+      const totalPaid = remainingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+      const total = parseFloat(invoice[0].total);
+
+      let newStatus = 'sent'; // Default to sent if no payments
+      let paidDate = null;
+
+      if (totalPaid >= total) {
+        newStatus = 'paid';
+        paidDate = new Date();
+      } else if (totalPaid > 0) {
+        newStatus = 'partial';
+      }
+
+      await this.db.update(invoices)
+        .set({
+          amountPaid: totalPaid.toString(),
+          status: newStatus,
+          paidDate: paidDate
+        })
+        .where(eq(invoices.id, payment.invoiceId));
+    }
+
+    return true;
   }
 }
 

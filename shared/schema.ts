@@ -124,7 +124,9 @@ export const invoices = pgTable("invoices", {
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0"),
   taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  recurringInvoiceId: varchar("recurring_invoice_id").references(() => recurringInvoices.id, { onDelete: 'set null' }),
+  // Payment tracking fields
+  amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).notNull().default("0"),
+  paidDate: timestamp("paid_date"),
 });
 
 export const lineItems = pgTable("line_items", {
@@ -188,6 +190,18 @@ export const expenses = pgTable("expenses", {
   isTaxDeductible: boolean("is_tax_deductible").default(true),
   receipt: text("receipt"), // URL or base64 receipt image
   tags: text("tags"), // Comma-separated tags
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id, { onDelete: 'cascade' }), // Cascade delete payments when invoice deleted
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentDate: timestamp("payment_date").notNull().defaultNow(),
+  paymentMethod: text("payment_method").notNull(), // "cash", "bank_transfer", "credit_card", "debit_card", "check", "paypal", "stripe", "other"
+  transactionId: text("transaction_id"),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -359,13 +373,22 @@ export const insertRecurringInvoiceItemSchema = createInsertSchema(recurringInvo
       return !isNaN(num) && num >= 0 && num < 100000000;
     }, "Price must be between 0 and 99,999,999.99")
     .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Price must have max 2 decimal places"),
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, updatedAt: true }).extend({
   amount: z.union([z.string(), z.number()])
     .transform(val => String(val))
     .refine(val => {
       const num = parseFloat(val);
-      return !isNaN(num) && num >= 0 && num < 100000000;
-    }, "Amount must be between 0 and 99,999,999.99")
+      return !isNaN(num) && num > 0 && num < 100000000;
+    }, "Payment amount must be positive and less than 99,999,999.99")
     .refine(val => /^\d+(\.\d{0,2})?$/.test(val), "Amount must have max 2 decimal places"),
+  paymentMethod: z.enum(["cash", "bank_transfer", "credit_card", "debit_card", "check", "paypal", "stripe", "other"]),
+  paymentDate: z.union([z.string(), z.date()]).transform(val =>
+    typeof val === 'string' ? new Date(val) : val
+  ),
+  transactionId: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -385,6 +408,9 @@ export type Service = typeof services.$inferSelect;
 
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Expense = typeof expenses.$inferSelect;
+
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;
 
 export type InsertBankAccount = z.infer<typeof bankAccountSchema>;
 export type BankAccount = typeof bankAccounts.$inferSelect;
