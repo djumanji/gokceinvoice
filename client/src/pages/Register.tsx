@@ -23,8 +23,53 @@ export default function Register() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
 
-  // Extract email and marketing flag from URL params
+  // Extract invite token from URL query params
+  const inviteParam = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('invite');
+  }, [location]);
+
+  // Validate invite token on page load
+  const { data: inviteValidation, isLoading: isValidatingInvite } = useQuery({
+    queryKey: ['/api/invites/validate', inviteParam],
+    queryFn: async () => {
+      if (!inviteParam) return null;
+      const res = await apiRequest("GET", `/api/invites/validate?token=${inviteParam}`);
+      return res;
+    },
+    enabled: !!inviteParam,
+    retry: false,
+  });
+
+  // Redirect to waitlist if no invite token
+  useEffect(() => {
+    if (!inviteParam && !isValidatingInvite) {
+      setLocation("/waitlist");
+    }
+  }, [inviteParam, isValidatingInvite, setLocation]);
+
+  // Handle invalid invite token
+  useEffect(() => {
+    if (inviteValidation && !inviteValidation.valid) {
+      toast({
+        title: "Invalid Invite",
+        description: inviteValidation.error || "This invite link is invalid or has expired.",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        setLocation("/waitlist");
+      }, 2000);
+    } else if (inviteValidation && inviteValidation.valid) {
+      setInviteToken(inviteParam!);
+      if (inviteValidation.recipientEmail) {
+        setEmail(inviteValidation.recipientEmail);
+      }
+    }
+  }, [inviteValidation, inviteParam, toast, setLocation]);
+
+  // Extract email and marketing flag from URL params (legacy support)
   const emailParam = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('email');
@@ -35,12 +80,12 @@ export default function Register() {
     return params.get('from') === 'marketing';
   }, [location]);
 
-  // Pre-fill email from URL params
+  // Pre-fill email from URL params (legacy support)
   useEffect(() => {
-    if (emailParam) {
+    if (emailParam && !inviteValidation?.recipientEmail) {
       setEmail(emailParam);
     }
-  }, [emailParam]);
+  }, [emailParam, inviteValidation]);
 
   const [animationSrc, setAnimationSrc] = useState<string>(
     import.meta.env.PROD
@@ -70,10 +115,14 @@ export default function Register() {
         throw new Error(t("errors.passwordMismatch"));
       }
 
+      if (!inviteToken) {
+        throw new Error("Invite token is required");
+      }
+
       const res = await apiRequest("POST", "/api/auth/register", {
         email,
         password,
-        fromMarketing, // Pass flag to indicate user came from marketing page
+        invite_token: inviteToken,
       });
       return res;
     },
@@ -129,14 +178,36 @@ export default function Register() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Track registration attempt
-    // trackEvent('Registration Attempt', {
-    //   email,
-    //   has_username: !!username,
-    // });
+    if (!inviteToken) {
+      toast({
+        title: "Invalid Invite",
+        description: "Please use a valid invite link to register.",
+        variant: "destructive",
+      });
+      setLocation("/waitlist");
+      return;
+    }
     
     registerMutation.mutate();
   };
+
+  // Show loading state while validating invite
+  if (isValidatingInvite) {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center p-6 overflow-hidden">
+        <Card className="relative z-10 w-full max-w-md backdrop-blur-sm bg-card/95 shadow-xl">
+          <CardContent className="pt-6">
+            <div className="text-center">Validating invite...</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Don't render form if invite is invalid
+  if (!inviteValidation || !inviteValidation.valid) {
+    return null;
+  }
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-6 overflow-hidden">
@@ -165,11 +236,11 @@ export default function Register() {
       <Card className="relative z-10 w-full max-w-md backdrop-blur-sm bg-card/95 shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl text-center">
-            {fromMarketing ? t("register.completeRegistration", "Complete your registration") : t("register.createAccount")}
+            {t("register.createAccount")}
           </CardTitle>
-          {fromMarketing && emailParam && (
+          {inviteValidation?.sender && (
             <p className="text-sm text-muted-foreground text-center mt-2">
-              {t("register.setupPasswordFor", "Create a password for")} {emailParam}
+              Invited by {inviteValidation.sender.name || inviteValidation.sender.email}
             </p>
           )}
         </CardHeader>
@@ -183,9 +254,9 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                readOnly={fromMarketing} // Make email read-only if from marketing
+                readOnly={!!inviteValidation?.recipientEmail}
                 placeholder={t("auth.emailPlaceholder")}
-                className={fromMarketing ? "bg-muted cursor-not-allowed" : ""}
+                className={inviteValidation?.recipientEmail ? "bg-muted cursor-not-allowed" : ""}
               />
             </div>
             <div className="space-y-2">

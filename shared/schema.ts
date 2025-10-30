@@ -29,6 +29,7 @@ export const industryEnum = pgEnum("industry", [
   "nonprofit",
   "other"
 ]);
+export const inviteStatusEnum = pgEnum("invite_status", ["pending", "used", "expired"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -55,6 +56,8 @@ export const users = pgTable("users", {
   taxOfficeId: text("tax_office_id"), // Tax Registration Number
   isProspect: boolean("is_prospect").default(false), // Flag to identify prospects (email-only users)
   marketingOnly: boolean("marketing_only").default(false), // Flag for users who signed up from marketing page but haven't set password yet
+  availableInvites: integer("available_invites").default(5),
+  invitedByUserId: varchar("invited_by_user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -162,6 +165,24 @@ export const expenses = pgTable("expenses", {
   tags: text("tags"), // Comma-separated tags
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const inviteTokens = pgTable("invite_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  token: text("token").notNull().unique(),
+  senderUserId: varchar("sender_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  status: inviteStatusEnum("status").default("pending"),
+  recipientEmail: text("recipient_email"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  usedAt: timestamp("used_at"),
+  expiresAt: timestamp("expires_at"),
+});
+
+export const waitlist = pgTable("waitlist", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  source: text("source"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true }).extend({
@@ -327,3 +348,11 @@ export type BankAccount = typeof bankAccounts.$inferSelect;
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true });
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
+
+export const insertInviteTokenSchema = createInsertSchema(inviteTokens).omit({ id: true });
+export type InsertInviteToken = z.infer<typeof insertInviteTokenSchema>;
+export type InviteToken = typeof inviteTokens.$inferSelect;
+
+export const insertWaitlistSchema = createInsertSchema(waitlist).omit({ id: true });
+export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
+export type WaitlistEntry = typeof waitlist.$inferSelect;

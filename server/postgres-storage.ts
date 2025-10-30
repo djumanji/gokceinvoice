@@ -1,7 +1,8 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
-import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject } from '@shared/schema';
+import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, inviteTokens, waitlist, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type InviteToken, type InsertInviteToken, type WaitlistEntry } from '@shared/schema';
 import { eq, desc, and, sql, lte } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
 
 // Initialize PostgreSQL connection
 let connectionString: string | undefined;
@@ -57,7 +58,8 @@ export class PgStorage {
       'email', 'username', 'password', 'provider', 'providerId',
       'isEmailVerified', 'emailVerificationToken', 'emailVerificationExpires',
       'passwordResetToken', 'passwordResetExpires', 'name', 'companyName',
-      'address', 'phone', 'taxOfficeId', 'isProspect', 'marketingOnly', 'createdAt', 'updatedAt'
+      'address', 'phone', 'taxOfficeId', 'isProspect', 'marketingOnly', 
+      'availableInvites', 'invitedByUserId', 'createdAt', 'updatedAt'
     ];
     
     const insertData: any = {};
@@ -431,6 +433,61 @@ export class PgStorage {
         lte(invoices.scheduledDate, new Date())
       )
     );
+    return result;
+  }
+
+  // Invite Tokens
+  async createInviteToken(senderId: string, recipientEmail?: string): Promise<InviteToken> {
+    const token = randomUUID();
+    const result = await this.db.insert(inviteTokens).values({
+      token,
+      senderUserId: senderId,
+      recipientEmail: recipientEmail || null,
+      status: 'pending',
+    }).returning();
+    return result[0];
+  }
+
+  async getInviteTokenByToken(token: string): Promise<InviteToken | undefined> {
+    const result = await this.db.select().from(inviteTokens).where(eq(inviteTokens.token, token));
+    return result[0];
+  }
+
+  async updateInviteTokenStatus(tokenId: string, status: 'used' | 'expired'): Promise<void> {
+    await this.db.update(inviteTokens)
+      .set({
+        status,
+        usedAt: status === 'used' ? new Date() : undefined,
+      })
+      .where(eq(inviteTokens.id, tokenId));
+  }
+
+  async getUserInviteTokens(userId: string): Promise<InviteToken[]> {
+    return await this.db.select()
+      .from(inviteTokens)
+      .where(eq(inviteTokens.senderUserId, userId))
+      .orderBy(desc(inviteTokens.createdAt));
+  }
+
+  async decrementUserInvites(userId: string): Promise<void> {
+    await this.db.update(users)
+      .set({
+        availableInvites: sql`${users.availableInvites} - 1`,
+      })
+      .where(eq(users.id, userId));
+  }
+
+  // Waitlist
+  async addToWaitlist(email: string, source?: string): Promise<WaitlistEntry> {
+    const result = await this.db.insert(waitlist).values({
+      email,
+      source: source || null,
+    }).returning();
+    return result[0];
+  }
+
+  async getWaitlistCount(): Promise<number> {
+    const result = await this.db.$count(waitlist);
     return result;
   }
 }

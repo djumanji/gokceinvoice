@@ -31,6 +31,7 @@ import Marketing from "@/pages/Marketing";
 import Leads from "@/pages/Leads";
 import NotFound from "@/pages/not-found";
 import LeadCapture from "@/pages/LeadCapture";
+import Waitlist from "@/pages/Waitlist";
 
 function Router() {
   return (
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/" component={Marketing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/waitlist" component={Waitlist} />
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
@@ -113,7 +115,8 @@ function AuthLayout({ children, style }: { children: React.ReactNode; style: Rea
   const isAuthPage = location === '/login' || location === '/register' || location.startsWith('/verify-email') || location.startsWith('/reset-password') || location === '/forgot-password';
   const isOnboardingPage = location === '/onboarding';
   const isMarketingPage = location === '/' || location === '/marketing';
-  const hideSidebar = isAuthPage || isOnboardingPage || isMarketingPage;
+  const isWaitlistPage = location === '/waitlist';
+  const hideSidebar = isAuthPage || isOnboardingPage || isMarketingPage || isWaitlistPage;
 
   if (hideSidebar) {
     return (

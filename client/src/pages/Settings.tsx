@@ -26,7 +26,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Edit, Upload, X } from "lucide-react";
+import { Plus, Trash2, Edit, Upload, X, Copy, Check } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 
 const profileSchema = z.object({
@@ -105,6 +105,69 @@ export default function Settings() {
       return await apiRequest("GET", "/api/bank-accounts");
     },
   });
+
+  // Fetch invite tokens
+  const { data: invitesData, refetch: refetchInvites } = useQuery({
+    queryKey: ["/api/invites/my-invites"],
+    queryFn: async () => {
+      return await apiRequest("GET", "/api/invites/my-invites");
+    },
+  });
+
+  const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
+
+  // Generate invite mutation
+  const generateInviteMutation = useMutation({
+    mutationFn: async (recipientEmail?: string) => {
+      return await apiRequest("POST", "/api/invites/generate", {
+        recipient_email: recipientEmail || undefined,
+      });
+    },
+    onSuccess: () => {
+      refetchInvites();
+      toast({
+        title: t("common.success"),
+        description: "Invite link generated successfully",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Failed to generate invite:", error);
+      let errorMessage = "Failed to generate invite";
+      try {
+        const match = error.message?.match(/\d+:\s*(.+)/);
+        if (match) {
+          const errorBody = match[1];
+          try {
+            const errorData = JSON.parse(errorBody);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            errorMessage = errorBody;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing error message:", e);
+      }
+      toast({
+        title: t("common.error"),
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const copyToClipboard = async (text: string, tokenId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedTokenId(tokenId);
+      setTimeout(() => setCopiedTokenId(null), 2000);
+      toast({
+        title: "Copied!",
+        description: "Invite link copied to clipboard",
+      });
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -371,6 +434,7 @@ export default function Settings() {
         <TabsList>
           <TabsTrigger value="personal">Personal</TabsTrigger>
           <TabsTrigger value="bank">Bank Details</TabsTrigger>
+          <TabsTrigger value="invites">Invites</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal">
@@ -768,6 +832,99 @@ export default function Settings() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invites">
+          <Card>
+            <CardHeader>
+              <CardTitle>Invites</CardTitle>
+              <CardDescription>
+                Generate invite links to share with others. You have {invitesData?.availableInvites || 0} invites remaining.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Button
+                  onClick={() => generateInviteMutation.mutate()}
+                  disabled={
+                    generateInviteMutation.isPending ||
+                    (invitesData?.availableInvites || 0) === 0
+                  }
+                >
+                  {generateInviteMutation.isPending
+                    ? "Generating..."
+                    : "Generate Invite Link"}
+                </Button>
+                {invitesData && invitesData.availableInvites === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No invites remaining
+                  </p>
+                )}
+              </div>
+
+              {invitesData && invitesData.tokens && invitesData.tokens.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="font-semibold">Your Invite Links</h3>
+                  {invitesData.tokens.map((token: any) => (
+                    <div
+                      key={token.id}
+                      className="p-4 border rounded-lg space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs px-2 py-1 rounded ${
+                                token.status === "pending"
+                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                  : token.status === "used"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                              }`}
+                            >
+                              {token.status.charAt(0).toUpperCase() +
+                                token.status.slice(1)}
+                            </span>
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            Created: {new Date(token.createdAt).toLocaleDateString()}
+                            {token.usedAt &&
+                              ` • Used: ${new Date(token.usedAt).toLocaleDateString()}`}
+                          </div>
+                          {token.recipientEmail && (
+                            <div className="text-sm text-muted-foreground">
+                              For: {token.recipientEmail}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(token.inviteLink, token.id)}
+                        >
+                          {copiedTokenId === token.id ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      {token.status === "pending" && (
+                        <div className="text-xs text-muted-foreground break-all">
+                          {token.inviteLink}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No invite links generated yet. Click "Generate Invite Link" to
+                  create one.
                 </div>
               )}
             </CardContent>

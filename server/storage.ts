@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject } from "@shared/schema";
+import { type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject, type InviteToken, type InsertInviteToken, type WaitlistEntry, type InsertWaitlist } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { PgStorage } from './postgres-storage';
 
@@ -67,6 +67,17 @@ export interface IStorage {
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, userId: string, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string, userId: string): Promise<boolean>;
+
+  // Invite Tokens
+  createInviteToken(senderId: string, recipientEmail?: string): Promise<InviteToken>;
+  getInviteTokenByToken(token: string): Promise<InviteToken | undefined>;
+  updateInviteTokenStatus(tokenId: string, status: 'used' | 'expired'): Promise<void>;
+  getUserInviteTokens(userId: string): Promise<InviteToken[]>;
+  decrementUserInvites(userId: string): Promise<void>;
+
+  // Waitlist
+  addToWaitlist(email: string, source?: string): Promise<WaitlistEntry>;
+  getWaitlistCount(): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -533,6 +544,36 @@ export class MemStorage implements IStorage {
 
   async getScheduledInvoicesCount(): Promise<number> {
     return (await this.getScheduledInvoicesDue()).length;
+  }
+
+  // Invite Tokens - stub implementations
+  async createInviteToken(senderId: string, recipientEmail?: string): Promise<InviteToken> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getInviteTokenByToken(token: string): Promise<InviteToken | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async updateInviteTokenStatus(tokenId: string, status: 'used' | 'expired'): Promise<void> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getUserInviteTokens(userId: string): Promise<InviteToken[]> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async decrementUserInvites(userId: string): Promise<void> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  // Waitlist - stub implementations
+  async addToWaitlist(email: string, source?: string): Promise<WaitlistEntry> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getWaitlistCount(): Promise<number> {
+    throw new Error("Not implemented in MemStorage");
   }
 }
 
