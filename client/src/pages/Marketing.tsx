@@ -362,11 +362,34 @@ export default function Marketing() {
 
           <div className="flex max-h-[120vh] w-full max-w-[850px] place-content-center items-center overflow-hidden max-md:max-w-[350px]">
             <div className="relative flex w-fit place-content-center items-center">
-              <div className="flex max-h-[550px] min-h-[450px] min-w-[350px] max-w-[650px] overflow-hidden rounded-2xl shadow-xl max-lg:h-[320px] max-lg:w-[320px]">
-                <div className="h-full w-full bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <div className="text-6xl mb-4">📄</div>
-                    <div className="text-2xl font-semibold text-gray-900">{t("marketing.footer.tagline")}</div>
+              <div className="flex max-h-[550px] min-h-[450px] min-w-[350px] max-w-[650px] overflow-hidden rounded-2xl shadow-xl max-lg:h-[320px] max-lg:w-[320px] bg-white">
+                <div className="w-full flex flex-col">
+                  <div className="h-[200px] w-full bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
+                    <div className="text-center p-8">
+                      <div className="text-6xl mb-4">📄</div>
+                      <div className="text-2xl font-semibold text-gray-900">{t("marketing.footer.tagline")}</div>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-4">
+                    <div className="text-center space-y-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="text-3xl">⚡</div>
+                        <span className="text-lg font-semibold text-gray-900">Quick Setup</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="text-3xl">🔒</div>
+                        <span className="text-lg font-semibold text-gray-900">Secure & Reliable</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="text-3xl">📊</div>
+                        <span className="text-lg font-semibold text-gray-900">Track Everything</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-px bg-gray-200 my-2"></div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-gray-900 mb-1">100%</div>
+                      <div className="text-sm text-gray-600">Free Forever</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -408,37 +431,44 @@ export default function Marketing() {
           <div className="text-gray-700 mb-8">
             {t("marketing.pricing.subtitle")}
           </div>
-          <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
-            <div className="w-full max-w-md p-6 border-2 border-gray-200 rounded-xl">
+          <div className="flex flex-col md:flex-row gap-6 justify-center items-stretch">
+            <div className="w-full max-w-md p-6 border-2 border-gray-200 rounded-xl flex flex-col">
+              <div className="h-8 mb-3"></div>
               <h3 className="text-2xl font-semibold mb-2 text-gray-900">{t("marketing.pricing.freePlan.title")}</h3>
               <div className="text-4xl font-bold mb-4 text-gray-900">{t("marketing.pricing.freePlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.freePlan.period")}</span></div>
-              <ul className="text-left space-y-2 mb-6 text-gray-700">
+              <ul className="text-left space-y-2 mb-6 text-gray-700 flex-grow">
                 <li>✓ {t("marketing.pricing.freePlan.features.invoices")}</li>
                 <li>✓ {t("marketing.pricing.freePlan.features.templates")}</li>
                 <li>✓ {t("marketing.pricing.freePlan.features.clients")}</li>
                 <li>✓ {t("marketing.pricing.freePlan.features.support")}</li>
+                <li className="opacity-0">✓ Placeholder</li>
               </ul>
-              <Link href="/register">
-                <Button className="w-full">{t("marketing.pricing.freePlan.button")}</Button>
-              </Link>
+              <div className="mt-auto">
+                <Link href="/register">
+                  <Button className="w-full">{t("marketing.pricing.freePlan.button")}</Button>
+                </Link>
+                <p className="text-sm text-gray-500 text-center mt-2 opacity-0">Placeholder</p>
+              </div>
             </div>
-            <div className="w-full max-w-md p-6 border-2 border-indigo-600 rounded-xl bg-indigo-50">
-              <div className="inline-block px-3 py-1 bg-indigo-600 text-white text-sm font-semibold rounded-full mb-3">
+            <div className="w-full max-w-md p-6 border-2 border-indigo-600 rounded-xl bg-indigo-50 flex flex-col">
+              <div className="inline-block px-3 py-1 bg-indigo-600 text-white text-sm font-semibold rounded-full mb-3 h-8 flex items-center justify-center">
                 {t("marketing.pricing.proPlan.comingSoon")}
               </div>
               <h3 className="text-2xl font-semibold mb-2 text-gray-900">{t("marketing.pricing.proPlan.title")}</h3>
               <div className="text-4xl font-bold mb-4 text-gray-900">{t("marketing.pricing.proPlan.price")}<span className="text-lg text-gray-500">{t("marketing.pricing.proPlan.period")}</span></div>
-              <ul className="text-left space-y-2 mb-6 text-gray-700">
+              <ul className="text-left space-y-2 mb-6 text-gray-700 flex-grow">
                 <li>✓ {t("marketing.pricing.proPlan.features.invoices")}</li>
                 <li>✓ {t("marketing.pricing.proPlan.features.templates")}</li>
                 <li>✓ {t("marketing.pricing.proPlan.features.reminders")}</li>
                 <li>✓ {t("marketing.pricing.proPlan.features.support")}</li>
                 <li>✓ {t("marketing.pricing.proPlan.features.reporting")}</li>
               </ul>
-              <Link href="/register">
-                <Button className="w-full bg-indigo-600 hover:bg-indigo-700">{t("marketing.pricing.proPlan.button")}</Button>
-              </Link>
-              <p className="text-sm text-gray-500 text-center mt-2">{t("marketing.pricing.proPlan.subtext")}</p>
+              <div className="mt-auto">
+                <Link href="/register">
+                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700">{t("marketing.pricing.proPlan.button")}</Button>
+                </Link>
+                <p className="text-sm text-gray-500 text-center mt-2">{t("marketing.pricing.proPlan.subtext")}</p>
+              </div>
             </div>
           </div>
         </div>
