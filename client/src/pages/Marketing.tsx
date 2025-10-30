@@ -149,22 +149,32 @@ export default function Marketing() {
     return () => window.removeEventListener("resize", handleResize);
   }, [isHeaderCollapsed]);
 
-  const toggleHeader = () => {
+  const toggleHeader = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (window.innerWidth < RESPONSIVE_WIDTH && headerRef.current) {
       const willBeOpen = isHeaderCollapsed;
       setIsHeaderCollapsed(!isHeaderCollapsed);
       
-      if (willBeOpen) {
-        // Opening - was collapsed, now opening
-        headerRef.current.style.width = "60vw";
-        headerRef.current.style.opacity = "1";
-        headerRef.current.classList.add("opacity-100");
-      } else {
-        // Closing - was open, now closing
-        headerRef.current.style.width = "0vw";
-        headerRef.current.style.opacity = "0";
-        headerRef.current.classList.remove("opacity-100");
-      }
+      // Use requestAnimationFrame to ensure state update happens before DOM manipulation
+      requestAnimationFrame(() => {
+        if (headerRef.current) {
+          if (willBeOpen) {
+            // Opening - was collapsed, now opening
+            headerRef.current.style.width = "60vw";
+            headerRef.current.style.opacity = "1";
+            headerRef.current.classList.add("opacity-100");
+          } else {
+            // Closing - was open, now closing
+            headerRef.current.style.width = "0vw";
+            headerRef.current.style.opacity = "0";
+            headerRef.current.classList.remove("opacity-100");
+          }
+        }
+      });
     }
   };
 
@@ -217,7 +227,7 @@ export default function Marketing() {
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <a href="#navigation" className="skip-link">Skip to navigation</a>
       {/* Header */}
-      <header className="absolute top-0 z-20 flex h-[60px] w-full bg-white px-[10%] text-foreground lg:justify-around max-lg:px-4 max-lg:mr-auto">
+      <header className="absolute top-0 z-20 flex h-[60px] w-full bg-white px-[10%] text-gray-900 lg:justify-around max-lg:px-4 max-lg:mr-auto">
         <a href="/" aria-label="Hallederik home" onClick={handleLogoClick} className="h-[50px] w-[50px] p-1">
           <div className="h-full w-full flex items-center justify-center bg-indigo-600 rounded-lg">
               <span className="text-white font-bold text-lg">H</span>
@@ -226,10 +236,10 @@ export default function Marketing() {
 
         <div
           ref={headerRef}
-          className="collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-foreground max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300"
+          className="collapsible-header lg:flex lg:gap-1 lg:w-full lg:bg-inherit lg:place-content-center lg:overflow-hidden max-lg:shadow-md max-lg:fixed max-lg:right-0 max-lg:flex-col max-lg:h-screen max-lg:min-h-screen max-lg:justify-between max-lg:pt-[5%] max-lg:pb-[5%] max-lg:items-end max-lg:bg-white max-lg:text-gray-900 max-lg:overflow-y-auto max-lg:shadow-2xl transition-all duration-300"
           id="collapsed-header-items"
         >
-          <nav id="navigation" aria-label="Primary navigation" className="flex h-full w-max gap-5 text-base text-foreground max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
+          <nav id="navigation" aria-label="Primary navigation" className="flex h-full w-max gap-5 text-base text-gray-900 max-lg:mt-[30px] max-lg:flex-col max-lg:items-end max-lg:gap-5 lg:mx-auto lg:items-center">
             <a 
               href="#features" 
               onClick={(e) => handleAnchorClick(e, "#features")}
@@ -260,8 +270,8 @@ export default function Marketing() {
             </a>
           </nav>
           
-          <div className="flex items-center gap-5 text-lg max-md:w-full max-md:flex-col max-md:justify-center max-md:content-center">
-            <Link href="/login" className="transition-colors duration-300">
+          <div className="flex items-center gap-5 text-lg text-gray-900 max-md:w-full max-md:flex-col max-md:justify-center max-md:content-center">
+            <Link href="/login" className="transition-colors duration-300 text-gray-900 hover:text-[#1e85ec]">
               {t("marketing.nav.login")}
             </Link>
             <Link href="/register">
@@ -273,8 +283,9 @@ export default function Marketing() {
         </div>
         
         <button
-          className="absolute right-3 top-3 z-50 text-3xl text-foreground lg:hidden"
+          className="absolute right-3 top-3 z-50 text-3xl text-gray-900 lg:hidden"
           onClick={toggleHeader}
+          type="button"
           aria-label={isHeaderCollapsed ? "Open menu" : "Close menu"}
           aria-controls="collapsed-header-items"
           aria-expanded={!isHeaderCollapsed}

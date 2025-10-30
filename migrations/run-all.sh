@@ -42,8 +42,8 @@ echo ""
 # Start with the base schema that creates all tables
 # NOTE: Use 000_create_schema_safe.sql for production (uses IF NOT EXISTS)
 #       Use 000_create_schema.sql for fresh installs (destructive with DROP TABLE)
-echo "📊 Running migration: 000_create_schema.sql (BASE SCHEMA)"
-if psql "$DATABASE_URL" -f migrations/000_create_schema.sql; then
+echo "📊 Running migration: 000_create_schema_safe.sql (BASE SCHEMA - SAFE FOR PRODUCTION)"
+if psql "$DATABASE_URL" -f migrations/000_create_schema_safe.sql; then
     echo "✅ Base schema created - all tables created"
 else
     echo "⚠️  Base schema may already exist - continuing..."
@@ -194,11 +194,35 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 018_add_recurring_invoices.sql"
+if psql "$DATABASE_URL" -f migrations/018_add_recurring_invoices.sql; then
+    echo "✅ Recurring invoices system added"
+else
+    echo "⚠️  Recurring invoices system may already exist - continuing..."
+fi
+echo ""
+
 echo "📊 Running migration: 019_add_user_sessions_table.sql"
 if psql "$DATABASE_URL" -f migrations/019_add_user_sessions_table.sql; then
     echo "✅ User sessions table created for persistent session storage"
 else
     echo "⚠️  User sessions table may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 021_add_marketing_only.sql"
+if psql "$DATABASE_URL" -f migrations/021_add_marketing_only.sql; then
+    echo "✅ Marketing only fields added"
+else
+    echo "⚠️  Marketing only fields may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 022_fix_password_constraint_for_marketing.sql"
+if psql "$DATABASE_URL" -f migrations/022_fix_password_constraint_for_marketing.sql; then
+    echo "✅ Password constraint fixed for marketing users"
+else
+    echo "⚠️  Password constraint may already be fixed - continuing..."
 fi
 echo ""
 

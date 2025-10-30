@@ -1,4 +1,4 @@
-import type { Express } from 'express';
+import type { Express, Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import { randomBytes } from 'crypto';
 import { storage } from './storage';
@@ -41,39 +41,51 @@ export function registerAuthRoutes(app: Express) {
   // Register endpoint
   app.post('/api/auth/register', authLimiter, validateCsrf, async (req, res) => {
     try {
-      const { email, password, username, invite_token } = req.body;
+      const { email, password, username, invite_token, fromMarketing } = req.body;
 
-      console.log('Registration attempt:', { email, username: username || 'not provided', hasInviteToken: !!invite_token });
-
-      // Require invite token
-      if (!invite_token) {
-        return res.status(400).json({ error: 'Invite token is required for registration' });
-      }
-
-      // Validate invite token
-      const inviteToken = await storage.getInviteTokenByToken(invite_token);
-      if (!inviteToken) {
-        return res.status(400).json({ error: 'Invalid invite token' });
-      }
-
-      if (inviteToken.status !== 'pending') {
-        if (inviteToken.status === 'used') {
-          return res.status(400).json({ error: 'This invite token has already been used' });
-        }
-        if (inviteToken.status === 'expired') {
-          return res.status(400).json({ error: 'This invite token has expired' });
-        }
-      }
-
-      // Check if token is expired
-      if (inviteToken.expiresAt && new Date() > new Date(inviteToken.expiresAt)) {
-        await storage.updateInviteTokenStatus(inviteToken.id, 'expired');
-        return res.status(400).json({ error: 'This invite token has expired' });
-      }
+      console.log('Registration attempt:', { email, username: username || 'not provided', hasInviteToken: !!invite_token, fromMarketing });
 
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
+        // If user exists and is marketingOnly, allow password setup
+        if (existingUser.marketingOnly && fromMarketing && password) {
+          // Update marketing user with password
+          const hashedPassword = await hashPassword(password);
+          const verificationToken = randomBytes(32).toString('hex');
+          const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          
+          await storage.updateUser(existingUser.id, {
+            password: hashedPassword,
+            marketingOnly: false,
+            isProspect: false,
+            emailVerificationToken: verificationToken,
+            emailVerificationExpires: verificationExpires,
+          });
+          
+          // Regenerate session
+          await new Promise<void>((resolve, reject) => {
+            req.session.regenerate((err) => {
+              if (err) return reject(err);
+              req.session.userId = existingUser.id;
+              req.session.save((err2) => {
+                if (err2) reject(err2);
+                else resolve();
+              });
+            });
+          });
+          
+          const token = generateToken(existingUser);
+          return res.status(200).json({
+            user: {
+              id: existingUser.id,
+              email: existingUser.email,
+              username: existingUser.username
+            },
+            message: 'Registration completed! Please check your email to verify your account.',
+            ...(token && { token }),
+          });
+        }
         console.log('User already exists:', email);
         return res.status(400).json({ error: 'User already exists' });
       }
@@ -101,7 +113,7 @@ export function registerAuthRoutes(app: Express) {
       const verificationToken = randomBytes(32).toString('hex');
       const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      // Create user with invite information
+      // Create user - marketing users don't need invite tokens
       const user = await storage.createUser({
         email,
         password: hashedPassword,
@@ -110,15 +122,9 @@ export function registerAuthRoutes(app: Express) {
         isEmailVerified: false,
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,
-        invitedByUserId: inviteToken.senderUserId,
-        availableInvites: 5, // New users get 5 invites
+        marketingOnly: fromMarketing ? false : undefined, // Set to false if from marketing
+        isProspect: fromMarketing ? false : undefined,
       });
-
-      // Mark invite token as used
-      await storage.updateInviteTokenStatus(inviteToken.id, 'used');
-
-      // Decrement sender's available invites
-      await storage.decrementUserInvites(inviteToken.senderUserId);
       
       console.log('User created:', { id: user.id, email: user.email });
 
@@ -466,133 +472,30 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Generate invite token endpoint (authenticated)
-  app.post('/api/invites/generate', requireAuth, async (req, res) => {
-    try {
-      const userId = (req as any).userId;
-      if (!userId) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const { recipient_email } = req.body;
-
-      // Get user to check available invites
-      const user = await storage.getUserById(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      // Check if user has available invites
-      if (!user.availableInvites || user.availableInvites <= 0) {
-        return res.status(400).json({ error: 'No invites remaining' });
-      }
-
-      // Create invite token
-      const inviteToken = await storage.createInviteToken(userId, recipient_email);
-
-      // Build invite link
-      const frontendUrl = process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:5173';
-      const inviteLink = `${frontendUrl}/register?invite=${inviteToken.token}`;
-
-      res.json({
-        token: inviteToken.token,
-        inviteLink,
-        expiresAt: inviteToken.expiresAt,
-      });
-    } catch (error) {
-      console.error('Generate invite error:', error);
-      res.status(500).json({ error: 'Failed to generate invite token' });
-    }
+  // Invite system endpoints (DEPRECATED - using marketing registration instead)
+  // Generate invite token endpoint - DEPRECATED
+  app.post('/api/invites/generate', requireAuth, (req: Request, res: Response) => {
+    res.status(410).json({ error: 'Invite system is deprecated. Please use marketing registration instead.' });
   });
 
-  // Validate invite token endpoint (public)
-  app.get('/api/invites/validate', async (req, res) => {
-    try {
-      const { token } = req.query;
-
-      if (!token || typeof token !== 'string') {
-        return res.status(400).json({ error: 'Token is required' });
-      }
-
-      const inviteToken = await storage.getInviteTokenByToken(token);
-
-      if (!inviteToken) {
-        return res.status(404).json({ 
-          valid: false,
-          error: 'Invalid invite token' 
-        });
-      }
-
-      // Check if expired
-      if (inviteToken.expiresAt && new Date() > new Date(inviteToken.expiresAt)) {
-        await storage.updateInviteTokenStatus(inviteToken.id, 'expired');
-        return res.json({
-          valid: false,
-          error: 'This invite token has expired',
-        });
-      }
-
-      // Check status
-      if (inviteToken.status !== 'pending') {
-        return res.json({
-          valid: false,
-          error: inviteToken.status === 'used' 
-            ? 'This invite token has already been used'
-            : 'This invite token is invalid',
-        });
-      }
-
-      // Get sender info
-      const sender = await storage.getUserById(inviteToken.senderUserId);
-
-      res.json({
-        valid: true,
-        sender: sender ? {
-          name: sender.name || sender.email,
-          email: sender.email,
-        } : null,
-        recipientEmail: inviteToken.recipientEmail,
-      });
-    } catch (error) {
-      console.error('Validate invite error:', error);
-      res.status(500).json({ error: 'Failed to validate invite token' });
-    }
+  // Validate invite token endpoint - DEPRECATED but kept for backward compatibility
+  app.get('/api/invites/validate', (req: Request, res: Response) => {
+    res.json({
+      valid: false,
+      error: 'Invite system is deprecated. Please use marketing registration instead.',
+    });
   });
 
-  // Get user's invite tokens endpoint (authenticated)
-  app.get('/api/invites/my-invites', requireAuth, async (req, res) => {
-    try {
-      const userId = (req as any).userId;
-      if (!userId) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const user = await storage.getUserById(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      const tokens = await storage.getUserInviteTokens(userId);
-
-      // Build frontend URL for invite links
-      const frontendUrl = process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:5173';
-
-      const tokensWithLinks = tokens.map(token => ({
-        ...token,
-        inviteLink: `${frontendUrl}/register?invite=${token.token}`,
-      }));
-
-      res.json({
-        availableInvites: user.availableInvites || 0,
-        tokens: tokensWithLinks,
-      });
-    } catch (error) {
-      console.error('Get invites error:', error);
-      res.status(500).json({ error: 'Failed to get invite tokens' });
-    }
+  // Get user's invite tokens endpoint - DEPRECATED
+  app.get('/api/invites/my-invites', requireAuth, (req: Request, res: Response) => {
+    res.status(410).json({ 
+      error: 'Invite system is deprecated. Please use marketing registration instead.',
+      availableInvites: 0,
+      tokens: [],
+    });
   });
 
-  // Waitlist signup endpoint (public)
+  // Waitlist signup endpoint (public) - Now creates marketing user
   app.post('/api/waitlist', authLimiter, validateCsrf, async (req, res) => {
     try {
       const { email, source } = req.body;
@@ -607,8 +510,26 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: 'Invalid email format' });
       }
 
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        // If already exists, return success (don't reveal if it's marketing or regular user)
+        return res.json({ 
+          message: 'Successfully added to waitlist',
+          email,
+        });
+      }
+
+      // Create marketing user (no password, will set later)
       try {
-        await storage.addToWaitlist(email, source);
+        await storage.createUser({
+          email,
+          password: null, // Explicitly set to null for marketing users (not undefined)
+          provider: 'local',
+          marketingOnly: true,
+          isProspect: true,
+        });
+        
         res.json({ 
           message: 'Successfully added to waitlist',
           email,

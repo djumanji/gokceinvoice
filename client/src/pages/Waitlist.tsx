@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { ArrowLeft } from "lucide-react";
 
 export default function Waitlist() {
   const { t } = useTranslation();
@@ -63,10 +64,30 @@ export default function Waitlist() {
     waitlistMutation.mutate();
   };
 
+  const handleBack = () => {
+    // Check if there's history to go back to, otherwise go to marketing page
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation("/");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background to-muted">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <div className="flex items-center justify-start mb-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleBack}
+              className="mr-auto"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </div>
           <CardTitle className="text-2xl">Join the Waitlist</CardTitle>
           <CardDescription className="mt-2">
             This is an invite-only platform. Enter your email to join the waitlist and we'll notify you when invites become available.
@@ -96,12 +117,9 @@ export default function Waitlist() {
           </form>
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Already have an invite?{" "}
-            <button
-              onClick={() => setLocation("/register")}
-              className="text-primary hover:underline"
-            >
+            <Link href="/register" className="text-primary hover:underline">
               Register here
-            </button>
+            </Link>
           </div>
         </CardContent>
       </Card>
