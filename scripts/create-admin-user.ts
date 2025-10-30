@@ -3,7 +3,7 @@ import { hashPassword } from "../server/auth";
 import { storage } from "../server/storage";
 
 async function createAdminUser() {
-  const email = "djumanji";
+  const email = "djumanji@admin.local"; // Use valid email format
   const password = "cmre7163";
   const username = "djumanji";
 

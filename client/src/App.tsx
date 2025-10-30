@@ -122,10 +122,11 @@ function Router() {
 function AuthLayout({ children, style }: { children: React.ReactNode; style: React.CSSProperties }) {
   const [location] = useLocation();
   const isAuthPage = location === '/login' || location === '/register' || location.startsWith('/verify-email') || location.startsWith('/reset-password') || location === '/forgot-password';
+  const isAdminLoginPage = location === '/admin-login';
   const isOnboardingPage = location === '/onboarding';
   const isMarketingPage = location === '/' || location === '/marketing';
   const isWaitlistPage = location === '/waitlist';
-  const hideSidebar = isAuthPage || isOnboardingPage || isMarketingPage || isWaitlistPage;
+  const hideSidebar = isAuthPage || isAdminLoginPage || isOnboardingPage || isMarketingPage || isWaitlistPage;
 
   if (hideSidebar) {
     return (

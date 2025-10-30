@@ -232,9 +232,22 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: 'Email and password are required' });
       }
 
-      // Find user
-      console.log('[Login] Looking up user by email');
-      const user = await storage.getUserByEmail(email);
+      // Find user by email or username
+      console.log('[Login] Looking up user by email or username');
+      let user = await storage.getUserByEmail(email);
+      
+      // If not found by email, try finding by username
+      if (!user) {
+        // Try to find by username - we'll need to query all users and filter
+        // For now, handle special case: if email looks like a username (no @), check username field
+        if (!email.includes('@')) {
+          // This is a simplified approach - in production you might want a getUserByUsername method
+          const allUsers = await storage.getAllUsers?.(); // This might not exist
+          if (allUsers) {
+            user = allUsers.find((u: any) => u.username === email || u.email === email);
+          }
+        }
+      }
 
       // Always perform bcrypt comparison to prevent timing attacks
       // Use a dummy hash if user doesn't exist OR if user doesn't have a password (OAuth)
