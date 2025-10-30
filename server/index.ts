@@ -124,14 +124,28 @@ export function validateCsrf(req: Request, res: Response, next: NextFunction) {
   const secret = req.session.csrfSecret;
 
   if (!secret) {
+    console.warn('[CSRF] Rejected: missing session secret', {
+      path: req.path,
+      method: req.method,
+      hasToken: Boolean(token),
+    });
     return res.status(403).json({ error: 'CSRF secret not found. Please refresh.' });
   }
 
   if (!token || typeof token !== 'string') {
+    console.warn('[CSRF] Rejected: missing/invalid token header', {
+      path: req.path,
+      method: req.method,
+      hasToken: Boolean(token),
+    });
     return res.status(403).json({ error: 'CSRF token required' });
   }
 
   if (!tokens.verify(secret, token)) {
+    console.warn('[CSRF] Rejected: token verification failed', {
+      path: req.path,
+      method: req.method,
+    });
     return res.status(403).json({ error: 'Invalid CSRF token' });
   }
 

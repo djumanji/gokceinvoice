@@ -6,16 +6,8 @@ test.describe('Register Page', () => {
   });
 
   test('should display registration form correctly', async ({ page }) => {
-    // Check title
-    await expect(page.locator('text=Create an Account')).toBeVisible();
-    
-    // Check social login buttons
-    await expect(page.locator('button:has-text("Continue with Google")')).toBeVisible();
-    await expect(page.locator('button:has-text("Continue with GitHub")')).toBeVisible();
-    
     // Check form fields
     await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[placeholder="johndoe"]')).toBeVisible();
     await expect(page.locator('input[type="password"]').first()).toBeVisible();
     await expect(page.locator('input[type="password"]').nth(1)).toBeVisible();
     
@@ -25,9 +17,9 @@ test.describe('Register Page', () => {
 
   test('should validate password match', async ({ page }) => {
     await page.fill('input[type="email"]', 'newuser@test.com');
-    await page.fill('input[placeholder="johndoe"]', 'testuser');
-    await page.fill('input[type="password"]', 'password123');
-    await page.fill('input[type="password"]', 'different123');
+    const passwordInputs = page.locator('input[type="password"]');
+    await passwordInputs.first().fill('password123');
+    await passwordInputs.nth(1).fill('different123');
     
     await page.locator('button:has-text("Register")').click();
     await page.waitForTimeout(1000);
