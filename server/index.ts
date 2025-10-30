@@ -10,6 +10,7 @@ import { registerRoutes } from "./routes";
 import { registerAuthRoutes } from "./auth-routes";
 import { registerOAuthRoutes } from "./oauth";
 import { setupVite, serveStatic, log } from "./vite";
+import { errorHandler } from "./middleware/error.middleware";
 
 const PgStore = connectPgSimple(session);
 
@@ -124,14 +125,28 @@ export function validateCsrf(req: Request, res: Response, next: NextFunction) {
   const secret = req.session.csrfSecret;
 
   if (!secret) {
+    console.warn('[CSRF] Rejected: missing session secret', {
+      path: req.path,
+      method: req.method,
+      hasToken: Boolean(token),
+    });
     return res.status(403).json({ error: 'CSRF secret not found. Please refresh.' });
   }
 
   if (!token || typeof token !== 'string') {
+    console.warn('[CSRF] Rejected: missing/invalid token header', {
+      path: req.path,
+      method: req.method,
+      hasToken: Boolean(token),
+    });
     return res.status(403).json({ error: 'CSRF token required' });
   }
 
   if (!tokens.verify(secret, token)) {
+    console.warn('[CSRF] Rejected: token verification failed', {
+      path: req.path,
+      method: req.method,
+    });
     return res.status(403).json({ error: 'Invalid CSRF token' });
   }
 
@@ -175,13 +190,8 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    console.error('Unhandled error:', err);
-    res.status(status).json({ message });
-  });
+  // Use centralized error handler
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
