@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { parseErrorMessage } from "@/lib/errorUtils";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { DOTLOTTIE_WASM_URL } from "@/lib/lottie";
 import { useTheme } from "@/components/ThemeProvider";
 import { Moon, Sun } from "lucide-react";
 // import { trackEvent, identifyUser } from "@/lib/mixpanel-wrapper";
@@ -148,6 +149,7 @@ export default function Login() {
           loop
           autoplay
           className="w-full h-full object-cover"
+          wasmUrl={DOTLOTTIE_WASM_URL}
         />
       </div>
 
