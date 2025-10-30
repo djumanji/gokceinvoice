@@ -124,10 +124,19 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ error: 'Password is required for registration' });
       }
 
-      // Validate invite token if provided
+      // Validate invite token if provided (accepts code or full token)
       let validatedInviteToken = null;
       if (invite_token) {
-        const inviteToken = await storage.getInviteTokenByToken(invite_token);
+        const { normalizeInviteCode } = await import('./utils/invite-code.js');
+        const normalizedInput = normalizeInviteCode(invite_token);
+
+        // Try to find by code first (5 chars), then by full token
+        let inviteToken;
+        if (normalizedInput.length === 5) {
+          inviteToken = await storage.getInviteTokenByCode(normalizedInput);
+        } else {
+          inviteToken = await storage.getInviteTokenByToken(invite_token);
+        }
 
         if (!inviteToken) {
           return res.status(400).json({ error: 'Invalid invite code' });
@@ -567,23 +576,50 @@ export function registerAuthRoutes(app: Express) {
     try {
       const userId = req.user!.id;
       const { recipientEmail } = req.body;
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       if (!user) return res.status(404).json({ error: 'User not found' });
       if (user.availableInvites !== null && user.availableInvites <= 0) {
         return res.status(400).json({ error: 'No available invites remaining' });
       }
+
       const token = randomUUID();
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
+
+      // Generate unique 5-character code
+      const { generateInviteCode } = await import('./utils/invite-code.js');
+      let code = generateInviteCode();
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      // Ensure code is unique (retry up to 10 times if collision)
+      while (attempts < maxAttempts) {
+        const existing = await storage.getInviteTokenByCode(code);
+        if (!existing) break;
+        code = generateInviteCode();
+        attempts++;
+      }
+
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({ error: 'Failed to generate unique invite code' });
+      }
+
       const inviteToken = await storage.createInviteToken({
-        token, senderUserId: userId, recipientEmail: recipientEmail || null, expiresAt,
+        token,
+        code,
+        senderUserId: userId,
+        recipientEmail: recipientEmail || null,
+        expiresAt,
       });
+
       if (user.availableInvites !== null) {
         await storage.updateUser(userId, { availableInvites: user.availableInvites - 1 });
       }
+
       res.json({
+        code: inviteToken.code,
         token: inviteToken.token,
-        inviteUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=${inviteToken.token}`,
+        inviteUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=${inviteToken.code}`,
         expiresAt: inviteToken.expiresAt,
       });
     } catch (error) {
@@ -592,16 +628,28 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Validate invite token endpoint
+  // Validate invite token endpoint (accepts code or full token)
   app.get('/api/invites/validate', async (req: Request, res: Response) => {
     try {
       const { token } = req.query;
       if (!token || typeof token !== 'string') {
-        return res.json({ valid: false, error: 'Invite token is required' });
+        return res.json({ valid: false, error: 'Invite code is required' });
       }
-      const inviteToken = await storage.getInviteTokenByToken(token);
+
+      // Normalize and check if it's a 5-character code or full UUID token
+      const { normalizeInviteCode } = await import('./utils/invite-code.js');
+      const normalizedInput = normalizeInviteCode(token);
+
+      // Try to find by code first (5 chars), then by full token
+      let inviteToken;
+      if (normalizedInput.length === 5) {
+        inviteToken = await storage.getInviteTokenByCode(normalizedInput);
+      } else {
+        inviteToken = await storage.getInviteTokenByToken(token);
+      }
+
       if (!inviteToken) {
-        return res.json({ valid: false, error: 'Invalid invite token' });
+        return res.json({ valid: false, error: 'Invalid invite code' });
       }
       if (inviteToken.status === 'used') {
         return res.json({ valid: false, error: 'This invite has already been used' });
@@ -609,9 +657,11 @@ export function registerAuthRoutes(app: Express) {
       if (inviteToken.expiresAt && new Date() > inviteToken.expiresAt) {
         return res.json({ valid: false, error: 'This invite has expired' });
       }
-      const sender = await storage.getUser(inviteToken.senderUserId);
+      const sender = await storage.getUserById(inviteToken.senderUserId);
       res.json({
-        valid: true, recipientEmail: inviteToken.recipientEmail,
+        valid: true,
+        code: inviteToken.code,
+        recipientEmail: inviteToken.recipientEmail,
         sender: sender ? { name: sender.name, email: sender.email } : null,
       });
     } catch (error) {
@@ -624,14 +674,19 @@ export function registerAuthRoutes(app: Express) {
   app.get('/api/invites/my-invites', requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.user!.id;
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       const tokens = await storage.getInviteTokensBySender(userId);
       res.json({
         availableInvites: user?.availableInvites ?? 1,
         tokens: tokens.map(t => ({
-          token: t.token, status: t.status, recipientEmail: t.recipientEmail,
-          createdAt: t.createdAt, usedAt: t.usedAt, expiresAt: t.expiresAt,
-          inviteUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=${t.token}`,
+          code: t.code,
+          token: t.token,
+          status: t.status,
+          recipientEmail: t.recipientEmail,
+          createdAt: t.createdAt,
+          usedAt: t.usedAt,
+          expiresAt: t.expiresAt,
+          inviteUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=${t.code || t.token}`,
         })),
       });
     } catch (error) {

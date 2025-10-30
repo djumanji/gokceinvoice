@@ -64,6 +64,7 @@ export const users = pgTable("users", {
 export const inviteTokens = pgTable("invite_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   token: text("token").notNull().unique(),
+  code: varchar("code", { length: 5 }).unique(), // Short 5-character human-friendly code
   senderUserId: varchar("sender_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   status: inviteStatusEnum("status").default("pending"),
   recipientEmail: text("recipient_email"),

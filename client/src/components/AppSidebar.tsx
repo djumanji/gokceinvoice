@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Users, Box, Receipt, Moon, Sun, LogOut, Settings, Kanban } from "lucide-react";
+import { LayoutDashboard, FileText, Users, Box, Receipt, Moon, Sun, LogOut, Settings, Kanban, MessageSquare, Shield, Gavel, Mail } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
@@ -114,6 +114,42 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {userData?.isAdmin && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location === "/admin"}>
+                      <Link href="/admin">
+                        <Shield className="w-4 h-4" />
+                        <span>Admin</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location === "/lead-capture"}>
+                      <Link href="/lead-capture">
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Lead Capture</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location === "/bids"}>
+                      <Link href="/bids">
+                        <Gavel className="w-4 h-4" />
+                        <span>Bids</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location === "/messages"}>
+                      <Link href="/messages">
+                        <Mail className="w-4 h-4" />
+                        <span>Messages</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

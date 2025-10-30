@@ -16,6 +16,20 @@ export const extractedFieldsSchema = z.object({
 export type ExtractedFields = z.infer<typeof extractedFieldsSchema>;
 
 export async function extractLeadFieldsViaLLM(userMessage: string, opts?: { history?: Array<{ role: 'user'|'assistant'; content: string }>; categorySlug?: string; }): Promise<{ assistantMessage: string; extractedFields: ExtractedFields; confidence: number; }>{
+  // Try to use HuggingFace if configured, otherwise fallback to stub
+  if (process.env.HF_TOKEN) {
+    try {
+      const { extractLeadFieldsViaHuggingFace } = await import('./llm-hf');
+      console.log('[LLM] Using HuggingFace for extraction');
+      return await extractLeadFieldsViaHuggingFace(userMessage, opts);
+    } catch (error) {
+      console.error('[LLM] HuggingFace error, falling back to stub:', error);
+      // Fall through to stub implementation
+    }
+  } else {
+    console.log('[LLM] HF_TOKEN not configured, using stub extraction');
+  }
+
   // Fallback stub extraction until LLM provider is configured
   const extracted: ExtractedFields = {};
 
@@ -97,9 +111,53 @@ export async function extractLeadFieldsViaLLM(userMessage: string, opts?: { hist
   // Simple description/title
   extracted.description = userMessage.slice(0, 1000);
 
+  // Extract email if present
+  const emailMatch = userMessage.match(/[\w\.-]+@[\w\.-]+\.\w+/);
+  if (emailMatch) extracted.customer_email = emailMatch[0];
+
+  // Extract phone if present
+  const phoneMatch = userMessage.match(/(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/);
+  if (phoneMatch) {
+    extracted.customer_phone = phoneMatch[0].replace(/\s/g, '');
+  }
+
+  // Extract ZIP code if present
+  const zipMatch = userMessage.match(/\b\d{5}(?:-\d{4})?\b/);
+  if (zipMatch) extracted.customer_zip_code = zipMatch[0];
+
+  // Extract name if conversation history suggests it
+  if (opts?.history && opts.history.length > 0) {
+    const namePatterns = [
+      /(?:my name is|I'm|I am|call me|name's)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+      /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)(?:\s+here|speaking)/i,
+    ];
+    for (const pattern of namePatterns) {
+      const match = userMessage.match(pattern);
+      if (match && match[1]) {
+        extracted.customer_name = match[1].trim();
+        break;
+      }
+    }
+  }
+
   const validated = extractedFieldsSchema.parse(extracted);
 
-  const reply = "Got it. Could you share your ZIP code and the best phone or email to reach you?";
+  // Generate a more contextual reply based on what's missing
+  const missingFields: string[] = [];
+  if (!extracted.customer_zip_code) missingFields.push('ZIP code');
+  if (!extracted.customer_email && !extracted.customer_phone) missingFields.push('phone or email');
+  if (!extracted.customer_name && userMessage.length > 20) missingFields.push('name');
 
-  return { assistantMessage: reply, extractedFields: validated, confidence: 0.35 };
+  let reply: string;
+  if (missingFields.length > 0) {
+    if (missingFields.length === 1) {
+      reply = `Got it! Could you share your ${missingFields[0]}?`;
+    } else {
+      reply = `Got it! Could you share your ${missingFields.slice(0, -1).join(', ')} and ${missingFields[missingFields.length - 1]}?`;
+    }
+  } else {
+    reply = "Perfect! I have all the information I need. Click 'Confirm & Submit' when you're ready!";
+  }
+
+  return { assistantMessage: reply, extractedFields: validated, confidence: 0.45 };
 }

@@ -67,3 +67,29 @@ export async function incrementSessionCounters(sessionRowId: string, delta: { us
     WHERE id = ${sessionRowId}::uuid
   `);
 }
+
+export type ChatbotMessage = {
+  id: string;
+  session_id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  extracted_fields: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export async function getChatbotMessages(sessionRowId: string): Promise<ChatbotMessage[]> {
+  const result = await db.execute(sql<ChatbotMessage>`
+    SELECT 
+      id,
+      session_id,
+      role,
+      content,
+      extracted_fields,
+      to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
+    FROM chatbot_messages
+    WHERE session_id = ${sessionRowId}::uuid
+    ORDER BY created_at ASC
+  `);
+  // @ts-ignore
+  return (result as any).rows || result || [];
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, DollarSign } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -251,7 +251,6 @@ export default function Services() {
                   <Badge variant="secondary" className="text-xs">{service.category}</Badge>
                 )}
                 <div className="flex items-center gap-2 text-lg font-semibold">
-                  <DollarSign className="w-5 h-5" />
                   <span>€{parseFloat(service.price).toFixed(2)}</span>
                   {service.unit && <span className="text-sm font-normal text-muted-foreground">/ {service.unit}</span>}
                 </div>

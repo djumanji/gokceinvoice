@@ -35,6 +35,8 @@ import NotFound from "@/pages/not-found";
 import LeadCapture from "@/pages/LeadCapture";
 import Waitlist from "@/pages/Waitlist";
 import Admin from "@/pages/Admin";
+import Bids from "@/pages/Bids";
+import Messages from "@/pages/Messages";
 
 function Router() {
   return (
@@ -113,6 +115,16 @@ function Router() {
         <AdminRoute>
           <Admin />
         </AdminRoute>
+      </Route>
+      <Route path="/bids">
+        <ProtectedRoute>
+          <Bids />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/messages">
+        <ProtectedRoute>
+          <Messages />
+        </ProtectedRoute>
       </Route>
       <Route component={NotFound} />
     </Switch>

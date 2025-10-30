@@ -85,7 +85,7 @@ class ChatbotController {
 
   postMessage = asyncHandler(async (req: Request, res: Response) => {
     const { sessionId, message } = postMessageSchema.parse(req.body ?? {});
-    const { getChatbotSessionByPublicId, insertChatbotMessage, incrementSessionCounters } = await import('../services/chatbot');
+    const { getChatbotSessionByPublicId, insertChatbotMessage, incrementSessionCounters, getChatbotMessages } = await import('../services/chatbot');
     const { extractLeadFieldsViaLLM } = await import('../services/llm');
 
     const session = await getChatbotSessionByPublicId(sessionId);
@@ -98,12 +98,20 @@ class ChatbotController {
     await incrementSessionCounters(session.id, { user: 1 });
     console.log(`[chatbot] user message in ${session.session_id}`);
 
+    // Get conversation history for context
+    const history = await getChatbotMessages(session.id);
+    const historyFormatted = history
+      .filter(msg => msg.role !== 'system')
+      .map(msg => ({ role: msg.role as 'user' | 'assistant', content: msg.content }));
+
     // Extract fields and craft assistant reply (LLM or stub)
-    const { assistantMessage, extractedFields, confidence } = await extractLeadFieldsViaLLM(message, {});
+    const { assistantMessage, extractedFields, confidence } = await extractLeadFieldsViaLLM(message, { 
+      history: historyFormatted 
+    });
 
     await insertChatbotMessage({ sessionRowId: session.id, role: 'assistant', content: assistantMessage, extractedFields });
     await incrementSessionCounters(session.id, { assistant: 1 });
-    console.log(`[chatbot] assistant reply in ${session.session_id}`);
+    console.log(`[chatbot] assistant reply in ${session.session_id}`, { extractedFields, confidence });
 
     return res.status(200).json({
       assistantMessage,

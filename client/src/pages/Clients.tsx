@@ -48,6 +48,11 @@ export default function Clients() {
   const prevProjectIdsRef = useRef<string>("");
   const [newProject, setNewProject] = useState({ name: "", description: "" });
 
+  // Fetch all clients
+  const { data: clients = [], isLoading } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+  });
+
   // Fetch projects for editing client
   const { data: clientProjects = [] } = useQuery<Project[]>({
     queryKey: editingClient ? [`/api/clients/${editingClient.id}/projects`] : [""],
