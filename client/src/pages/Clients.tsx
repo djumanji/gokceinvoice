@@ -112,9 +112,14 @@ export default function Clients() {
   const createProjectMutation = useMutation({
     mutationFn: (data: { clientId: string; name: string; description?: string }) =>
       apiRequest("POST", "/api/projects", data),
-    onSuccess: () => {
+    onSuccess: async (newProject) => {
       if (editingClient) {
-        queryClient.invalidateQueries({ queryKey: [`/api/clients/${editingClient.id}/projects`] });
+        // Refetch projects immediately to update UI
+        const updatedProjects = await queryClient.fetchQuery({
+          queryKey: [`/api/clients/${editingClient.id}/projects`],
+          queryFn: () => apiRequest("GET", `/api/clients/${editingClient.id}/projects`),
+        });
+        setProjects(updatedProjects || []);
       }
       setNewProject({ name: "", description: "" });
       toast({
@@ -133,9 +138,14 @@ export default function Clients() {
 
   const deleteProjectMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/projects/${id}`),
-    onSuccess: () => {
+    onSuccess: async () => {
       if (editingClient) {
-        queryClient.invalidateQueries({ queryKey: [`/api/clients/${editingClient.id}/projects`] });
+        // Refetch projects immediately to update UI
+        const updatedProjects = await queryClient.fetchQuery({
+          queryKey: [`/api/clients/${editingClient.id}/projects`],
+          queryFn: () => apiRequest("GET", `/api/clients/${editingClient.id}/projects`),
+        });
+        setProjects(updatedProjects || []);
       }
       toast({
         title: "Project Deleted",
@@ -179,6 +189,7 @@ export default function Clients() {
   };
 
   const handleAddProject = () => {
+    // Validate that project name is provided
     if (!newProject.name.trim()) {
       toast({
         title: "Validation Error",
@@ -197,13 +208,16 @@ export default function Clients() {
       return;
     }
 
-    // If creating new client, store project temporarily
-    // Otherwise, create it immediately
+    // Capture both name and description together
+    const projectName = newProject.name.trim();
+    const projectDescription = newProject.description?.trim() || undefined;
+
+    // If editing existing client, create project immediately via API
     if (editingClient) {
       createProjectMutation.mutate({
         clientId: editingClient.id,
-        name: newProject.name.trim(),
-        description: newProject.description?.trim() || undefined,
+        name: projectName,
+        description: projectDescription,
       });
     } else {
       // Store for later creation after client is created
@@ -212,11 +226,12 @@ export default function Clients() {
         {
           id: `temp-${Date.now()}`,
           clientId: "",
-          name: newProject.name.trim(),
-          description: newProject.description?.trim() || null,
+          name: projectName,
+          description: projectDescription || null,
           isActive: true,
         },
       ]);
+      // Clear the form after adding
       setNewProject({ name: "", description: "" });
     }
   };
@@ -270,7 +285,7 @@ export default function Clients() {
               {t("clients.addClient")}
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingClient ? t("clients.editClient") : t("clients.addNewClient")}</DialogTitle>
             </DialogHeader>
@@ -334,23 +349,18 @@ export default function Clients() {
                 <div className="space-y-2 p-3 bg-muted rounded-md">
                   <div className="space-y-2">
                     <Label htmlFor="project-name">Project Name *</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="project-name"
-                        value={newProject.name}
-                        onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                        placeholder="e.g., Website Redesign"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleAddProject}
-                        disabled={createProjectMutation.isPending}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add
-                      </Button>
-                    </div>
+                    <Input
+                      id="project-name"
+                      value={newProject.name}
+                      onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                      placeholder="e.g., Website Redesign"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddProject();
+                        }
+                      }}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="project-description">Description</Label>
@@ -362,6 +372,16 @@ export default function Clients() {
                       rows={2}
                     />
                   </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddProject}
+                    disabled={createProjectMutation.isPending}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Project
+                  </Button>
                 </div>
 
                 {/* Projects List */}
