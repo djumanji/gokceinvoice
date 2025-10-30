@@ -452,32 +452,32 @@ export default function Marketing() {
           </h2>
 
           <div className="flex gap-6 max-lg:flex-col">
-            <div className="flex h-[400px] w-[350px] flex-col gap-2 rounded-xl p-4 shadow-xl bg-card">
+            <div className="flex h-[400px] w-[350px] flex-col gap-2 rounded-xl p-4 shadow-xl bg-gray-900">
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
                 <div className="text-6xl">⚡</div>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900">{t("marketing.features.fastCreation.title")}</h3>
-              <div className="text-gray-700">
+              <h3 className="text-2xl font-semibold text-gray-100">{t("marketing.features.fastCreation.title")}</h3>
+              <div className="text-gray-300">
                 {t("marketing.features.fastCreation.description")}
               </div>
             </div>
             
-            <div className="flex h-[400px] w-[350px] flex-col gap-2 rounded-xl p-4 shadow-xl bg-card">
+            <div className="flex h-[400px] w-[350px] flex-col gap-2 rounded-xl p-4 shadow-xl bg-gray-900">
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
                 <div className="text-6xl">📊</div>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900">{t("marketing.features.trackManage.title")}</h3>
-              <div className="text-gray-700">
+              <h3 className="text-2xl font-semibold text-gray-100">{t("marketing.features.trackManage.title")}</h3>
+              <div className="text-gray-300">
                 {t("marketing.features.trackManage.description")}
               </div>
             </div>
             
-            <div className="flex h-[400px] w-[350px] flex-col gap-2 rounded-xl p-4 shadow-xl bg-card">
+            <div className="flex h-[400px] w-[350px] flex-col gap-2 rounded-xl p-4 shadow-xl bg-gray-900">
               <div className="h-[200px] w-full overflow-clip rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                 <div className="text-6xl">🔒</div>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900">{t("marketing.features.secure.title")}</h3>
-              <div className="text-gray-700">
+              <h3 className="text-2xl font-semibold text-gray-100">{t("marketing.features.secure.title")}</h3>
+              <div className="text-gray-300">
                 {t("marketing.features.secure.description")}
               </div>
             </div>
