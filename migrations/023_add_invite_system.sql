@@ -2,8 +2,8 @@
 -- Adds invite tokens, waitlist, and user invite tracking
 
 -- Add invite-related fields to users table
-ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS available_invites INTEGER DEFAULT 5,
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS available_invites INTEGER DEFAULT 1,
 ADD COLUMN IF NOT EXISTS invited_by_user_id VARCHAR REFERENCES users(id);
 
 -- Create invite_status enum
@@ -42,4 +42,4 @@ CREATE TABLE IF NOT EXISTS waitlist (
 CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
 
 -- Set default invites for existing users (if any)
-UPDATE users SET available_invites = 5 WHERE available_invites IS NULL;
+UPDATE users SET available_invites = 1 WHERE available_invites IS NULL;
