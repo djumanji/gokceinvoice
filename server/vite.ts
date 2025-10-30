@@ -68,7 +68,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -76,10 +76,42 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static files with proper MIME types
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      // Ensure proper MIME types for CSS and JS files
+      if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (filePath.endsWith('.png')) {
+        res.setHeader('Content-Type', 'image/png');
+      } else if (filePath.endsWith('.wasm')) {
+        res.setHeader('Content-Type', 'application/wasm');
+      }
+    }
+  }));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  // fall through to index.html for SPA routes (not API routes or asset requests)
+  app.use("*", (req, res, next) => {
+    // Only serve index.html for routes that look like SPA routes
+    // Don't serve index.html for API routes or asset requests
+    if (req.path.startsWith('/api') || 
+        req.path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|wasm|lottie)$/i)) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    const indexPath = path.resolve(distPath, "index.html");
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        // Only send error if headers haven't been sent
+        if (!res.headersSent) {
+          console.error('Error serving index.html:', err);
+          res.status(500).json({ error: 'Internal server error' });
+        } else {
+          // If headers were sent, just log and let Express handle it
+          console.error('Error serving index.html after headers sent:', err);
+        }
+      }
+    });
   });
 }
