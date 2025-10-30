@@ -1,0 +1,184 @@
+import type { Request, Response } from 'express';
+import { storage } from '../storage';
+import { insertInvoiceSchema, insertLineItemSchema } from '@shared/schema';
+import { asyncHandler, AppError } from '../middleware/error.middleware';
+import { getUserId } from '../middleware/auth.middleware';
+import { 
+  calculateInvoiceTotals, 
+  validateTotalMatch, 
+  prepareLineItems 
+} from '../services/invoice-calculation.service';
+
+/**
+ * Invoice Controller
+ * Handles CRUD operations for invoices and line items
+ */
+
+/**
+ * GET /api/invoices
+ * Get all invoices for the authenticated user
+ */
+export const list = asyncHandler(async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const invoices = await storage.getInvoices(userId);
+  res.json(invoices);
+});
+
+/**
+ * GET /api/invoices/:id
+ * Get a specific invoice by ID
+ */
+export const getOne = asyncHandler(async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const { id } = req.params;
+
+  const invoice = await storage.getInvoice(id, userId);
+  if (!invoice) {
+    throw new AppError(404, 'Invoice not found');
+  }
+
+  res.json(invoice);
+});
+
+/**
+ * POST /api/invoices
+ * Create a new invoice with line items
+ * Body is validated and sanitized by middleware before reaching here
+ */
+export const create = asyncHandler(async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const { lineItems, taxRate, ...invoiceData } = req.body;
+
+  // Calculate totals server-side (never trust client)
+  const calculations = calculateInvoiceTotals(lineItems, taxRate);
+  
+  // Validate client-provided total matches server calculation
+  if (invoiceData.total) {
+    validateTotalMatch(calculations.total, invoiceData.total);
+  }
+
+  // Generate invoice number server-side
+  const invoiceNumber = await storage.getNextInvoiceNumber(userId);
+
+  // Prepare invoice data with calculated values
+  const validatedInvoice = insertInvoiceSchema.parse({
+    ...invoiceData,
+    userId,
+    invoiceNumber,
+    subtotal: calculations.subtotal,
+    tax: calculations.tax,
+    taxRate: taxRate.toString(),
+    total: calculations.total,
+  });
+
+  // Prepare line items
+  const preparedLineItems = prepareLineItems(lineItems);
+
+  // Create invoice with line items in transaction
+  const invoice = await storage.createInvoiceWithLineItems(
+    validatedInvoice,
+    preparedLineItems
+  );
+
+  res.status(201).json(invoice);
+});
+
+/**
+ * PATCH /api/invoices/:id
+ * Update an existing invoice and optionally its line items
+ * Body is validated and sanitized by middleware before reaching here
+ */
+export const update = asyncHandler(async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const { id } = req.params;
+  const { lineItems, taxRate, ...invoiceData } = req.body;
+
+  // Check if invoice exists and belongs to user
+  const existingInvoice = await storage.getInvoice(id, userId);
+  if (!existingInvoice) {
+    throw new AppError(404, 'Invoice not found');
+  }
+
+  // Prevent changing invoice number
+  if (invoiceData.invoiceNumber && invoiceData.invoiceNumber !== existingInvoice.invoiceNumber) {
+    throw new AppError(400, 'Cannot change invoice number');
+  }
+
+  // If line items are provided, recalculate totals
+  if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
+    const calculations = calculateInvoiceTotals(lineItems, taxRate);
+
+    // Update invoice with recalculated values
+    const data = insertInvoiceSchema.partial().parse({
+      ...invoiceData,
+      subtotal: calculations.subtotal,
+      tax: calculations.tax,
+      taxRate: taxRate.toString(),
+      total: calculations.total,
+    });
+
+    const invoice = await storage.updateInvoice(id, userId, data);
+    if (!invoice) {
+      throw new AppError(404, 'Invoice not found');
+    }
+
+    // Replace line items
+    await storage.deleteLineItemsByInvoice(id);
+    
+    const preparedLineItems = prepareLineItems(lineItems);
+    for (const item of preparedLineItems) {
+      const validatedItem = insertLineItemSchema.parse({
+        invoiceId: invoice.id,
+        ...item,
+      });
+      await storage.createLineItem(validatedItem);
+    }
+
+    res.json(invoice);
+  } else {
+    // Update invoice without line items (e.g., status change)
+    const data = insertInvoiceSchema.partial().parse(invoiceData);
+    const invoice = await storage.updateInvoice(id, userId, data);
+
+    if (!invoice) {
+      throw new AppError(404, 'Invoice not found');
+    }
+
+    res.json(invoice);
+  }
+});
+
+/**
+ * DELETE /api/invoices/:id
+ * Delete an invoice (cascades to line items)
+ */
+export const remove = asyncHandler(async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const { id } = req.params;
+
+  const deleted = await storage.deleteInvoice(id, userId);
+  if (!deleted) {
+    throw new AppError(404, 'Invoice not found');
+  }
+
+  res.status(204).send();
+});
+
+/**
+ * GET /api/invoices/:invoiceId/line-items
+ * Get line items for a specific invoice
+ */
+export const listLineItems = asyncHandler(async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const { invoiceId } = req.params;
+
+  // Verify invoice belongs to user
+  const invoice = await storage.getInvoice(invoiceId, userId);
+  if (!invoice) {
+    throw new AppError(404, 'Invoice not found');
+  }
+
+  const lineItems = await storage.getLineItemsByInvoice(invoiceId);
+  res.json(lineItems);
+});
+

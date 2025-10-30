@@ -1,15 +1,15 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import postgres, { type Sql } from 'postgres';
 import { users, clients, invoices, lineItems, services, expenses, bankAccounts, projects, type User, type InsertUser, type Client, type InsertClient, type Invoice, type InsertInvoice, type LineItem, type InsertLineItem, type Service, type InsertService, type Expense, type InsertExpense, type BankAccount, type InsertBankAccount, type Project, type InsertProject } from '@shared/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 
 // Initialize PostgreSQL connection
 let connectionString: string | undefined;
-let client: any;
-let db: any;
+let client: Sql | undefined;
+let db: PostgresJsDatabase | undefined;
 
-function initializeDb() {
-  if (!client) {
+function initializeDb(): PostgresJsDatabase {
+  if (!client || !db) {
     connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new Error('DATABASE_URL is not set');
@@ -33,7 +33,7 @@ function initializeDb() {
 }
 
 export class PgStorage {
-  private db: any;
+  private db: PostgresJsDatabase;
 
   constructor() {
     this.db = initializeDb();
