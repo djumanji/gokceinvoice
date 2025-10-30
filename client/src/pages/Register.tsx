@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
@@ -43,12 +44,12 @@ export default function Register() {
     retry: false,
   });
 
-  // Redirect to waitlist if no invite token
+  // If invite param in URL, set it as the invite code
   useEffect(() => {
-    if (!inviteParam && !isValidatingInvite) {
-      setLocation("/waitlist");
+    if (inviteParam) {
+      setInviteCode(inviteParam);
     }
-  }, [inviteParam, isValidatingInvite, setLocation]);
+  }, [inviteParam]);
 
   // Handle invalid invite token
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function Register() {
         variant: "destructive",
       });
       setTimeout(() => {
-        setLocation("/waitlist");
+        setLocation("/waitlist", { replace: true });
       }, 2000);
     } else if (inviteValidation && inviteValidation.valid) {
       setInviteToken(inviteParam!);
@@ -185,24 +186,48 @@ export default function Register() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!inviteToken) {
+
+    // Validate the invite code (either from URL or manually entered)
+    const codeToValidate = inviteParam || inviteCode.trim();
+
+    if (!codeToValidate) {
       toast({
-        title: "Invalid Invite",
-        description: "Please use a valid invite link to register.",
+        title: "Invite Code Required",
+        description: "Please enter a valid invite code to register.",
         variant: "destructive",
       });
-      setLocation("/waitlist");
       return;
     }
-    
-    registerMutation.mutate();
+
+    // Validate the invite code first
+    try {
+      const validation = await apiRequest("GET", `/api/invites/validate?token=${codeToValidate}`);
+
+      if (!validation.valid) {
+        toast({
+          title: "Invalid Invite Code",
+          description: validation.error || "The invite code is invalid or has expired.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Set the validated token and proceed with registration
+      setInviteToken(codeToValidate);
+      registerMutation.mutate();
+    } catch (error: any) {
+      toast({
+        title: "Validation Failed",
+        description: "Could not validate invite code. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Show loading state while validating invite
-  if (isValidatingInvite) {
+  // Show loading state while validating invite from URL
+  if (inviteParam && isValidatingInvite) {
     return (
       <div className="relative min-h-screen flex items-center justify-center p-6 overflow-hidden">
         <Card className="relative z-10 w-full max-w-md backdrop-blur-sm bg-card/95 shadow-xl">
@@ -214,13 +239,15 @@ export default function Register() {
     );
   }
 
-  // Don't render form if invite is invalid
-  if (!inviteValidation || !inviteValidation.valid) {
-    return null;
-  }
-
   return (
     <div className="relative min-h-screen flex items-center justify-center p-6 overflow-hidden">
+      {/* Company Logo */}
+      <Link href="/" className="absolute top-4 left-4 z-50 h-[50px] w-[50px] p-1">
+        <div className="h-full w-full flex items-center justify-center bg-indigo-600 rounded-lg">
+          <span className="text-white font-bold text-lg">H</span>
+        </div>
+      </Link>
+      
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
@@ -256,6 +283,24 @@ export default function Register() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="inviteCode">Invite Code</Label>
+              <Input
+                id="inviteCode"
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                required
+                readOnly={!!inviteParam}
+                placeholder="Enter your invite code"
+                className={inviteParam ? "bg-muted cursor-not-allowed" : ""}
+              />
+              {!inviteParam && (
+                <p className="text-xs text-muted-foreground">
+                  Enter the invite code you received
+                </p>
+              )}
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">{t("common.email")}</Label>
               <Input

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,7 +40,14 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-6">
+    <div className="relative flex items-center justify-center min-h-screen p-6">
+      {/* Company Logo */}
+      <Link href="/" className="absolute top-4 left-4 z-50 h-[50px] w-[50px] p-1">
+        <div className="h-full w-full flex items-center justify-center bg-indigo-600 rounded-lg">
+          <span className="text-white font-bold text-lg">H</span>
+        </div>
+      </Link>
+      
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">{t('auth.forgotPassword')}</CardTitle>
