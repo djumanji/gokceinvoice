@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Users as UsersIcon, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,15 +56,17 @@ export default function Clients() {
     enabled: !!editingClient,
   });
 
+  // Create a stable string representation of project IDs for comparison
+  const projectIdsString = useMemo(() => {
+    return clientProjects.map(p => p.id).sort().join(',');
+  }, [clientProjects]);
+
   useEffect(() => {
     if (editingClient && clientProjects && clientProjects.length > 0) {
-      // Create a stable ID string for comparison
-      const newProjectIds = clientProjects.map(p => p.id).sort().join(',');
-      
       // Only update if projects actually changed
-      if (prevProjectIdsRef.current !== newProjectIds) {
+      if (prevProjectIdsRef.current !== projectIdsString) {
         setProjects(clientProjects);
-        prevProjectIdsRef.current = newProjectIds;
+        prevProjectIdsRef.current = projectIdsString;
       }
     } else if (!editingClient || !clientProjects || clientProjects.length === 0) {
       // Only clear if we're not editing or projects are empty
@@ -73,7 +75,7 @@ export default function Clients() {
         prevProjectIdsRef.current = "";
       }
     }
-  }, [editingClient?.id, clientProjects]); // Use editingClient.id instead of editingClient object
+  }, [editingClient?.id, projectIdsString, clientProjects]); // Use stable projectIdsString instead of clientProjects array
 
   const { data: invoices = [] } = useQuery<any[]>({
     queryKey: ["/api/invoices"],
