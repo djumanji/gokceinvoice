@@ -583,7 +583,7 @@ export function registerAuthRoutes(app: Express) {
       }
       res.json({
         token: inviteToken.token,
-        inviteUrl: \`\${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=\${inviteToken.token}\`,
+        inviteUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=${inviteToken.token}`,
         expiresAt: inviteToken.expiresAt,
       });
     } catch (error) {
@@ -631,7 +631,7 @@ export function registerAuthRoutes(app: Express) {
         tokens: tokens.map(t => ({
           token: t.token, status: t.status, recipientEmail: t.recipientEmail,
           createdAt: t.createdAt, usedAt: t.usedAt, expiresAt: t.expiresAt,
-          inviteUrl: \`\${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=\${t.token}\`,
+          inviteUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=${t.token}`,
         })),
       });
     } catch (error) {
