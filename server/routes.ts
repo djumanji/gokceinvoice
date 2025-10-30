@@ -15,6 +15,7 @@ import {
   projectController,
   userController,
   uploadController,
+  chatbotController,
 } from "./controllers";
 
 // Configure multer for in-memory storage
@@ -263,6 +264,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: 'Failed to confirm session' });
     }
   });
+
+  // ============================================================================
+  // CHATBOT ROUTES (Public - no auth, no CSRF for MVP)
+  // ============================================================================
+  app.post("/api/chatbot/sessions", chatbotController.sessionLimiter, chatbotController.createSession);
+  app.post("/api/chatbot/messages", chatbotController.messageLimiter, chatbotController.postMessage);
+  app.post('/api/chatbot/sessions/:sessionId/confirm', chatbotController.confirmSession);
 
   // ============================================================================
   // USER PROFILE ROUTES

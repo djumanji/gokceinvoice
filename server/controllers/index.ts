@@ -11,6 +11,7 @@ import * as bankController from './bank.controller';
 import * as projectController from './project.controller';
 import * as userController from './user.controller';
 import * as uploadController from './upload.controller';
+import * as chatbotController from './chatbot.controller';
 
 export {
   clientController,
@@ -21,5 +22,6 @@ export {
   projectController,
   userController,
   uploadController,
+  chatbotController,
 };
 
