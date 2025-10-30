@@ -349,7 +349,11 @@ export function registerAuthRoutes(app: Express) {
         token,
       });
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[Login] ========== LOGIN ERROR ==========');
+      console.error('[Login] Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('[Login] Error message:', error instanceof Error ? error.message : String(error));
+      console.error('[Login] Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.error('[Login] =================================');
       res.status(500).json({ error: 'An error occurred during login. Please try again.' });
     }
   });
