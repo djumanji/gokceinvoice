@@ -38,6 +38,35 @@ const authLimiter = rateLimit({
 });
 
 export function registerAuthRoutes(app: Express) {
+  // Test endpoint to verify storage is working (remove in production)
+  app.get('/api/test-admin-user', async (req, res) => {
+    try {
+      const userByEmail = await storage.getUserByEmail('djumanji@admin.local');
+      const userByUsername = await storage.getUserByUsername('djumanji');
+      
+      res.json({
+        byEmail: userByEmail ? {
+          id: userByEmail.id,
+          email: userByEmail.email,
+          username: userByEmail.username,
+          isAdmin: userByEmail.isAdmin,
+          hasPassword: !!userByEmail.password
+        } : null,
+        byUsername: userByUsername ? {
+          id: userByUsername.id,
+          email: userByUsername.email,
+          username: userByUsername.username,
+          isAdmin: userByUsername.isAdmin,
+          hasPassword: !!userByUsername.password
+        } : null,
+        storageType: storage.constructor.name,
+        hasGetUserByUsername: typeof storage.getUserByUsername === 'function'
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message, stack: error.stack });
+    }
+  });
+  
   // Register endpoint
   app.post('/api/auth/register', authLimiter, validateCsrf, async (req, res) => {
     try {
