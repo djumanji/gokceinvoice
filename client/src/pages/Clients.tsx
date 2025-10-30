@@ -51,6 +51,10 @@ export default function Clients() {
   // Fetch projects for editing client
   const { data: clientProjects = [] } = useQuery<Project[]>({
     queryKey: editingClient ? [`/api/clients/${editingClient.id}/projects`] : [""],
+    queryFn: async () => {
+      if (!editingClient) return [];
+      return await apiRequest("GET", `/api/clients/${editingClient.id}/projects`);
+    },
     enabled: !!editingClient,
   });
 
@@ -114,12 +118,13 @@ export default function Clients() {
       apiRequest("POST", "/api/projects", data),
     onSuccess: async (newProject) => {
       if (editingClient) {
-        // Refetch projects immediately to update UI
-        const updatedProjects = await queryClient.fetchQuery({
-          queryKey: [`/api/clients/${editingClient.id}/projects`],
-          queryFn: () => apiRequest("GET", `/api/clients/${editingClient.id}/projects`),
+        // Invalidate and refetch projects query to update UI
+        await queryClient.invalidateQueries({ 
+          queryKey: [`/api/clients/${editingClient.id}/projects`] 
         });
-        setProjects(updatedProjects || []);
+        await queryClient.refetchQueries({ 
+          queryKey: [`/api/clients/${editingClient.id}/projects`] 
+        });
       }
       setNewProject({ name: "", description: "" });
       toast({
@@ -140,12 +145,13 @@ export default function Clients() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/projects/${id}`),
     onSuccess: async () => {
       if (editingClient) {
-        // Refetch projects immediately to update UI
-        const updatedProjects = await queryClient.fetchQuery({
-          queryKey: [`/api/clients/${editingClient.id}/projects`],
-          queryFn: () => apiRequest("GET", `/api/clients/${editingClient.id}/projects`),
+        // Invalidate and refetch projects query to update UI
+        await queryClient.invalidateQueries({ 
+          queryKey: [`/api/clients/${editingClient.id}/projects`] 
         });
-        setProjects(updatedProjects || []);
+        await queryClient.refetchQueries({ 
+          queryKey: [`/api/clients/${editingClient.id}/projects`] 
+        });
       }
       toast({
         title: "Project Deleted",
