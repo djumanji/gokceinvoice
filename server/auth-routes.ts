@@ -237,16 +237,11 @@ export function registerAuthRoutes(app: Express) {
       let user = await storage.getUserByEmail(email);
       console.log('[Login] User found by email:', user ? 'YES' : 'NO');
       
-      // If not found by email, try finding by username
+      // If not found by email, try finding by username (if input doesn't look like email)
       if (!user && !email.includes('@')) {
         console.log('[Login] Trying username lookup for:', email);
-        // If input doesn't look like an email, try username lookup
-        if (storage.getUserByUsername) {
-          user = await storage.getUserByUsername(email);
-          console.log('[Login] User found by username:', user ? 'YES' : 'NO');
-        } else {
-          console.log('[Login] getUserByUsername method not available');
-        }
+        user = await storage.getUserByUsername(email);
+        console.log('[Login] User found by username:', user ? 'YES' : 'NO');
       }
 
       // Always perform bcrypt comparison to prevent timing attacks
@@ -514,30 +509,85 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Invite system endpoints (DEPRECATED - using marketing registration instead)
-  // Generate invite token endpoint - DEPRECATED
-  app.post('/api/invites/generate', requireAuth, (req: Request, res: Response) => {
-    res.status(410).json({ error: 'Invite system is deprecated. Please use marketing registration instead.' });
+  // Invite system endpoints
+  // Generate invite token endpoint
+  app.post('/api/invites/generate', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const { recipientEmail } = req.body;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      if (user.availableInvites !== null && user.availableInvites <= 0) {
+        return res.status(400).json({ error: 'No available invites remaining' });
+      }
+      const token = randomUUID();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      const inviteToken = await storage.createInviteToken({
+        token, senderUserId: userId, recipientEmail: recipientEmail || null, expiresAt,
+      });
+      if (user.availableInvites !== null) {
+        await storage.updateUser(userId, { availableInvites: user.availableInvites - 1 });
+      }
+      res.json({
+        token: inviteToken.token,
+        inviteUrl: \`\${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=\${inviteToken.token}\`,
+        expiresAt: inviteToken.expiresAt,
+      });
+    } catch (error) {
+      console.error('Generate invite error:', error);
+      res.status(500).json({ error: 'Failed to generate invite' });
+    }
   });
 
-  // Validate invite token endpoint - DEPRECATED but kept for backward compatibility
-  app.get('/api/invites/validate', (req: Request, res: Response) => {
-    res.json({
-      valid: false,
-      error: 'Invite system is deprecated. Please use marketing registration instead.',
-    });
+  // Validate invite token endpoint
+  app.get('/api/invites/validate', async (req: Request, res: Response) => {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== 'string') {
+        return res.json({ valid: false, error: 'Invite token is required' });
+      }
+      const inviteToken = await storage.getInviteTokenByToken(token);
+      if (!inviteToken) {
+        return res.json({ valid: false, error: 'Invalid invite token' });
+      }
+      if (inviteToken.status === 'used') {
+        return res.json({ valid: false, error: 'This invite has already been used' });
+      }
+      if (inviteToken.expiresAt && new Date() > inviteToken.expiresAt) {
+        return res.json({ valid: false, error: 'This invite has expired' });
+      }
+      const sender = await storage.getUser(inviteToken.senderUserId);
+      res.json({
+        valid: true, recipientEmail: inviteToken.recipientEmail,
+        sender: sender ? { name: sender.name, email: sender.email } : null,
+      });
+    } catch (error) {
+      console.error('Validate invite error:', error);
+      res.status(500).json({ valid: false, error: 'Failed to validate invite' });
+    }
   });
 
-  // Get user's invite tokens endpoint - DEPRECATED
-  app.get('/api/invites/my-invites', requireAuth, (req: Request, res: Response) => {
-    res.status(410).json({ 
-      error: 'Invite system is deprecated. Please use marketing registration instead.',
-      availableInvites: 0,
-      tokens: [],
-    });
+  // Get user's invite tokens endpoint
+  app.get('/api/invites/my-invites', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const user = await storage.getUser(userId);
+      const tokens = await storage.getInviteTokensBySender(userId);
+      res.json({
+        availableInvites: user?.availableInvites ?? 1,
+        tokens: tokens.map(t => ({
+          token: t.token, status: t.status, recipientEmail: t.recipientEmail,
+          createdAt: t.createdAt, usedAt: t.usedAt, expiresAt: t.expiresAt,
+          inviteUrl: \`\${process.env.CLIENT_URL || 'http://localhost:3000'}/register?invite=\${t.token}\`,
+        })),
+      });
+    } catch (error) {
+      console.error('Get invites error:', error);
+      res.status(500).json({ error: 'Failed to get invites' });
+    }
   });
 
-  // Waitlist signup endpoint (public) - Now creates marketing user
   app.post('/api/waitlist', authLimiter, validateCsrf, async (req, res) => {
     try {
       const { email, source } = req.body;
