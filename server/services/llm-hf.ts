@@ -28,18 +28,18 @@ export async function extractLeadFieldsViaHuggingFace(
     // - meta-llama/Llama-2-7b-chat-hf
     // - google/flan-t5-base (smaller, faster)
     
-    const response = await hf.textGeneration({
+    const response = await hf.chatCompletion({
       model: 'mistralai/Mistral-7B-Instruct-v0.2',
-      inputs: prompt,
-      parameters: {
-        max_new_tokens: 500,
-        temperature: 0.3, // Lower temperature for more structured output
-        return_full_text: false,
-      },
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant that extracts lead information from customer messages.' },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 500,
+      temperature: 0.3, // Lower temperature for more structured output
     });
     
     // Parse JSON response
-    const extracted = parseExtractionResponse(response.generated_text);
+    const extracted = parseExtractionResponse(response.choices[0]?.message?.content || '');
     
     // Generate assistant reply
     const assistantMessage = generateAssistantReply(extracted, userMessage);
@@ -153,6 +153,8 @@ function fallbackExtraction(userMessage: string): { assistantMessage: string; ex
     confidence: 0.35,
   };
 }
+
+
 
 
 

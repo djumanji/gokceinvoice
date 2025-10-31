@@ -48,3 +48,4 @@ const client = postgres(databaseUrl, {
 });
 
 export const db = drizzle(client, { schema });
+export const pg = client; // Export raw postgres client for complex queries

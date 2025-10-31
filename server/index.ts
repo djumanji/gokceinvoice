@@ -18,6 +18,7 @@ import { processRecurringInvoices } from "./services/recurring-invoice.service";
 const PgStore = connectPgSimple(session);
 
 const app = express();
+export let sessionMiddleware: any; // Export for Socket.IO
 
 // CSRF protection setup
 const tokens = new Tokens();
@@ -97,7 +98,7 @@ if (sessionStore) {
   console.warn('   Set DATABASE_URL environment variable to enable persistent sessions.');
 }
 
-app.use(session({
+sessionMiddleware = session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -110,7 +111,9 @@ app.use(session({
   store: sessionStore,
   // Force session save on every response to ensure persistence
   rolling: true, // Reset maxAge on every request
-}));
+});
+
+app.use(sessionMiddleware);
 
 app.use(cookieParser());
 app.use(express.json({
@@ -218,6 +221,10 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Initialize Socket.IO for real-time messaging
+  const { setupSocketIO } = await import('./socket/index.js');
+  setupSocketIO(server, sessionMiddleware);
 
   // Use centralized error handler
   app.use(errorHandler);

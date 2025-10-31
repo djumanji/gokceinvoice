@@ -51,9 +51,10 @@ export async function getChatbotSessionByPublicId(publicSessionId: string): Prom
 }
 
 export async function insertChatbotMessage(params: { sessionRowId: string; role: 'user'|'assistant'|'system'; content: string; extractedFields?: Record<string, unknown> | null; tokensUsed?: number | null; }): Promise<void> {
+  const extractedFieldsJson = params.extractedFields ? JSON.stringify(params.extractedFields) : null;
   await db.execute(sql`
     INSERT INTO chatbot_messages (session_id, role, content, tokens_used, extracted_fields)
-    VALUES (${params.sessionRowId}::uuid, ${params.role}, ${params.content}, ${params.tokensUsed ?? null}, ${params.extractedFields ? sql.raw(JSON.stringify(params.extractedFields)) : null})
+    VALUES (${params.sessionRowId}::uuid, ${params.role}, ${params.content}, ${params.tokensUsed ?? null}, ${extractedFieldsJson}::jsonb)
   `);
 }
 

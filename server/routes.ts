@@ -316,6 +316,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     uploadController.uploadLogo
   );
 
+  // ============================================================================
+  // MESSAGES ROUTES
+  // ============================================================================
+  const messagesRouter = (await import("./routes/messages.js")).default;
+  app.use("/api/messages", messagesRouter);
+
   const httpServer = createServer(app);
   return httpServer;
 }

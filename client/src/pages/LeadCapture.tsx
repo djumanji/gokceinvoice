@@ -72,9 +72,18 @@ export default function LeadCapture() {
       const res = await apiRequest('POST', '/api/chatbot/messages', { sessionId, message: text });
       return res as { assistantMessage: string; extractedFields: Record<string, any> };
     },
-    onSuccess: (data, variables) => {
-      setMessages((prev) => [...prev, { role: 'user', content: variables }, { role: 'assistant', content: data.assistantMessage }]);
+    onMutate: async (text: string) => {
+      // Optimistically add user message immediately
+      setMessages((prev) => [...prev, { role: 'user', content: text }]);
+    },
+    onSuccess: (data) => {
+      // Add assistant response
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.assistantMessage }]);
       setExtractedFields(data.extractedFields || {});
+    },
+    onError: () => {
+      // Remove the optimistic user message on error
+      setMessages((prev) => prev.slice(0, -1));
     }
   });
 

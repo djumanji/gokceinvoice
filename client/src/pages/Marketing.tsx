@@ -245,23 +245,36 @@ export default function Marketing() {
             </div>
 
             <h2 className="mt-6 text-lg font-semibold text-gray-900">{t("marketing.hero.getStarted")}</h2>
-            <div className="mt-4 flex h-[50px] w-[350px] max-w-[350px] items-center gap-2 overflow-hidden">
-              <label htmlFor="hero-email" className="sr-only">{t("marketing.newsletter.emailPlaceholder")}</label>
-              <input
-                id="hero-email"
-                type="email"
-                value={heroEmail}
-                onChange={(e) => setHeroEmail(e.target.value)}
-                className="h-full w-full rounded-md border-2 border-solid border-[#bfbfbf] bg-transparent p-2 px-3 outline-none transition-colors duration-300 focus:border-[#0c0c0c]"
-                placeholder={t("marketing.hero.emailPlaceholder")}
-              />
-            <Button
-              className="h-full rounded-md bg-[#101010] text-[#fdfdfd] px-4 transition-colors duration-300 hover:bg-[#1a1a1a]"
-              onClick={() => handleProspectSignup(heroEmail)}
-            >
-              {t("marketing.nav.signup")}
-            </Button>
-          </div>
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="flex h-[50px] w-[350px] max-w-[350px] items-center gap-2 overflow-hidden">
+                <label htmlFor="hero-email" className="sr-only">{t("marketing.newsletter.emailPlaceholder")}</label>
+                <input
+                  id="hero-email"
+                  type="email"
+                  value={heroEmail}
+                  onChange={(e) => setHeroEmail(e.target.value)}
+                  className="h-full w-full rounded-md border-2 border-solid border-[#bfbfbf] bg-transparent p-2 px-3 outline-none transition-colors duration-300 focus:border-[#0c0c0c]"
+                  placeholder={t("marketing.hero.emailPlaceholder")}
+                />
+                <Button
+                  className="h-full rounded-md bg-[#101010] text-[#fdfdfd] px-4 transition-colors duration-300 hover:bg-[#1a1a1a]"
+                  onClick={() => handleProspectSignup(heroEmail)}
+                >
+                  {t("marketing.nav.signup")}
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">{t("marketing.hero.alreadyHaveAccount", "Already have an account?")}</span>
+                <Link href="/login">
+                  <Button
+                    variant="outline"
+                    className="rounded-md border-2 border-[#101010] px-4 py-2 transition-colors duration-300 hover:bg-[#101010] hover:text-white"
+                  >
+                    {t("marketing.nav.login")}
+                  </Button>
+                </Link>
+              </div>
+            </div>
 
             <div className="mt-6 flex gap-4 text-2xl">
               <a 
