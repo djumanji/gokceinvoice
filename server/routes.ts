@@ -59,6 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================================================
   // CHATBOT ROUTES (Public - no auth, no CSRF for MVP)
   // ============================================================================
+  app.get("/api/chatbot/categories", chatbotController.getCategories);
   app.post("/api/chatbot/sessions", chatbotController.sessionLimiter, chatbotController.createSession);
   app.post("/api/chatbot/messages", chatbotController.messageLimiter, chatbotController.postMessage);
   app.post('/api/chatbot/sessions/:sessionId/confirm', chatbotController.confirmSession);

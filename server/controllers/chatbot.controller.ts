@@ -48,6 +48,21 @@ const confirmSchema = z.object({
 });
 
 class ChatbotController {
+  getCategories = asyncHandler(async (req: Request, res: Response) => {
+    const { db } = await import('../db');
+    const { sql } = await import('drizzle-orm');
+
+    const result = await db.execute(sql`
+      SELECT id, slug, display_name, description
+      FROM categories
+      ORDER BY display_name ASC
+    `);
+
+    // @ts-ignore
+    const categories = (result as any).rows || result || [];
+    return res.status(200).json({ categories });
+  });
+
   createSession = asyncHandler(async (req: Request, res: Response) => {
     const { categorySlug, sessionId } = createSessionSchema.parse(req.body ?? {});
     const { createChatbotSession, findCategoryIdBySlug, getChatbotSessionByPublicId } = await import('../services/chatbot');
@@ -104,9 +119,22 @@ class ChatbotController {
       .filter(msg => msg.role !== 'system')
       .map(msg => ({ role: msg.role as 'user' | 'assistant', content: msg.content }));
 
+    // Get category information if available
+    let categoryName: string | undefined;
+    if (session.category_id) {
+      const { db } = await import('../db');
+      const { sql } = await import('drizzle-orm');
+      const catResult = await db.execute(sql`
+        SELECT display_name FROM categories WHERE id = ${session.category_id} LIMIT 1
+      `);
+      // @ts-ignore
+      categoryName = ((catResult as any).rows?.[0] || (catResult as any)[0])?.display_name;
+    }
+
     // Extract fields and craft assistant reply (LLM or stub)
-    const { assistantMessage, extractedFields, confidence } = await extractLeadFieldsViaLLM(message, { 
-      history: historyFormatted 
+    const { assistantMessage, extractedFields, confidence } = await extractLeadFieldsViaLLM(message, {
+      history: historyFormatted,
+      categoryName
     });
 
     await insertChatbotMessage({ sessionRowId: session.id, role: 'assistant', content: assistantMessage, extractedFields });
@@ -221,5 +249,5 @@ class ChatbotController {
 }
 
 const controller = new ChatbotController();
-export const { createSession, postMessage, confirmSession } = controller;
+export const { getCategories, createSession, postMessage, confirmSession } = controller;
 

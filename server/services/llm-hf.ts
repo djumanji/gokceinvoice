@@ -16,38 +16,54 @@ const hf = new HfInference(process.env.HF_TOKEN);
  */
 export async function extractLeadFieldsViaHuggingFace(
   userMessage: string,
-  opts?: { history?: Array<{ role: 'user' | 'assistant'; content: string }>; categorySlug?: string; }
+  opts?: { history?: Array<{ role: 'user' | 'assistant'; content: string }>; categorySlug?: string; categoryName?: string; }
 ): Promise<{ assistantMessage: string; extractedFields: ExtractedFields; confidence: number }> {
   try {
-    // Build prompt for structured extraction
-    const prompt = buildExtractionPrompt(userMessage, opts?.history);
-    
-    // Use HuggingFace text generation (free tier available)
-    // You can use models like:
-    // - mistralai/Mistral-7B-Instruct-v0.2
-    // - meta-llama/Llama-2-7b-chat-hf
-    // - google/flan-t5-base (smaller, faster)
-    
+    // Build system prompt with category context
+    const categoryContext = opts?.categoryName
+      ? `The customer is looking for ${opts.categoryName} services. Ask relevant questions about their ${opts.categoryName.toLowerCase()} needs.`
+      : 'You are helping a customer find a service provider.';
+
+    const systemPrompt = `You are a friendly lead capture assistant helping customers find service providers. ${categoryContext}
+
+Your job is to:
+1. Ask ONE relevant question at a time to understand their needs
+2. Extract information from their responses (name, email, phone, ZIP code, project details)
+3. Be conversational and helpful
+
+Keep responses short (1-2 sentences max).`;
+
+    // Build conversation history
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    if (opts?.history) {
+      for (const msg of opts.history) {
+        messages.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    messages.push({ role: 'user', content: userMessage });
+
+    // Use HuggingFace for conversational response
     const response = await hf.chatCompletion({
       model: 'mistralai/Mistral-7B-Instruct-v0.2',
-      messages: [
-        { role: 'system', content: 'You are a helpful assistant that extracts lead information from customer messages.' },
-        { role: 'user', content: prompt }
-      ],
-      max_tokens: 500,
-      temperature: 0.3, // Lower temperature for more structured output
+      messages,
+      max_tokens: 200,
+      temperature: 0.7,
     });
-    
-    // Parse JSON response
-    const extracted = parseExtractionResponse(response.choices[0]?.message?.content || '');
-    
-    // Generate assistant reply
-    const assistantMessage = generateAssistantReply(extracted, userMessage);
-    
+
+    const assistantMessage = response.choices[0]?.message?.content?.trim() ||
+      "Could you tell me more about what you need?";
+
+    // Extract any structured data from the user's message
+    const extracted = extractStructuredData(userMessage);
+
     return {
       assistantMessage,
       extractedFields: extractedFieldsSchema.parse(extracted),
-      confidence: 0.75, // Higher confidence than stub
+      confidence: 0.75,
     };
   } catch (error) {
     console.error('HuggingFace LLM extraction error:', error);
@@ -89,14 +105,53 @@ export async function generateChatbotResponse(
 
 // Helper functions
 
+/**
+ * Extract structured data from user message (email, phone, ZIP, etc.)
+ */
+function extractStructuredData(userMessage: string): Partial<ExtractedFields> {
+  const extracted: Partial<ExtractedFields> = {};
+
+  // Extract email
+  const emailMatch = userMessage.match(/[\w\.-]+@[\w\.-]+\.\w+/);
+  if (emailMatch) extracted.customer_email = emailMatch[0];
+
+  // Extract phone
+  const phoneMatch = userMessage.match(/(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/);
+  if (phoneMatch) {
+    extracted.customer_phone = phoneMatch[0].replace(/\s/g, '');
+  }
+
+  // Extract ZIP
+  const zipMatch = userMessage.match(/\b\d{5}(?:-\d{4})?\b/);
+  if (zipMatch) extracted.customer_zip_code = zipMatch[0];
+
+  // Extract name
+  const namePatterns = [
+    /(?:my name is|I'm|I am|call me|name's)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+    /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)(?:\s+here|speaking)/i,
+  ];
+  for (const pattern of namePatterns) {
+    const match = userMessage.match(pattern);
+    if (match && match[1]) {
+      extracted.customer_name = match[1].trim();
+      break;
+    }
+  }
+
+  // Store description
+  extracted.description = userMessage.slice(0, 1000);
+
+  return extracted;
+}
+
 function buildExtractionPrompt(
   userMessage: string,
   history?: Array<{ role: 'user' | 'assistant'; content: string }>
 ): string {
-  const historyText = history 
+  const historyText = history
     ? history.map(h => `${h.role}: ${h.content}`).join('\n')
     : '';
-  
+
   return `Extract information from this customer message. Return JSON with: customer_name, customer_email, customer_phone, customer_zip_code, title, description, budget_min, budget_max, urgency_level, needed_at.
 
 ${historyText ? `Conversation history:\n${historyText}\n\n` : ''}

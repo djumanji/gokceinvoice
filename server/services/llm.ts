@@ -15,7 +15,47 @@ export const extractedFieldsSchema = z.object({
 
 export type ExtractedFields = z.infer<typeof extractedFieldsSchema>;
 
-export async function extractLeadFieldsViaLLM(userMessage: string, opts?: { history?: Array<{ role: 'user'|'assistant'; content: string }>; categorySlug?: string; }): Promise<{ assistantMessage: string; extractedFields: ExtractedFields; confidence: number; }>{
+/**
+ * Helper function to extract previously collected information from conversation history
+ */
+function extractFromHistory(history: Array<{ role: 'user'|'assistant'; content: string }>): Partial<ExtractedFields> {
+  const collected: Partial<ExtractedFields> = {};
+
+  for (const msg of history) {
+    if (msg.role === 'user') {
+      // Extract email
+      const emailMatch = msg.content.match(/[\w\.-]+@[\w\.-]+\.\w+/);
+      if (emailMatch && !collected.customer_email) collected.customer_email = emailMatch[0];
+
+      // Extract phone
+      const phoneMatch = msg.content.match(/(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/);
+      if (phoneMatch && !collected.customer_phone) {
+        collected.customer_phone = phoneMatch[0].replace(/\s/g, '');
+      }
+
+      // Extract ZIP
+      const zipMatch = msg.content.match(/\b\d{5}(?:-\d{4})?\b/);
+      if (zipMatch && !collected.customer_zip_code) collected.customer_zip_code = zipMatch[0];
+
+      // Extract name
+      const namePatterns = [
+        /(?:my name is|I'm|I am|call me|name's)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+        /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)(?:\s+here|speaking)/i,
+      ];
+      for (const pattern of namePatterns) {
+        const match = msg.content.match(pattern);
+        if (match && match[1] && !collected.customer_name) {
+          collected.customer_name = match[1].trim();
+          break;
+        }
+      }
+    }
+  }
+
+  return collected;
+}
+
+export async function extractLeadFieldsViaLLM(userMessage: string, opts?: { history?: Array<{ role: 'user'|'assistant'; content: string }>; categorySlug?: string; categoryName?: string; }): Promise<{ assistantMessage: string; extractedFields: ExtractedFields; confidence: number; }>{
   // Try to use HuggingFace if configured, otherwise fallback to stub
   if (process.env.HF_TOKEN) {
     try {
@@ -142,19 +182,48 @@ export async function extractLeadFieldsViaLLM(userMessage: string, opts?: { hist
 
   const validated = extractedFieldsSchema.parse(extracted);
 
-  // Generate a more contextual reply based on what's missing
-  const missingFields: string[] = [];
-  if (!extracted.customer_zip_code) missingFields.push('ZIP code');
-  if (!extracted.customer_email && !extracted.customer_phone) missingFields.push('phone or email');
-  if (!extracted.customer_name && userMessage.length > 20) missingFields.push('name');
+  // Determine what information we just received in this message
+  const justReceived: string[] = [];
+  if (extracted.customer_name) justReceived.push('name');
+  if (extracted.customer_email) justReceived.push('email');
+  if (extracted.customer_phone) justReceived.push('phone');
+  if (extracted.customer_zip_code) justReceived.push('ZIP code');
+  if (extracted.budget_min || extracted.budget_max) justReceived.push('budget');
 
+  // Check conversation history to see what was already collected
+  const historyExtracted = extractFromHistory(opts?.history || []);
+
+  // Merge with current extraction
+  const allExtracted = { ...historyExtracted, ...extracted };
+
+  // Determine what's still missing for a complete lead
+  const stillMissing: string[] = [];
+  if (!allExtracted.customer_zip_code) stillMissing.push('ZIP code');
+  if (!allExtracted.customer_email && !allExtracted.customer_phone) stillMissing.push('phone or email');
+
+  // Generate contextual response
   let reply: string;
-  if (missingFields.length > 0) {
-    if (missingFields.length === 1) {
-      reply = `Got it! Could you share your ${missingFields[0]}?`;
+
+  if (justReceived.length > 0) {
+    // Acknowledge what was just shared
+    const receivedText = justReceived.length === 1
+      ? justReceived[0]
+      : `${justReceived.slice(0, -1).join(', ')} and ${justReceived[justReceived.length - 1]}`;
+
+    if (stillMissing.length > 0) {
+      const missingText = stillMissing.length === 1
+        ? stillMissing[0]
+        : `${stillMissing.slice(0, -1).join(', ')} and ${stillMissing[stillMissing.length - 1]}`;
+      reply = `Thanks for sharing your ${receivedText}! Could you also provide your ${missingText}?`;
     } else {
-      reply = `Got it! Could you share your ${missingFields.slice(0, -1).join(', ')} and ${missingFields[missingFields.length - 1]}?`;
+      reply = `Perfect! I have all the information I need. Click 'Confirm & Submit' when you're ready!`;
     }
+  } else if (stillMissing.length > 0) {
+    // First message or no new info extracted
+    const missingText = stillMissing.length === 1
+      ? stillMissing[0]
+      : `${stillMissing.slice(0, -1).join(', ')} and ${stillMissing[stillMissing.length - 1]}`;
+    reply = `Got it! To help you find the right professional, could you share your ${missingText}?`;
   } else {
     reply = "Perfect! I have all the information I need. Click 'Confirm & Submit' when you're ready!";
   }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
+
+type Category = {
+  id: string;
+  slug: string;
+  display_name: string;
+  description: string;
+};
 
 function useChatbotSession() {
   const [sessionId, setSessionId] = useState<string | null>(() => localStorage.getItem('chatbot:sessionId'));
@@ -34,13 +41,23 @@ function useChatbotSession() {
 
 export default function LeadCapture() {
   const { sessionId, createOrResume } = useChatbotSession();
-  const [messages, setMessages] = useState<Array<{ role: 'user'|'assistant'; content: string }>>([
-    { role: 'assistant', content: 'Hi! What do you need help with today?' }
+  const [messages, setMessages] = useState<Array<{ role: 'user'|'assistant'; content: string; categoryOptions?: Category[] }>>([
+    { role: 'assistant', content: 'What service do you need?' }
   ]);
   const [input, setInput] = useState('');
   const [step, setStep] = useState<'chat' | 'confirm' | 'success'>('chat');
   const [extractedFields, setExtractedFields] = useState<Record<string, any>>({});
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  // Fetch categories
+  const { data: categoriesData } = useQuery({
+    queryKey: ['/api/chatbot/categories'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/chatbot/categories');
+      return res as { categories: Category[] };
+    }
+  });
 
   // Form state for confirmation
   const [formData, setFormData] = useState({
@@ -66,6 +83,36 @@ export default function LeadCapture() {
   useEffect(() => {
     listRef.current?.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  // Add categories to the first message when loaded
+  useEffect(() => {
+    if (categoriesData?.categories && messages.length === 1 && !selectedCategory) {
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[0] = { ...updated[0], categoryOptions: categoriesData.categories };
+        return updated;
+      });
+    }
+  }, [categoriesData, messages.length, selectedCategory]);
+
+  const handleCategorySelect = async (category: Category) => {
+    setSelectedCategory(category);
+
+    // Add user's selection to chat
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: category.display_name
+    }]);
+
+    // Create session with category
+    await createOrResume.mutateAsync({ categorySlug: category.slug });
+
+    // Add assistant's response
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `Great! Let me help you with ${category.display_name.toLowerCase()}. Tell me more about what you need.`
+    }]);
+  };
 
   const sendMessage = useMutation({
     mutationFn: async (text: string) => {
@@ -140,8 +187,9 @@ export default function LeadCapture() {
             onClick={() => {
               // Reset to start a new conversation
               setStep('chat');
-              setMessages([{ role: 'assistant', content: 'Hi! What do you need help with today?' }]);
+              setMessages([{ role: 'assistant', content: 'What service do you need?' }]);
               setExtractedFields({});
+              setSelectedCategory(null);
               setFormData({
                 customer_name: '',
                 customer_email: '',
@@ -341,6 +389,24 @@ export default function LeadCapture() {
               <div className={`inline-block px-3 py-2 rounded-md ${m.role === 'assistant' ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}>
                 {m.content}
               </div>
+              {m.categoryOptions && m.categoryOptions.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2 max-w-lg">
+                  {m.categoryOptions.map((cat) => (
+                    <Button
+                      key={cat.id}
+                      variant="outline"
+                      className="justify-start text-left h-auto py-3"
+                      onClick={() => handleCategorySelect(cat)}
+                      disabled={selectedCategory !== null}
+                    >
+                      <div>
+                        <div className="font-semibold">{cat.display_name}</div>
+                        <div className="text-xs text-muted-foreground">{cat.description}</div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
