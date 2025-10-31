@@ -104,7 +104,8 @@ export default function LeadCapture() {
       content: category.display_name
     }]);
 
-    // Create session with category
+    // Clear old session and create new one with category
+    localStorage.removeItem('chatbot:sessionId');
     await createOrResume.mutateAsync({ categorySlug: category.slug });
 
     // Add assistant's response

@@ -35,9 +35,9 @@ export async function extractLeadFieldsViaHuggingFace(
 
     conversationText += `Customer: ${userMessage}\nAssistant:`;
 
-    // Use text generation with a model that definitely works
+    // Use text generation with a well-supported model
     const response = await hf.textGeneration({
-      model: 'mistralai/Mistral-7B-Instruct-v0.2',
+      model: 'microsoft/Phi-3-mini-4k-instruct',
       inputs: conversationText,
       parameters: {
         max_new_tokens: 100,
