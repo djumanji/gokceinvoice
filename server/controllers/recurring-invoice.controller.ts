@@ -17,16 +17,22 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
   const userId = getUserId(req);
   const recurringInvoices = await storage.getRecurringInvoices(userId);
   
-  // Fetch items for each recurring invoice
-  const recurringInvoicesWithItems = await Promise.all(
-    recurringInvoices.map(async (recurring) => {
-      const items = await storage.getRecurringInvoiceItems(recurring.id);
-      return {
-        ...recurring,
-        items,
-      };
-    })
-  );
+  const recurringInvoiceIds = recurringInvoices.map(ri => ri.id);
+  const allItems = await storage.getRecurringInvoiceItemsByIds(recurringInvoiceIds);
+  
+  const itemsByRecurringInvoiceId = allItems.reduce((acc, item) => {
+    if (!acc[item.recurringInvoiceId]) {
+      acc[item.recurringInvoiceId] = [];
+    }
+    acc[item.recurringInvoiceId].push(item);
+    return acc;
+  }, {} as Record<string, typeof allItems>);
+  
+  // Attach items to their respective recurring invoices
+  const recurringInvoicesWithItems = recurringInvoices.map(recurring => ({
+    ...recurring,
+    items: itemsByRecurringInvoiceId[recurring.id] || [],
+  }));
   
   res.json(recurringInvoicesWithItems);
 });
