@@ -62,10 +62,15 @@ apt-get update && apt-get install -y postgresql-client
 18. `018_add_prospect_system.sql` - Prospects
 19. `018_add_recurring_invoices.sql` - **Recurring invoices**
 20. `019_add_user_sessions_table.sql` - Sessions
-21. `020_add_vector_embeddings.sql` - Vector embeddings
+21. `020_add_vector_embeddings.sql` - Vector embeddings (pgvector)
 22. `021_add_marketing_only.sql` - Marketing users
 23. `022_fix_password_constraint_for_marketing.sql` - Password fix
-24. `023_add_payments_table.sql` - **Payments system**
+24. `023_add_invite_system.sql` - Invite system
+25. `023_add_payments_table.sql` - **Payments system**
+26. `024_add_admin_field.sql` - Admin user support
+27. `024_add_invite_code.sql` - Invite codes
+28. `025_add_project_number_generation.sql` - Project number sequences
+29. `026_add_messages_system.sql` - Messaging system
 
 ### Step 3: Verify Database Setup
 

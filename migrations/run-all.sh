@@ -210,6 +210,14 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 020_add_vector_embeddings.sql"
+if psql "$DATABASE_URL" -f migrations/020_add_vector_embeddings.sql; then
+    echo "✅ Vector embeddings support added (pgvector extension)"
+else
+    echo "⚠️  Vector embeddings may already be configured - continuing..."
+fi
+echo ""
+
 echo "📊 Running migration: 021_add_marketing_only.sql"
 if psql "$DATABASE_URL" -f migrations/021_add_marketing_only.sql; then
     echo "✅ Marketing only fields added"
@@ -226,11 +234,51 @@ else
 fi
 echo ""
 
+echo "📊 Running migration: 023_add_invite_system.sql"
+if psql "$DATABASE_URL" -f migrations/023_add_invite_system.sql; then
+    echo "✅ Invite system added"
+else
+    echo "⚠️  Invite system may already exist - continuing..."
+fi
+echo ""
+
 echo "📊 Running migration: 023_add_payments_table.sql"
 if psql "$DATABASE_URL" -f migrations/023_add_payments_table.sql; then
     echo "✅ Payments table and payment tracking fields added"
 else
     echo "⚠️  Payments table may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 024_add_admin_field.sql"
+if psql "$DATABASE_URL" -f migrations/024_add_admin_field.sql; then
+    echo "✅ Admin field added to users"
+else
+    echo "⚠️  Admin field may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 024_add_invite_code.sql"
+if psql "$DATABASE_URL" -f migrations/024_add_invite_code.sql; then
+    echo "✅ Invite code field added"
+else
+    echo "⚠️  Invite code field may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 025_add_project_number_generation.sql"
+if psql "$DATABASE_URL" -f migrations/025_add_project_number_generation.sql; then
+    echo "✅ Project number generation system added"
+else
+    echo "⚠️  Project number generation may already exist - continuing..."
+fi
+echo ""
+
+echo "📊 Running migration: 026_add_messages_system.sql"
+if psql "$DATABASE_URL" -f migrations/026_add_messages_system.sql; then
+    echo "✅ Messages system added"
+else
+    echo "⚠️  Messages system may already exist - continuing..."
 fi
 echo ""
 

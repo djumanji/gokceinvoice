@@ -103,6 +103,7 @@ export default function LeadCapture() {
       content: category.display_name
     }]);
 
+    localStorage.removeItem('chatbot:sessionId');
     const session = await createOrResume.mutateAsync({ categorySlug: category.slug });
 
     try {

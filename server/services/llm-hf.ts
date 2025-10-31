@@ -21,40 +21,32 @@ export async function extractLeadFieldsViaHuggingFace(
   try {
     // Build system prompt with category context
     const categoryContext = opts?.categoryName
-      ? `The customer is looking for ${opts.categoryName} services. Ask relevant questions about their ${opts.categoryName.toLowerCase()} needs.`
+      ? `The customer is looking for ${opts.categoryName} services.`
       : 'You are helping a customer find a service provider.';
 
-    const systemPrompt = `You are a friendly lead capture assistant helping customers find service providers. ${categoryContext}
+    // Build conversation history as a text prompt
+    let conversationText = `You are a friendly lead capture assistant. ${categoryContext} Ask relevant questions to get: name, email, phone, ZIP code.\n\n`;
 
-Your job is to:
-1. Ask ONE relevant question at a time to understand their needs
-2. Extract information from their responses (name, email, phone, ZIP code, project details)
-3. Be conversational and helpful
-
-Keep responses short (1-2 sentences max).`;
-
-    // Build conversation history
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-      { role: 'system', content: systemPrompt }
-    ];
-
-    if (opts?.history) {
+    if (opts?.history && opts.history.length > 0) {
       for (const msg of opts.history) {
-        messages.push({ role: msg.role, content: msg.content });
+        conversationText += `${msg.role === 'user' ? 'Customer' : 'Assistant'}: ${msg.content}\n`;
       }
     }
 
-    messages.push({ role: 'user', content: userMessage });
+    conversationText += `Customer: ${userMessage}\nAssistant:`;
 
-    // Use HuggingFace for conversational response
-    const response = await hf.chatCompletion({
-      model: 'mistralai/Mistral-7B-Instruct-v0.2',
-      messages,
-      max_tokens: 200,
-      temperature: 0.7,
+    // Use text generation with a well-supported model
+    const response = await hf.textGeneration({
+      model: 'microsoft/Phi-3-mini-4k-instruct',
+      inputs: conversationText,
+      parameters: {
+        max_new_tokens: 100,
+        temperature: 0.7,
+        return_full_text: false,
+      },
     });
 
-    const assistantMessage = response.choices[0]?.message?.content?.trim() ||
+    const assistantMessage = response.generated_text.trim() ||
       "Could you tell me more about what you need?";
 
     // Extract any structured data from the user's message
@@ -293,6 +285,7 @@ function fallbackExtraction(userMessage: string): { assistantMessage: string; ex
     confidence: 0.35,
   };
 }
+
 
 
 
