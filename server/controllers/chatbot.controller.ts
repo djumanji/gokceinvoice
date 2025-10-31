@@ -98,9 +98,43 @@ class ChatbotController {
     });
   });
 
+  generateQuestions = asyncHandler(async (req: Request, res: Response) => {
+    const { sessionId } = req.params;
+    const { getChatbotSessionByPublicId, storeSessionQuestions } = await import('../services/chatbot');
+    const { generateCategoryQuestions } = await import('../services/llm-hf');
+
+    const session = await getChatbotSessionByPublicId(sessionId);
+    if (!session) {
+      throw new AppError(404, 'Session not found');
+    }
+
+    if (!session.category_id) {
+      throw new AppError(400, 'Session must have a category to generate questions');
+    }
+
+    const { db } = await import('../db');
+    const { sql } = await import('drizzle-orm');
+    const catResult = await db.execute(sql`
+      SELECT display_name FROM categories WHERE id = ${session.category_id} LIMIT 1
+    `);
+    // @ts-ignore
+    const categoryName = ((catResult as any).rows?.[0] || (catResult as any)[0])?.display_name;
+
+    if (!categoryName) {
+      throw new AppError(404, 'Category not found');
+    }
+
+    const questions = await generateCategoryQuestions(categoryName);
+    await storeSessionQuestions(session.id, questions);
+
+    console.log(`[chatbot] generated ${questions.length} questions for ${categoryName} in session ${session.session_id}`);
+
+    return res.status(200).json({ questions });
+  });
+
   postMessage = asyncHandler(async (req: Request, res: Response) => {
     const { sessionId, message } = postMessageSchema.parse(req.body ?? {});
-    const { getChatbotSessionByPublicId, insertChatbotMessage, incrementSessionCounters, getChatbotMessages } = await import('../services/chatbot');
+    const { getChatbotSessionByPublicId, insertChatbotMessage, incrementSessionCounters, getChatbotMessages, getSessionQuestions, incrementQuestionIndex } = await import('../services/chatbot');
     const { extractLeadFieldsViaLLM } = await import('../services/llm');
 
     const session = await getChatbotSessionByPublicId(sessionId);
@@ -131,21 +165,53 @@ class ChatbotController {
       categoryName = ((catResult as any).rows?.[0] || (catResult as any)[0])?.display_name;
     }
 
-    // Extract fields and craft assistant reply (LLM or stub)
-    const { assistantMessage, extractedFields, confidence } = await extractLeadFieldsViaLLM(message, {
-      history: historyFormatted,
-      categoryName
-    });
+    const { questions, questionIndex } = await getSessionQuestions(session.id);
+    
+    let assistantMessage: string;
+    let extractedFields: any = {};
+    let confidence = 0.5;
+    let isQuestionFlowComplete = false;
+
+    if (questions && questions.length === 3) {
+      // Extract fields from the user's answer
+      const extraction = await extractLeadFieldsViaLLM(message, {
+        history: historyFormatted,
+        categoryName
+      });
+      extractedFields = extraction.extractedFields;
+      confidence = extraction.confidence;
+
+      await incrementQuestionIndex(session.id);
+      const nextIndex = questionIndex + 1;
+
+      if (nextIndex < 3) {
+        assistantMessage = questions[nextIndex];
+      } else {
+        assistantMessage = "Perfect! I have all the information I need. Please click 'Confirm & Submit' to complete your request.";
+        isQuestionFlowComplete = true;
+      }
+    } else {
+      const extraction = await extractLeadFieldsViaLLM(message, {
+        history: historyFormatted,
+        categoryName
+      });
+      assistantMessage = extraction.assistantMessage;
+      extractedFields = extraction.extractedFields;
+      confidence = extraction.confidence;
+    }
 
     await insertChatbotMessage({ sessionRowId: session.id, role: 'assistant', content: assistantMessage, extractedFields });
     await incrementSessionCounters(session.id, { assistant: 1 });
-    console.log(`[chatbot] assistant reply in ${session.session_id}`, { extractedFields, confidence });
+    console.log(`[chatbot] assistant reply in ${session.session_id}`, { extractedFields, confidence, questionIndex });
 
     return res.status(200).json({
       assistantMessage,
       extractedFields,
       extractionConfidence: confidence,
-      phase: session.phase, // remains same for stub
+      phase: session.phase,
+      isQuestionFlowComplete,
+      currentQuestionIndex: questions ? questionIndex + 1 : null,
+      totalQuestions: questions ? questions.length : null,
     });
   });
 
@@ -249,5 +315,5 @@ class ChatbotController {
 }
 
 const controller = new ChatbotController();
-export const { getCategories, createSession, postMessage, confirmSession } = controller;
+export const { getCategories, createSession, postMessage, generateQuestions, confirmSession } = controller;
 

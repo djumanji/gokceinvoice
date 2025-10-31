@@ -61,6 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================================================
   app.get("/api/chatbot/categories", chatbotController.getCategories);
   app.post("/api/chatbot/sessions", chatbotController.sessionLimiter, chatbotController.createSession);
+  app.post("/api/chatbot/sessions/:sessionId/generate-questions", chatbotController.generateQuestions);
   app.post("/api/chatbot/messages", chatbotController.messageLimiter, chatbotController.postMessage);
   app.post('/api/chatbot/sessions/:sessionId/confirm', chatbotController.confirmSession);
 
