@@ -73,6 +73,91 @@ Keep responses short (1-2 sentences max).`;
 }
 
 /**
+ * Generate 3 category-specific questions using HuggingFace LLM
+ * Uses JSON schema to ensure structured output
+ * 
+ * @param categoryName - Display name of the category
+ * @returns Array of 3 questions
+ */
+export async function generateCategoryQuestions(
+  categoryName: string
+): Promise<string[]> {
+  try {
+    const systemPrompt = `You are a lead qualification assistant. Generate exactly 3 short, specific questions to understand a customer's needs for ${categoryName} services. Questions should help gather project details, timeline, and requirements. Return ONLY a JSON object with format: {"questions": ["question1", "question2", "question3"]}. Each question must be concise (under 15 words) and specific to ${categoryName}.`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Generate 3 questions for ${categoryName}` }
+    ];
+
+    const response = await hf.chatCompletion({
+      model: 'mistralai/Mistral-7B-Instruct-v0.2',
+      messages,
+      max_tokens: 300,
+      temperature: 0.7,
+      response_format: {
+        type: 'json_object'
+      }
+    });
+
+    const content = response.choices[0]?.message?.content?.trim();
+    if (!content) {
+      throw new Error('Empty response from LLM');
+    }
+
+    const parsed = JSON.parse(content);
+    if (!parsed.questions || !Array.isArray(parsed.questions) || parsed.questions.length !== 3) {
+      throw new Error('Invalid questions format from LLM');
+    }
+
+    return parsed.questions;
+  } catch (error) {
+    console.error('HuggingFace question generation error:', error);
+    // Fallback to category-specific default questions
+    return generateFallbackQuestions(categoryName);
+  }
+}
+
+/**
+ * Generate fallback questions when LLM fails
+ */
+function generateFallbackQuestions(categoryName: string): string[] {
+  const lowerCategory = categoryName.toLowerCase();
+  
+  if (lowerCategory.includes('plumb')) {
+    return [
+      'What plumbing issue are you experiencing?',
+      'When do you need this work completed?',
+      'What is your budget range for this project?'
+    ];
+  } else if (lowerCategory.includes('electric')) {
+    return [
+      'What electrical work do you need done?',
+      'Is this for residential or commercial property?',
+      'What is your preferred timeline?'
+    ];
+  } else if (lowerCategory.includes('clean')) {
+    return [
+      'What type of cleaning service do you need?',
+      'How large is the space (square feet)?',
+      'How often do you need this service?'
+    ];
+  } else if (lowerCategory.includes('paint')) {
+    return [
+      'What areas need painting (interior/exterior)?',
+      'Approximately how many rooms or square feet?',
+      'When would you like the work to start?'
+    ];
+  }
+  
+  return [
+    `What specific ${lowerCategory} services do you need?`,
+    'When do you need this work completed?',
+    'What is your budget range for this project?'
+  ];
+}
+
+/**
  * Generate chatbot response using HuggingFace
  */
 export async function generateChatbotResponse(

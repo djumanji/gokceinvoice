@@ -94,3 +94,36 @@ export async function getChatbotMessages(sessionRowId: string): Promise<ChatbotM
   // @ts-ignore
   return (result as any).rows || result || [];
 }
+
+export async function storeSessionQuestions(sessionRowId: string, questions: string[]): Promise<void> {
+  const questionsJson = JSON.stringify(questions);
+  await db.execute(sql`
+    UPDATE chatbot_sessions
+    SET questions = ${questionsJson}::jsonb,
+        question_index = 0
+    WHERE id = ${sessionRowId}::uuid
+  `);
+}
+
+export async function getSessionQuestions(sessionRowId: string): Promise<{ questions: string[] | null; questionIndex: number }> {
+  const result = await db.execute(sql<{ questions: string[] | null; question_index: number }>`
+    SELECT questions, question_index
+    FROM chatbot_sessions
+    WHERE id = ${sessionRowId}::uuid
+    LIMIT 1
+  `);
+  // @ts-ignore
+  const row = (result as any).rows?.[0] || (result as any)[0];
+  return {
+    questions: row?.questions || null,
+    questionIndex: row?.question_index || 0
+  };
+}
+
+export async function incrementQuestionIndex(sessionRowId: string): Promise<void> {
+  await db.execute(sql`
+    UPDATE chatbot_sessions
+    SET question_index = question_index + 1
+    WHERE id = ${sessionRowId}::uuid
+  `);
+}

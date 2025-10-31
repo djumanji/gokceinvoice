@@ -48,6 +48,7 @@ export default function LeadCapture() {
   const [step, setStep] = useState<'chat' | 'confirm' | 'success'>('chat');
   const [extractedFields, setExtractedFields] = useState<Record<string, any>>({});
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [isQuestionFlowComplete, setIsQuestionFlowComplete] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Fetch categories
@@ -84,7 +85,6 @@ export default function LeadCapture() {
     listRef.current?.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  // Add categories to the first message when loaded
   useEffect(() => {
     if (categoriesData?.categories && messages.length === 1 && !selectedCategory) {
       setMessages(prev => {
@@ -98,38 +98,52 @@ export default function LeadCapture() {
   const handleCategorySelect = async (category: Category) => {
     setSelectedCategory(category);
 
-    // Add user's selection to chat
     setMessages(prev => [...prev, {
       role: 'user',
       content: category.display_name
     }]);
 
-    // Create session with category
-    await createOrResume.mutateAsync({ categorySlug: category.slug });
+    const session = await createOrResume.mutateAsync({ categorySlug: category.slug });
 
-    // Add assistant's response
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: `Great! Let me help you with ${category.display_name.toLowerCase()}. Tell me more about what you need.`
-    }]);
+    try {
+      const res = await apiRequest('POST', `/api/chatbot/sessions/${session.sessionId}/generate-questions`, {});
+      const { questions } = res as { questions: string[] };
+
+      if (questions && questions.length > 0) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: questions[0]
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to generate questions:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Great! Let me help you with ${category.display_name.toLowerCase()}. Tell me more about what you need.`
+      }]);
+    }
   };
 
   const sendMessage = useMutation({
     mutationFn: async (text: string) => {
       const res = await apiRequest('POST', '/api/chatbot/messages', { sessionId, message: text });
-      return res as { assistantMessage: string; extractedFields: Record<string, any> };
+      return res as { 
+        assistantMessage: string; 
+        extractedFields: Record<string, any>;
+        isQuestionFlowComplete?: boolean;
+      };
     },
     onMutate: async (text: string) => {
-      // Optimistically add user message immediately
       setMessages((prev) => [...prev, { role: 'user', content: text }]);
     },
     onSuccess: (data) => {
-      // Add assistant response
       setMessages((prev) => [...prev, { role: 'assistant', content: data.assistantMessage }]);
       setExtractedFields(data.extractedFields || {});
+      if (data.isQuestionFlowComplete) {
+        setIsQuestionFlowComplete(true);
+      }
     },
     onError: () => {
-      // Remove the optimistic user message on error
       setMessages((prev) => prev.slice(0, -1));
     }
   });
@@ -389,22 +403,29 @@ export default function LeadCapture() {
               <div className={`inline-block px-3 py-2 rounded-md ${m.role === 'assistant' ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}>
                 {m.content}
               </div>
-              {m.categoryOptions && m.categoryOptions.length > 0 && (
-                <div className="mt-3 grid grid-cols-2 gap-2 max-w-lg">
-                  {m.categoryOptions.map((cat) => (
-                    <Button
-                      key={cat.id}
-                      variant="outline"
-                      className="justify-start text-left h-auto py-3"
-                      onClick={() => handleCategorySelect(cat)}
-                      disabled={selectedCategory !== null}
-                    >
-                      <div>
-                        <div className="font-semibold">{cat.display_name}</div>
-                        <div className="text-xs text-muted-foreground">{cat.description}</div>
-                      </div>
-                    </Button>
-                  ))}
+              {m.categoryOptions && m.categoryOptions.length > 0 && !selectedCategory && (
+                <div className="mt-3 max-w-md">
+                  <Select 
+                    onValueChange={(value) => {
+                      const cat = m.categoryOptions?.find(c => c.id === value);
+                      if (cat) handleCategorySelect(cat);
+                    }}
+                    disabled={selectedCategory !== null}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a service category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {m.categoryOptions.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          <div>
+                            <div className="font-semibold">{cat.display_name}</div>
+                            <div className="text-xs text-muted-foreground">{cat.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </div>
@@ -435,7 +456,7 @@ export default function LeadCapture() {
               Send
             </Button>
           </form>
-          {messages.length > 1 && (
+          {messages.length > 1 && (selectedCategory === null || isQuestionFlowComplete) && (
             <Button
               variant="outline"
               onClick={() => setStep('confirm')}
