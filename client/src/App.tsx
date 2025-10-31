@@ -39,6 +39,7 @@ import Waitlist from "@/pages/Waitlist";
 import Admin from "@/pages/Admin";
 import Bids from "@/pages/Bids";
 import Messages from "@/pages/Messages";
+import FeatureFlagDemo from "@/pages/FeatureFlagDemo";
 
 function Router() {
   return (
@@ -126,6 +127,11 @@ function Router() {
       <Route path="/messages">
         <ProtectedRoute>
           <Messages />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/feature-flag-demo">
+        <ProtectedRoute>
+          <FeatureFlagDemo />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />
