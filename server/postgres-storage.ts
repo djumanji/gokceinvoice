@@ -510,6 +510,17 @@ export class PgStorage {
       .orderBy(recurringInvoiceItems.position);
   }
 
+  async getRecurringInvoiceItemsByIds(recurringInvoiceIds: string[]): Promise<RecurringInvoiceItem[]> {
+    if (recurringInvoiceIds.length === 0) {
+      return [];
+    }
+    
+    return await this.db.select()
+      .from(recurringInvoiceItems)
+      .where(sql`${recurringInvoiceItems.recurringInvoiceId} = ANY(${recurringInvoiceIds})`)
+      .orderBy(recurringInvoiceItems.recurringInvoiceId, recurringInvoiceItems.position);
+  }
+
   async getRecurringInvoicesDueForGeneration(): Promise<RecurringInvoice[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
