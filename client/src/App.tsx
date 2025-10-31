@@ -2,7 +2,7 @@ import "./i18n/config";
 import { Switch, Route, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { queryClient, setApiLoadingCallback } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -12,6 +12,8 @@ import { SidebarReveal } from "@/components/SidebarReveal";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { LoadingModal } from "@/components/LoadingModal";
+import { FeatureFlagProvider } from "@/contexts/FeatureFlagContext";
+import { FeatureFlagDebugPanel } from "@/components/FeatureFlagDebugPanel";
 import Dashboard from "@/pages/Dashboard";
 import Invoices from "@/pages/Invoices";
 import CreateInvoice from "@/pages/CreateInvoice";
@@ -167,12 +169,18 @@ function AuthLayout({ children, style }: { children: React.ReactNode; style: Rea
   );
 }
 
-function App() {
+function AppContent() {
   const [isApiLoading, setIsApiLoading] = useState(false);
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
   };
+
+  // Get current user for feature flag targeting
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/me'],
+    retry: false,
+  });
 
   // Connect loading callback to the global API tracker
   useEffect(() => {
@@ -180,7 +188,14 @@ function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <FeatureFlagProvider
+      userId={user?.id}
+      userProperties={{
+        email: user?.email,
+        username: user?.username,
+        isAdmin: user?.isAdmin,
+      }}
+    >
       <TooltipProvider>
         <ThemeProvider>
           <AuthLayout style={style as React.CSSProperties}>
@@ -188,8 +203,17 @@ function App() {
           </AuthLayout>
           <Toaster />
           <LoadingModal isVisible={isApiLoading} />
+          <FeatureFlagDebugPanel />
         </ThemeProvider>
       </TooltipProvider>
+    </FeatureFlagProvider>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
     </QueryClientProvider>
   );
 }
